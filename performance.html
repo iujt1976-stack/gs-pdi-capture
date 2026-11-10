@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Inspector Performance</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 1100px; margin: 0 auto; padding-bottom: 40px; }
+h1 { font-size: 1.25rem; text-align: center; letter-spacing: 1px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+h3 { font-size: 0.78rem; margin: 8px 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
+th { background: #1f4e79; color: #fff; }
+td.n { text-align: center; font-weight: 700; }
+.click { color: #1f4e79; font-weight: 700; cursor: pointer; text-decoration: underline; }
+tr.on td { background: #eaf2fb; }
+.over { color: #c0392b; font-weight: 700; }
+.under { color: #1e7a3a; font-weight: 700; }
+.pill { display: inline-block; background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin: 0 4px 8px 0; border: none; cursor: pointer; }
+.pill.dim { background: #5d6d7e; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 8px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 140px; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.note { font-size: 0.75rem; color: #666; margin-top: 6px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; cursor: pointer; background: #2c3e50; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; max-width: none; }
+  th { background: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>INSPECTOR PERFORMANCE</h1>
+<p class="sub no-print"><a href="lane-times.html" style="color:#1a5276;font-weight:700">Lane times one-pager →</a></p>
+
+<div class="card no-print">
+  <div class="row">
+    <div>
+      <label>From</label>
+      <input type="date" id="from">
+    </div>
+    <div>
+      <label>To</label>
+      <input type="date" id="to">
+    </div>
+    <div>
+      <label>Plant</label>
+      <select id="plant">
+        <option value="">All</option>
+        <option value="51">51</option>
+        <option value="53">53</option>
+        <option value="57">57 Etna Green</option>
+        <option value="76">76</option>
+      </select>
+    </div>
+    <div>
+      <label>Lane</label>
+      <select id="lane">
+        <option value="">All</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="I">Interior</option>
+        <option value="U">PDI Validation</option>
+        <option value="1">Legacy L1</option>
+        <option value="2">Legacy L2</option>
+        <option value="3">Legacy L3</option>
+        <option value="4">Legacy L4</option>
+      </select>
+    </div>
+    <div>
+      <label>Inspector</label>
+      <select id="inspector">
+        <option value="">All</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="btn" id="btnLoad">Load</button>
+  <button type="button" class="btn" id="btnPrint" style="background:#8e44ad">Print / PDF</button>
+  <p class="status" id="status">Set dates (optional) and load.</p>
+</div>
+
+<div id="report" style="display:none">
+  <div class="card">
+    <h2>By lane — seat evaluation</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Lane</th>
+          <th>N</th>
+          <th>Median</th>
+          <th>Avg</th>
+          <th>vs <span class="tgt">42</span>m</th>
+          <th>% over</th>
+          <th>Fastest</th>
+          <th>Slowest</th>
+        </tr>
+      </thead>
+      <tbody id="laneBody"></tbody>
+    </table>
+    <p class="note">Seat first. Sittings under 1:00 excluded here (assist / aborted). Tap a lane for the unit list.</p>
+  </div>
+  <div class="card">
+    <h2>By plant × lane</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Plant</th>
+          <th>Lane</th>
+          <th>N</th>
+          <th>Median</th>
+          <th>Avg</th>
+          <th>vs <span class="tgt">42</span>m</th>
+          <th>% over</th>
+        </tr>
+      </thead>
+      <tbody id="plantLaneBody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>By inspector</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Inspector</th>
+          <th>Lanes</th>
+          <th>Avg</th>
+          <th>vs <span class="tgt">42</span>m</th>
+          <th>% over</th>
+          <th>Fastest</th>
+          <th>Slowest</th>
+        </tr>
+      </thead>
+      <tbody id="inspBody"></tbody>
+    </table>
+    <p class="note">Tap an inspector name for the unit/lane list behind the average.</p>
+  </div>
+  <div class="card" id="detailCard" style="display:none">
+    <h2 id="detailHead">Lane detail</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Unit</th>
+          <th>Plant</th>
+          <th>Lane</th>
+          <th>Time</th>
+          <th>vs <span class="tgt">42</span>m</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="detailBody"></tbody>
+    </table>
+    <p class="note" id="detailNote"></p>
+  </div>
+  <div class="card">
+    <h2>Uptime vs hours</h2>
+    <p class="note" id="uptimeNote">Hours from the hours log. Paid = hours on the clock, minus 45 min on a day at or over 6 hours (15 min on a 4–6 hour day).</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Inspector</th>
+          <th>Clocked</th>
+          <th>Inspected</th>
+          <th>Uptime</th>
+        </tr>
+      </thead>
+      <tbody id="uptimeBody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>By inspector × plant × lane</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Inspector</th>
+          <th>Plant</th>
+          <th>Lane</th>
+          <th>N</th>
+          <th>Avg</th>
+          <th>vs <span class="tgt">42</span>m</th>
+          <th>% over</th>
+        </tr>
+      </thead>
+      <tbody id="gridBody"></tbody>
+    </table>
+    <p class="note">Lanes submitted before time tracking started are excluded. Target is <span class="tgt">42</span>:00 per lane (set in Ops Settings).</p>
+    <p class="note" id="cutNote" style="display:none;background:#fff3cd;border:1px solid #e0c36a;border-radius:6px;padding:8px"></p>
+  </div>
+</div>
+
+<script src="gs-lanes.js"></script>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  // r6b: target comes from Ops Settings (via inspector-stats), never hard-coded. Until a load answers, the default 42 min.
+  var TARGET_MIN = 42, CUT = "";
+  var TARGET = TARGET_MIN * 60;
+  function paintTgt(){ Array.prototype.forEach.call(document.querySelectorAll(".tgt"), function(x){ x.textContent = TARGET_MIN; }); }
+  function tlabel(){ return TARGET_MIN + ":00"; }
+  function cutNote(){
+    var n = el("cutNote"); if (!n) return;
+    var from = el("from").value, to = el("to").value;
+    if (CUT && from && to && from < CUT && to >= CUT) { n.style.display = "block"; n.textContent = "Lane contents changed on " + CUT + ". Before and after are not comparable."; }
+    else { n.style.display = "none"; n.textContent = ""; }
+  }
+  var LANE_ORDER = ["R","S","E","I","U","1","2","3","4"];
+  // r6d: raw = ONE row per lane (counts lanes, averages lanes). rawC = one row per contributor (per-inspector tables only).
+  var raw = [], rawC = [];
+  var clockDays = [];
+  var detailMode = { type:"insp", key:"" };
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s); }
+  function laneName(k){
+    return (window.gsLanes && gsLanes.name) ? gsLanes.name(k) : ("Lane " + k);
+  }
+  function mins(sec){
+    if (sec == null) return "—";
+    var m = Math.floor(sec/60), s = Math.abs(sec % 60);
+    return m + ":" + String(s).padStart(2,"0");
+  }
+  function delta(avg){
+    var d = avg - TARGET;
+    var sign = d > 0 ? "+" : (d < 0 ? "−" : "");
+    return sign + mins(Math.abs(Math.round(d)));
+  }
+  function medianOf(arr){
+    var a = arr.slice().sort(function(x,y){ return x-y; });
+    if (!a.length) return null;
+    var mid = Math.floor(a.length/2);
+    return a.length % 2 ? a[mid] : Math.round((a[mid-1] + a[mid]) / 2);
+  }
+  function seatRows(rows){
+    return rows.filter(function(r){ return r.timed && (r.durationSec||0) >= 60; });
+  }
+  function group(rows, keyFn){
+    var bag = {};
+    rows.forEach(function(r){
+      var k = keyFn(r);
+      if (!bag[k]) bag[k] = { key:k, n:0, over:0, sum:0, min:null, max:0, durs:[], sample:r };
+      bag[k].n++;
+      bag[k].sum += r.durationSec;
+      bag[k].durs.push(r.durationSec);
+      if (r.durationSec > TARGET) bag[k].over++;
+      if (bag[k].min == null || r.durationSec < bag[k].min) bag[k].min = r.durationSec;
+      if (r.durationSec > bag[k].max) bag[k].max = r.durationSec;
+    });
+    return Object.keys(bag).map(function(k){
+      var b = bag[k];
+      b.avg = Math.round(b.sum / b.n);
+      b.median = medianOf(b.durs);
+      b.pctOver = Math.round((b.over / b.n) * 100);
+      return b;
+    }).sort(function(a,b){ return b.avg - a.avg; });
+  }
+  function laneSort(list){
+    list.sort(function(a,b){
+      var ia = LANE_ORDER.indexOf(String(a.key));
+      var ib = LANE_ORDER.indexOf(String(b.key));
+      if (ia < 0) ia = 99;
+      if (ib < 0) ib = 99;
+      return ia - ib || String(a.key).localeCompare(String(b.key));
+    });
+    return list;
+  }
+
+  function showDetail(name, opts){
+    opts = opts || {};
+    detailMode = { type: opts.lane ? "lane" : "insp", key: name };
+    var plant = el("plant").value;
+    var laneFilter = el("lane").value;
+    var list = (opts.lane ? raw : rawC).filter(function(r){
+      if (opts.lane) {
+        if (String(r.lane) !== String(name)) return false;
+        var insp = el("inspector").value;
+        if (insp && r.inspector !== insp) return false;
+      } else {
+        if (r.inspector !== name) return false;
+        if (laneFilter && String(r.lane) !== laneFilter) return false;
+      }
+      if (plant && r.plant !== plant) return false;
+      return true;
+    }).sort(function(a,b){
+      return String(b.date||"").localeCompare(String(a.date||"")) || String(a.unit).localeCompare(String(b.unit)) || String(a.lane).localeCompare(String(b.lane));
+    });
+    el("detailCard").style.display = "block";
+    el("detailHead").textContent = (opts.lane ? laneName(name) : name) + " — " + list.length + " lane records";
+    var tb = el("detailBody"); tb.innerHTML = "";
+    if (!list.length) {
+      tb.innerHTML = '<tr><td colspan="7">No lanes for this inspector in range.</td></tr>';
+    } else {
+      list.forEach(function(r){
+        var tag = r.durationVoid ? " VOID" : (r.durationExempt ? " EXEMPT" : (r.timed ? "" : " no-time"));
+        var cls = (!r.timed || r.durationVoid || r.durationExempt) ? "" : (r.durationSec > TARGET ? "over" : "under");
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>"+esc(r.date)+"</td><td>"+esc(r.unit)+"</td><td>"+esc(r.plant)+"</td><td>"+esc(laneName(r.lane))+"</td><td class='n "+cls+"'>"+mins(r.durationSec)+tag+"</td><td class='n "+cls+"'>"+(r.timed?delta(r.durationSec):"—")+"</td><td><a href='timeline.html?unit="+encodeURIComponent(r.unit)+"' target='_blank'>Timeline</a></td>";
+        tb.appendChild(tr);
+      });
+    }
+    var counted = list.filter(function(r){ return r.timed; });
+    var sum = 0; counted.forEach(function(r){ sum += r.durationSec||0; });
+    el("detailNote").textContent = counted.length
+      ? ("Counted in averages: "+counted.length+" · total "+mins(sum)+(list.length-counted.length ? " · "+(list.length-counted.length)+" void/exempt/untimed excluded from "+TARGET_MIN+"m" : ""))
+      : "Nothing in this list counts toward the "+TARGET_MIN+"-min average.";
+    Array.prototype.forEach.call(document.querySelectorAll("#inspBody tr, #uptimeBody tr, #laneBody tr"), function(tr){
+      var hit = tr.querySelector("[data-insp], [data-lane]");
+      var on = hit && ((hit.getAttribute("data-insp")===name && !opts.lane) || (hit.getAttribute("data-lane")===String(name) && opts.lane));
+      tr.classList.toggle("on", !!on);
+    });
+    el("detailCard").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  function filtered(src){
+    var plant = el("plant").value;
+    var lane = el("lane").value;
+    return (src || raw).filter(function(r){
+      if (!r.timed) return false;
+      if (plant && r.plant !== plant) return false;
+      if (lane && String(r.lane) !== lane) return false;
+      var insp = el("inspector").value;
+      if (insp && r.inspector !== insp) return false;
+      return true;
+    });
+  }
+
+  function paint(){
+    var rows = filtered();
+    var crows = filtered(rawC);
+    el("report").style.display = "block";
+    var seats = group(seatRows(rows), function(r){ return String(r.lane); });
+    laneSort(seats);
+    var lb = el("laneBody"); lb.innerHTML = "";
+    if (!seats.length) lb.innerHTML = '<tr><td colspan="8">No timed seats in range (1:00+).</td></tr>';
+    seats.forEach(function(g){
+      var cls = g.median > TARGET ? "over" : "under";
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td class="click" data-lane="'+esc(g.key)+'">'+esc(laneName(g.key))+'</td><td class="n">'+g.n+'</td><td class="n '+cls+'">'+mins(g.median)+'</td><td class="n '+cls+'">'+mins(g.avg)+'</td><td class="n '+cls+'">'+delta(g.median)+'</td><td class="n">'+g.pctOver+'%</td><td class="n">'+mins(g.min)+'</td><td class="n">'+mins(g.max)+"</td>";
+      lb.appendChild(tr);
+    });
+    lb.onclick = function(ev){
+      var cell = ev.target.closest("[data-lane]");
+      if (cell) showDetail(cell.getAttribute("data-lane"), { lane:true });
+    };
+    var pl = group(seatRows(rows), function(r){ return r.plant+"|"+r.lane; });
+    pl.sort(function(a,b){
+      var pa = a.key.split("|"), pb = b.key.split("|");
+      if (pa[0] !== pb[0]) return String(pa[0]).localeCompare(String(pb[0]));
+      var ia = LANE_ORDER.indexOf(pa[1]); var ib = LANE_ORDER.indexOf(pb[1]);
+      return (ia<0?99:ia) - (ib<0?99:ib);
+    });
+    var pb = el("plantLaneBody"); pb.innerHTML = "";
+    if (!pl.length) pb.innerHTML = '<tr><td colspan="7">No timed seats in range.</td></tr>';
+    pl.forEach(function(g){
+      var parts = g.key.split("|");
+      var cls = g.median > TARGET ? "over" : "under";
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+esc(parts[0])+"</td><td class='click' data-lane='"+esc(parts[1])+"'>"+esc(laneName(parts[1]))+'</td><td class="n">'+g.n+'</td><td class="n '+cls+'">'+mins(g.median)+'</td><td class="n '+cls+'">'+mins(g.avg)+'</td><td class="n '+cls+'">'+delta(g.median)+'</td><td class="n">'+g.pctOver+"%</td>";
+      pb.appendChild(tr);
+    });
+    pb.onclick = function(ev){
+      var cell = ev.target.closest("[data-lane]");
+      if (cell) showDetail(cell.getAttribute("data-lane"), { lane:true });
+    };
+    var insp = group(crows, function(r){ return r.inspector; });
+    var ib = el("inspBody"); ib.innerHTML = "";
+    if (!insp.length) ib.innerHTML = '<tr><td colspan="7">No timed lanes in range.</td></tr>';
+    insp.forEach(function(g){
+      var cls = g.avg > TARGET ? "over" : "under";
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td class="click" data-insp="'+esc(g.key)+'">'+esc(g.key)+'</td><td class="n">'+g.n+'</td><td class="n '+cls+'">'+mins(g.avg)+'</td><td class="n '+cls+'">'+delta(g.avg)+'</td><td class="n">'+g.pctOver+'%</td><td class="n">'+mins(g.min)+'</td><td class="n">'+mins(g.max)+"</td>";
+      ib.appendChild(tr);
+    });
+    ib.onclick = function(ev){
+      var cell = ev.target.closest("[data-insp]");
+      if (cell) showDetail(cell.getAttribute("data-insp"));
+    };
+    var grid = group(crows, function(r){ return r.inspector+"|"+r.plant+"|"+r.lane; });
+    grid.sort(function(a,b){ return String(a.key).localeCompare(String(b.key), undefined, {numeric:true}); });
+    var gb = el("gridBody"); gb.innerHTML = "";
+    if (!grid.length) gb.innerHTML = '<tr><td colspan="7">No timed lanes in range.</td></tr>';
+    function paidMinutes(raw){
+      raw = Number(raw)||0;
+      if (raw >= 360) return Math.max(0, raw - 45);
+      if (raw >= 240) return Math.max(0, raw - 15);
+      return raw;
+    }
+    var clocked = {};
+    var clockedRaw = {};
+    clockDays.forEach(function(day){
+      (day.punches||[]).forEach(function(p){
+        if (el("inspector").value && p.inspector !== el("inspector").value) return;
+        clockedRaw[p.inspector] = (clockedRaw[p.inspector]||0) + (p.minutes||0);
+        clocked[p.inspector] = (clocked[p.inspector]||0) + paidMinutes(p.minutes||0);
+      });
+    });
+    var inspected = {};
+    crows.forEach(function(r){
+      inspected[r.inspector] = (inspected[r.inspector]||0) + (r.durationSec||0);
+    });
+    var ub = el("uptimeBody");
+    if (ub) {
+      ub.innerHTML = "";
+      var names = Object.keys(clocked);
+      Object.keys(inspected).forEach(function(n){ if (names.indexOf(n)<0) names.push(n); });
+      names.sort();
+      if (!names.length) ub.innerHTML = '<tr><td colspan="4">No hours in this range. Log them on Hours log.</td></tr>';
+      names.forEach(function(n){
+        var ck = (clocked[n]||0)*60;
+        var ins = inspected[n]||0;
+        var pct = ck ? Math.round((ins/ck)*100) : "—";
+        var cls = (ck && ins/ck < 0.4) ? "over" : "under";
+        var tr = document.createElement("tr");
+        tr.innerHTML = '<td class="click" data-insp="'+esc(n)+'">'+esc(n)+'</td><td class="n" title="Hours on clock '+mins(clockedRaw[n]?clockedRaw[n]*60:null)+'">'+mins(clocked[n]?clocked[n]*60:null)+'</td><td class="n">'+mins(ins)+'</td><td class="n '+cls+'">'+(ck?pct+"%":"—")+"</td>";
+        ub.appendChild(tr);
+      });
+      ub.onclick = function(ev){
+        var cell = ev.target.closest("[data-insp]");
+        if (cell) showDetail(cell.getAttribute("data-insp"));
+      };
+      el("uptimeNote").textContent = clockDays.length
+        ? ("Punch days loaded: "+clockDays.length+". Uptime = inspected ÷ paid clocked. Paid = hours on the clock minus 45 min on a day at or over 6 hours (15 min on a 4–6 hour day).")
+        : "No hours in range yet.";
+    }
+    grid.forEach(function(g){
+      var parts = g.key.split("|");
+      var cls = g.avg > TARGET ? "over" : "under";
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+esc(parts[0])+"</td><td>"+esc(parts[1])+"</td><td>"+esc(laneName(parts[2]))+'</td><td class="n">'+g.n+'</td><td class="n '+cls+'">'+mins(g.avg)+'</td><td class="n '+cls+'">'+delta(g.avg)+'</td><td class="n">'+g.pctOver+"%</td>";
+      gb.appendChild(tr);
+    });
+  }
+
+  async function load(){
+    el("status").textContent = "Loading lane times…";
+    try {
+      var from = el("from").value;
+      var to = el("to").value;
+      var url = API + "/inspector-stats";
+      var qs = [];
+      if (from) qs.push("from="+encodeURIComponent(from));
+      if (to) qs.push("to="+encodeURIComponent(to));
+      if (qs.length) url += "?" + qs.join("&");
+      var res = await fetch(url);
+      var rawText = await res.text();
+      var data = {};
+      try { data = rawText ? JSON.parse(rawText) : {}; } catch (e) {
+        throw new Error("Performance timed out. Pick a shorter date range and Load again.");
+      }
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      raw = data.rows || [];
+      rawC = data.contribRows || raw;
+      if (Number(data.targetMin) > 0) { TARGET_MIN = Number(data.targetMin); TARGET = TARGET_MIN * 60; }
+      CUT = data.laneContentCutDate || "";
+      var keep = el("inspector").value;
+      var names = [];
+      rawC.forEach(function(r){
+        if (r.inspector && names.indexOf(r.inspector) < 0) names.push(r.inspector);
+      });
+      names.sort();
+      var sel = el("inspector");
+      sel.innerHTML = '<option value="">All</option>';
+      names.forEach(function(n){
+        var o = document.createElement("option"); o.value = n; o.textContent = n; sel.appendChild(o);
+      });
+      if (keep && names.indexOf(keep) >= 0) sel.value = keep;
+      clockDays = [];
+      try {
+        var cqs = [];
+        if (from) cqs.push("from="+encodeURIComponent(from));
+        if (to) cqs.push("to="+encodeURIComponent(to));
+        var cr = await fetch(API + "/submit-clock" + (cqs.length ? "?"+cqs.join("&") : ""));
+        var cd = await cr.json();
+        clockDays = cd.days || (cd.date ? [cd] : []);
+      } catch (ce) { clockDays = []; }
+      el("status").textContent = data.timed + " timed lanes / " + data.count + " total latest records. Target "+tlabel()+".";
+      paintTgt(); cutNote();
+      paint();
+    } catch(e){
+      el("status").textContent = "Failed: " + e.message;
+    }
+  }
+
+  (function(){
+    var d = new Date();
+    var iso = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    if (el("from") && !el("from").value) el("from").value = iso;
+    if (el("to") && !el("to").value) el("to").value = iso;
+  })();
+  el("btnLoad").onclick = load;
+  el("btnPrint").onclick = function(){ window.print(); };
+  el("plant").onchange = function(){ if (raw.length) paint(); };
+  el("lane").onchange = function(){ if (raw.length) paint(); };
+  el("inspector").onchange = function(){ if (raw.length) paint(); };
+})();
+</script>
+</body>
+</html>

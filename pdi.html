@@ -1,0 +1,3140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>GS PDI Capture</title>
+<script src="floor-boot.js"></script>
+<script src="build.js"></script>
+<script src="inspector-code.js"></script>
+<script src="unit-rules.js"></script>
+<script src="photo-send.js"></script>
+<script src="gs-lanes.js"></script>
+<script src="lane-data.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #111;
+  padding: 12px;
+  padding-bottom: 140px;
+}
+h1 { font-size: 1.2rem; text-align: center; margin-bottom: 10px; }
+.home { text-align: center; margin: 0 0 10px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.75rem; color: #666; margin-bottom: 12px; }
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+}
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, select, textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.sec {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin: 10px 0 6px;
+}
+.sec-lane { background: #2c3e50; }
+.sec-sub { background: #34495e; font-size: 0.8rem; letter-spacing: 0.4px; margin-top: 8px; }
+.sec-note { font-size: 0.75rem; color: #444; background: #eef2f5; border-left: 3px solid #34495e; padding: 6px 8px; margin: 0 0 4px; border-radius: 0 4px 4px 0; }
+/* r8a: water test result (Rain lane). Explicit colors, readable on a light or a dark phone setting. */
+.rr-box { background: #fff; color: #111; border: 2px solid #2c3e50; border-radius: 8px; padding: 10px; margin: 8px 0 10px; }
+.rr-box.rr-bad { border-color: #b42318; }
+.rr-q { font-size: 0.95rem; font-weight: 800; color: #111; margin-bottom: 6px; text-transform: none; }
+.rr-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.rr-opts button, .rr-where button, .rr-prompt button { min-height: 44px; padding: 8px 12px; border: 2px solid #667085; border-radius: 8px; background: #fff; color: #111; font-size: 0.9rem; font-weight: 700; cursor: pointer; }
+.rr-opts button[aria-pressed="true"].rr-nl { background: #05603a; border-color: #05603a; color: #fff; }
+.rr-opts button[aria-pressed="true"].rr-lk { background: #b42318; border-color: #b42318; color: #fff; }
+.rr-opts button[aria-pressed="true"].rr-nt { background: #475467; border-color: #475467; color: #fff; }
+.rr-where { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.rr-where button[aria-pressed="true"] { background: #fef0c7; border-color: #b54708; color: #4e2a06; }
+.rr-lab { font-size: 0.72rem; font-weight: 700; color: #555; text-transform: uppercase; margin: 6px 0 2px; }
+.rr-box textarea { margin-bottom: 4px; min-height: 64px; color: #111; background: #fff; }
+.rr-count { font-size: 0.7rem; color: #555; text-align: right; }
+.rr-err { color: #b42318; font-weight: 700; font-size: 0.85rem; margin-top: 4px; }
+.rr-prompt { background: #fef0c7; color: #4e2a06; border: 2px solid #b54708; border-radius: 8px; padding: 10px; margin-top: 8px; }
+.rr-prompt p { font-weight: 800; margin-bottom: 8px; }
+.rr-prompt button { margin-right: 6px; }
+.item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.9rem;
+}
+.item span { flex: 1; }
+.pf {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pf button {
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.pf button.on-pass { background: #27ae60; color: #fff; border-color: #27ae60; }
+.pf button.on-fail { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+.pf button.on-na { background: #95a5a6; color: #fff; border-color: #95a5a6; }
+.item { flex-wrap: wrap; }
+.item-wrap { border-bottom: 1px solid #eee; padding: 6px 0 8px; }
+.item-wrap > .item { border-bottom: none; padding: 4px 0; }
+.na-pick { width: 100%; margin-top: 4px; font-size: 0.78rem; padding: 4px 6px; display: none; }
+.na-pick.on { display: block; }
+.fail-inline, .na-inline { display: none; width: 100%; margin-top: 6px; padding: 8px; border-radius: 6px; }
+.fail-inline.on, .na-inline.on { display: block; }
+.photo-banner { display: none; position: sticky; top: 0; z-index: 50; background: #b3261e; color: #fff; font-size: 14px; }
+.photo-banner.on { display: block; }
+.photo-banner .pb-head { width: 100%; text-align: left; background: none; border: 0; color: #fff; font-weight: 700; padding: 10px 12px; font-size: 15px; }
+.photo-banner .pb-warn { padding: 0 12px 8px; font-weight: 700; }
+.photo-banner .pb-list { background: #fff; color: #222; padding: 4px 8px; }
+.photo-banner .pb-row { border-bottom: 1px solid #ddd; padding: 8px 4px; }
+.photo-banner .pb-row small { display: block; color: #8a1c14; word-break: break-word; }
+.photo-banner .pb-row button { margin: 6px 6px 0 0; padding: 6px 12px; }
+.val-bad { outline: 3px solid #d93025; outline-offset: 2px; border-radius: 8px; background: rgba(217,48,37,.08); }
+.fail-inline { background: #fff5f5; border: 1px solid #f5c6cb; }
+.na-inline { background: #f4f6f7; border: 1px solid #d5d8dc; }
+.fail-inline label, .na-inline label { font-size: 0.72rem; font-weight: 700; display: block; margin-bottom: 4px; }
+.fail-inline textarea { width: 100%; min-height: 52px; font-size: 0.9rem; padding: 6px; border: 1px solid #e6b0aa; border-radius: 4px; }
+.defect {
+  background: #fff5f5;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.defect textarea { min-height: 60px; }
+.photo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  flex-wrap: wrap;
+}
+.photo-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #eee;
+}
+.photo-btn {
+  background: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.photo-clear {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.actions {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #fff;
+  padding: 12px;
+  box-shadow: 0 -2px 12px rgba(0,0,0,0.12);
+  display: flex;
+  gap: 8px;
+  z-index: 50;
+  flex-wrap: wrap;
+}
+.btn {
+  flex: 1;
+  min-width: 110px;
+  padding: 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+}
+.btn-save { background: #7f8c8d; }
+.btn-go { background: #27ae60; }
+.btn-fallback { background: #e67e22; }
+.btn-add {
+  width: 100%;
+  padding: 14px;
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 8px;
+}
+.hard {
+  background: #c0392b;
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: none;
+}
+.hard.on { display: block; }
+.status { text-align: center; font-size: 0.8rem; color: #666; margin-top: 6px; }
+.hidden { display: none; }
+.rm {
+  background: #e74c3c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 6px;
+}
+.queue-badge {
+  background: #e67e22;
+  color: #fff;
+  font-size: 0.8rem;
+  padding: 10px 12px;
+  border-radius: 8px;
+  display: none;
+  text-align: left;
+  margin-bottom: 8px;
+  white-space: pre-line;
+  line-height: 1.35;
+  cursor: pointer;
+}
+.queue-badge.on { display: block; }
+.photo-chip {
+  background: #1a5276;
+  color: #fff;
+  font-size: 0.78rem;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: none;
+}
+.photo-chip.on { display: block; }
+.photo-chip.wait { background: #b9770e; }
+.photo-chip.err { background: #922b21; }
+.photo-thumb.sent { outline: 2px solid #27ae60; }
+.queue-actions { display: none; gap: 8px; margin: 0 0 10px; }
+.queue-actions.on { display: flex; }
+.queue-actions button {
+  flex: 1;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.today-panel { margin-top: 8px; }
+.btn-go:disabled, .btn-save:disabled { opacity: 0.55; cursor: wait; }
+.def-lab-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2px; }
+.mic-btn {
+  background: #8e44ad; color: #fff; border: none; border-radius: 6px;
+  padding: 6px 10px; font-size: 0.85rem; cursor: pointer; margin-left: 6px;
+}
+.mic-btn.listening { background: #c0392b; }
+
+.draft-list { margin-top: 8px; }
+.draft-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.85rem;
+}
+.draft-row button {
+  padding: 6px 10px; border: none; border-radius: 6px; font-size: 0.8rem;
+  font-weight: 600; cursor: pointer; color: #fff; background: #2c3e50; margin-left: 4px;
+}
+.draft-row .del { background: #c0392b; }
+.btn-reset { background: #7f8c8d !important; }
+.hid-extra { display: none !important; }
+
+/* ---- Load Day's Units (r7a): full-screen picker, phone first, light and dark ---- */
+.ld{--bg:#F2F4F7;--surface:#FFFFFF;--ink:#101828;--muted:#475467;--line:#EAECF0;--line2:#D0D5DD;--outline:#667085;--red-bg:#FEE4E2;--red:#912018;--blue-bg:#DBEAFE;--blue:#1E40AF;--green-bg:#DCFAE6;--green:#05603A;--amber-bg:#FEF0C7;--amber:#7A2E0E;--lane-part:#FEC84B;--lane-part-ink:#4E2A06;--lane-done:#05603A;--lane-done-ink:#FFFFFF;--btn:#101828;--btn-ink:#FFFFFF;
+  position:fixed;inset:0;z-index:1000;background:var(--bg);color:var(--ink);overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:14px;
+  padding:max(12px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));}
+.ld[hidden]{display:none}
+@media (prefers-color-scheme:dark){.ld{--bg:#0C111D;--surface:#161B26;--ink:#F5F5F6;--muted:#A4A9B3;--line:#232A38;--line2:#364152;--outline:#8A94A6;--red-bg:#4A1D1A;--red:#FDA29B;--blue-bg:#172554;--blue:#93C5FD;--green-bg:#0B3B2A;--green:#75E0A7;--amber-bg:#4A2F0B;--amber:#FEC84B;--lane-part:#B54708;--lane-part-ink:#FFFAEB;--lane-done:#17B26A;--lane-done-ink:#05140C;--btn:#F5F5F6;--btn-ink:#0C111D;color-scheme:dark}}
+body.ld-lock{overflow:hidden}
+.ld *{box-sizing:border-box}
+.ld-wrap{max-width:460px;margin:0 auto;background:var(--surface);border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+.ld-header{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 8px}
+.ld-back{flex:none;width:44px;height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);font-size:26px;line-height:1;cursor:pointer}
+.ld-header h1{flex:1;min-width:0;font-size:19px;font-weight:700;margin:0;text-align:left;color:var(--ink)}
+.ld-date{font-size:14px;font-weight:600;border:1px solid var(--line2);border-radius:8px;padding:8px 10px;white-space:nowrap}
+.ld-banner{margin:0 16px 10px;padding:10px 12px;border-radius:8px;border:2px solid var(--red);background:var(--red-bg);color:var(--red);font-weight:700;font-size:13px}
+.ld-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 16px 12px}
+.ld-tile{font:inherit;text-align:left;border:2px solid transparent;border-radius:10px;padding:10px 12px;min-height:64px;cursor:pointer;color:inherit}
+.ld-tile .ld-n{display:block;font-size:28px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.ld-tile .ld-l{display:block;font-size:12px;font-weight:600;margin-top:4px}
+.ld-tile[data-k="attn"]{background:var(--red-bg);color:var(--red)}
+.ld-tile[data-k="open"]{background:var(--blue-bg);color:var(--blue)}
+.ld-tile[data-k="done"]{background:var(--green-bg);color:var(--green)}
+.ld-tile[aria-pressed="true"]{border-color:currentColor}
+.ld-plants{display:flex;gap:6px;padding:0 16px 12px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.ld-chip{flex:1 1 52px;font:inherit;font-size:14px;font-weight:600;min-height:44px;border-radius:8px;border:1px solid var(--line2);background:var(--surface);color:var(--ink);cursor:pointer}
+.ld-chip[aria-pressed="true"]{background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.ld-chip .ld-cnt{color:var(--red);font-weight:700}
+.ld-chip[aria-pressed="true"] .ld-cnt{color:inherit}
+.ld-sec{padding:14px 16px 6px;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.ld-sec.attn{color:var(--red)}.ld-sec.open{color:var(--blue)}.ld-sec.done{color:var(--green)}
+.ld-row{border-bottom:1px solid var(--line)}
+.ld-head{width:100%;display:flex;align-items:center;gap:10px;padding:10px 16px;min-height:60px;background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.ld-head:focus-visible,.ld-chip:focus-visible,.ld-tile:focus-visible,.ld-btn:focus-visible,.ld-back:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.ld-id{flex:1;min-width:0;display:block}
+.ld-top{display:flex;align-items:baseline;gap:8px}
+.ld-unit{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;font-weight:600}
+.ld-plant{font-size:12px;color:var(--muted)}
+.ld-note{display:block;font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ld-side{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.ld-pill{font-size:11px;font-weight:700;letter-spacing:.03em;border-radius:6px;padding:3px 8px;white-space:nowrap}
+.ld-pill.red{background:var(--red-bg);color:var(--red)}.ld-pill.amber{background:var(--amber-bg);color:var(--amber)}
+.ld-lanes{display:flex;gap:3px}
+.ld-ln{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;font:700 11px ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--outline);color:var(--muted);background:var(--surface)}
+.ld-ln.d{background:var(--lane-done);color:var(--lane-done-ink);border-color:var(--lane-done)}
+.ld-ln.p{background:var(--lane-part);color:var(--lane-part-ink);border-color:var(--lane-part)}
+.ld-chev{flex:none;width:14px;text-align:center;color:var(--outline);transition:transform .15s}
+.ld-row[data-open="true"] .ld-chev{transform:rotate(180deg)}
+.ld-more{padding:0 16px 14px}
+.ld-more p{font-size:13px;color:var(--muted);margin:0 0 10px}
+.ld-more .ld-part{color:var(--amber)}
+.ld-btns{display:flex;gap:8px}
+.ld-btn{flex:1;display:flex;align-items:center;justify-content:center;min-height:48px;text-align:center;padding:0 4px;border-radius:8px;border:1px solid var(--outline);color:var(--ink);font-size:15px;font-weight:600;text-decoration:none;background:var(--surface);cursor:pointer;font-family:inherit}
+.ld-btn.main{flex:2;background:var(--btn);color:var(--btn-ink);border-color:var(--btn)}
+.ld-empty{padding:28px 16px;color:var(--muted);text-align:center}
+.ld-empty.ld-err{color:var(--red);font-weight:700}
+.ld-foot{padding:14px 16px 16px;font-size:12px;color:var(--muted);line-height:1.5}
+@media (prefers-reduced-motion:reduce){.ld-chev{transition:none}}
+</style>
+</head>
+<body>
+<div id="photoBanner" class="photo-banner"></div>
+
+<p class="home"><a href="index.html">← Main</a></p>
+<h1>Gulf Stream PDI Capture</h1>
+
+<div class="photo-chip" id="photoChip"></div>
+<div class="queue-badge" id="queueBadge">Pending offline submits: 0 — tap to retry</div>
+<div class="queue-actions" id="queueActions">
+  <button type="button" id="btnRetryQueue" style="background:#2980b9;color:#fff">Retry queue</button>
+  <button type="button" id="btnDropPhotos" style="background:#7f8c8d;color:#fff">Drop leftover photos</button>
+</div>
+
+<div class="card today-panel" id="todayCard">
+  <div class="row">
+    <div>
+      <label>Review date</label>
+      <input type="date" id="reviewDate">
+    </div>
+    <div style="display:flex;align-items:flex-end;padding-bottom:10px;">
+      <button type="button" class="btn btn-save" id="btnToday" style="flex:1;">Load Day's Units</button>
+    </div>
+  </div>
+  <p class="status" id="todayStatus" style="margin-top:4px;"></p>
+</div>
+
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label>Date</label>
+      <input type="date" id="pdiDate">
+    </div>
+    <div>
+      <label>Unit # (numeric)</label>
+      <input type="text" id="unitNumber" inputmode="numeric" pattern="[0-9]*" placeholder="Unit #">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Model #</label>
+      <input type="text" id="modelNumber" placeholder="Model">
+    </div>
+    <div>
+      <label>Inspector</label>
+      <select id="inspectorSelect"></select>
+      <input type="hidden" id="inspectorName">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Plant</label>
+      <select id="plantSelect">
+        <option value="">— Select Plant —</option>
+        <option value="51">51</option>
+        <option value="53">53</option>
+        <option value="76">76</option>
+        <option value="57">57 Etna Green</option>
+      </select>
+    </div>
+    <div>
+      <label>Unit Type</label>
+      <select id="unitType">
+        <option value="towable">Towable</option>
+        <option value="motorized">Motorized</option>
+      </select>
+    </div>
+  </div>
+  <div class="row" id="toyHaulerRow" style="display:none">
+    <div>
+      <label>Toy Hauler</label>
+      <select id="toyHaulerSelect">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+    <div id="thWallCell" style="display:none">
+      <label>Permanent wall of separation</label>
+      <select id="thWallSelect">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+    </div>
+  </div>
+  <div id="toyHaulerNote" class="sub" style="display:none;text-align:left;color:#c0392b;font-weight:700;margin:-4px 0 10px"></div>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="laneSelect">
+        <option value="">— Select Lane —</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="I">Interior</option>
+        <option value="U">PDI Validation</option>
+      </select>
+      <div id="laneClock" class="sub" style="text-align:left;margin:6px 0 0;color:#1f4e79;font-weight:700"></div>
+      <div id="clockWarn" class="sub" style="text-align:left;color:#c0392b;font-weight:700;display:none">Clock at 45m — stop or submit.</div>
+      <button type="button" class="photo-btn" id="btnStopClock" style="display:none;margin-top:6px">Stop clock</button>
+      <button type="button" class="photo-btn" id="btnResumeClock" style="display:none;margin-top:6px">Resume clock</button>
+    </div>
+  </div>
+</div>
+
+<div id="laneBox" class="card hidden"></div>
+
+
+
+<div class="card" id="defSummaryCard">
+  <h3 style="margin-bottom:6px;">Fails on this lane: <span id="defCount">0</span></h3>
+  <p class="sub" style="margin:0 0 8px">Checklist fails stay under the red line. Use Add Defect only for something that is not on the sheet.</p>
+  <div id="defectList"></div>
+  <button type="button" class="btn-add" id="btnAdd">+ Add Defect</button>
+</div>
+
+
+<div class="card" id="draftsCard" style="display:none">
+  <label>Saved drafts (this device)</label>
+  <div class="draft-list" id="draftPanel"></div>
+</div>
+
+<div class="actions">
+  <button type="button" class="btn btn-save" id="btnSave">Save Draft</button>
+  <button type="button" class="btn btn-reset" id="btnReset">Reset</button>
+  <button type="button" class="btn btn-save" id="btnPartial" title="Save the lines you marked and leave. Someone else finishes the lane.">Save partial</button>
+  <button type="button" class="btn btn-go" id="btnSubmit">Submit</button>
+</div>
+<p class="status" id="status"></p>
+
+<input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+<div id="dropNotice" class="val-bad" style="display:none;margin:8px 12px;padding:8px;font-size:13px"></div>
+
+
+<div class="ld" id="ldScreen" hidden role="dialog" aria-modal="true" aria-labelledby="ldTitle">
+  <div class="ld-wrap">
+    <header class="ld-header">
+      <button type="button" class="ld-back" id="ldBack" aria-label="Close Load Day's Units">&#8249;</button>
+      <h1 id="ldTitle">Load Day's Units</h1>
+      <div class="ld-date" id="ldDate"></div>
+    </header>
+    <div id="ldBanner"></div>
+    <div class="ld-tiles" id="ldTiles"></div>
+    <div class="ld-plants" id="ldPlants"></div>
+    <div class="ld-sec" id="ldSec"></div>
+    <div id="ldList"></div>
+    <div class="ld-foot" id="ldKey">R Rain · S Systems · E Exterior · I Interior</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  var DEFECT_CODES = [
+    "1.STR.FRAME-CRACK",
+    "1.STR.FRAME-WELD",
+    "1.STR.WALL-DELAM",
+    "1.STR.FLOOR-SOFT",
+    "1.STR.ROOF-STRUCTURE",
+    "1.STR.SLIDE-STRUCTURE",
+    "1.ELE.EXPOSED-WIRE",
+    "1.ELE.IMPROPER-GROUND",
+    "1.ELE.OVERHEAT-RISK",
+    "1.ELE.SHORT-CIRCUIT",
+    "1.ELE.BREAKER-MISWIRE",
+    "1.LP.LEAK",
+    "1.LP.REGULATOR",
+    "1.LP.LINE-DAMAGE",
+    "1.LP.APPLIANCE-HOOKUP",
+    "1.LP.DETECTOR-FAIL",
+    "1.RUN.BRAKE-FAIL",
+    "1.RUN.HUB-BEARING",
+    "1.RUN.AXLE",
+    "1.RUN.TIRE-RIM",
+    "1.RUN.BREAKAWAY",
+    "1.FIR.SMOKE-DETECTOR",
+    "1.FIR.CO-DETECTOR",
+    "1.FIR.EXTINGUISHER",
+    "1.FIR.EGRESS-WINDOW",
+    "1.FIR.EXIT-PATH",
+    "2.ROOF.SEAM",
+    "2.ROOF.MEMBRANE",
+    "2.ROOF.VENT",
+    "2.ROOF.AC-BOOT",
+    "2.ROOF.CAP-TRANSITION",
+    "2.ROOF.LAP-SEAL",
+    "2.WIN.WINDOW-SEAL",
+    "2.WIN.DOOR-SEAL",
+    "2.WIN.EGRESS-SEAL",
+    "2.WIN.FRAME-LEAK",
+    "2.PEN.LIGHT",
+    "2.PEN.ANTENNA",
+    "2.PEN.VENT",
+    "2.PEN.HANDLE",
+    "2.PEN.COMPARTMENT",
+    "2.WET.SHOWER-PAN",
+    "2.WET.SHOWER-SURROUND",
+    "2.WET.TOILET-SEAL",
+    "2.WET.SINK-BASE",
+    "2.WET.WET-BAY",
+    "2.PLB.PEX-FITTING",
+    "2.PLB.DRAIN-CONN",
+    "2.PLB.WATER-HEATER",
+    "2.PLB.PUMP-CONN",
+    "2.PLB.TANK-FITTING",
+    "2.SLD.TOP-SEAL",
+    "2.SLD.SIDE-SEAL",
+    "2.SLD.BOTTOM-SEAL",
+    "2.SLD.CORNER",
+    "3.12V.NO-POWER",
+    "3.12V.BATTERY",
+    "3.12V.CONVERTER",
+    "3.12V.LIGHTS",
+    "3.12V.USB",
+    "3.12V.SWITCH",
+    "3.120.NO-POWER",
+    "3.120.OUTLET",
+    "3.120.GFCI",
+    "3.120.BREAKER",
+    "3.120.CORD",
+    "3.WTR.PUMP",
+    "3.WTR.NO-FLOW",
+    "3.WTR.HEATER",
+    "3.WTR.FAUCET",
+    "3.WTR.SHOWER-VALVE",
+    "3.HVAC.FURNACE",
+    "3.HVAC.AC",
+    "3.HVAC.THERMOSTAT",
+    "3.HVAC.DUCT",
+    "3.HVAC.FAN",
+    "3.SLD.MOTOR",
+    "3.SLD.CONTROLLER",
+    "3.SLD.RAIL",
+    "3.SLD.SWITCH",
+    "3.SLD.STOP",
+    "3.APP.FRIDGE",
+    "3.APP.RANGE",
+    "3.APP.MICROWAVE",
+    "3.APP.WATER-HEATER",
+    "3.APP.ENTERTAINMENT",
+    "3.LVL.JACK",
+    "3.LVL.CONTROLLER",
+    "3.LVL.SENSOR",
+    "3.LVL.PUMP",
+    "3.EXT.AWNING",
+    "3.EXT.STEP",
+    "3.EXT.CARGO-DOOR",
+    "3.EXT.STABILIZER",
+    "4.CAB.DOOR-ALIGN",
+    "4.CAB.DRAWER",
+    "4.CAB.HARDWARE",
+    "4.CAB.FINISH",
+    "4.CAB.GAP",
+    "4.INT.WALL",
+    "4.INT.CEILING",
+    "4.INT.FLOOR",
+    "4.INT.TRIM",
+    "4.INT.CAULK",
+    "4.EXT.GRAPHIC",
+    "4.EXT.FIBERGLASS",
+    "4.EXT.PAINT",
+    "4.EXT.CAP",
+    "4.EXT.COMPARTMENT",
+    "4.SFT.UPHOLSTERY",
+    "4.SFT.CUSHION",
+    "4.SFT.CURTAIN",
+    "4.SFT.MATTRESS",
+    "4.SFT.BEDDING",
+    "4.FIT.GAP",
+    "4.FIT.ALIGNMENT",
+    "4.FIT.FASTENER",
+    "4.FIT.SEALANT-APPEARANCE",
+    "5.OTHER.UNSPECIFIED"
+  ];
+
+  var LANE = window.GS_LANE || {};
+
+
+  var API_BASE = "/.netlify/functions";
+  var PHOTOS_ON = !!(window.GS_PHOTOS && window.GS_PHOTOS.ENABLED);   // 9a1: photos off. One switch (build.js). Every photo path below reads it.
+  var defects = [];
+  var checks = {};
+  var walkObs = [];
+  var activePhotoIndex = -1;
+  var offlineQueue = [];
+
+  // Toy hauler flags. Towable only -- motorized always carries both as false.
+  // Every pack()/keys()/stats() call in this file reads these two through
+  // laneOpts(), never raw GS_LANE[lane][type].
+  var toyHauler = false;
+  var thWall = false;
+  function laneOpts() { return { toyHauler: toyHauler, thWall: thWall }; }
+  // The full lanes map from the last get-unit fetch, kept around only to
+  // check whether a toy-hauler toggle flip would leave an already-submitted
+  // lane with unmarked lines. Does not reopen anything -- just a note.
+  var _lastUnitLanes = null;
+  // r6a: a lane that already has a record on file is shown (and counted) against the pack that record was saved
+  // under (packV; absent = v1, the pre-r6a sheet), so an old in-flight lane can still be finished. A lane with no
+  // record yet gets the current sheet. _lastUnitLanesFor guards against a stale map from another unit.
+  var _lastUnitLanesFor = "";
+  var _renderedVer = 0;
+  var _hintedFor = "";
+  function sheetVer(lane) {
+    var A = window.GS_LANE_API;
+    if (!A) return 1;
+    var u = (el("unitNumber").value || "").trim();
+    var rec = _lastUnitLanes && _lastUnitLanesFor === u ? _lastUnitLanes[String(lane)] : null;
+    // r8a: a lane with no record is evaluated against the version the server will stamp it (newVer), not currentPackV; this page asks the water test question, so a new Rain lane is v3
+    return rec && !rec.mergedInto ? A.verOf(rec) : (A.newVer ? A.newVer(String(lane), { rainRun: true }) : A.currentPackV);
+  }
+  // Read-only hint on a Systems row whose check used to live on Exterior / Interior: what that sheet already says.
+  function movedHint(lane, key) {
+    var A = window.GS_LANE_API;
+    if (lane !== "S" || !A || !_lastUnitLanes || _renderedVer < 2) return "";
+    var out = "";
+    ["E", "I"].forEach(function(l) {
+      var rec = _lastUnitLanes[l];
+      if (out || !rec || rec.mergedInto || !rec.checks) return;
+      Object.keys(rec.checks).forEach(function(k) {
+        if (out || !rec.checks[k] || A.canon(k) !== key) return;
+        var who = rec.inspector ? " by " + rec.inspector : "";
+        var when = rec.date ? " on " + String(rec.date).slice(0, 10) : "";
+        out = ((window.gsLanes && gsLanes.short(l)) || l) + " marked " + String(rec.checks[k]).toUpperCase() + " earlier" + who + when;
+      });
+    });
+    return out;
+  }
+  function refreshToyHaulerNote() {
+    var note = el("toyHaulerNote");
+    if (!note) return;
+    var type = (el("unitType") && el("unitType").value) || "towable";
+    if (!_lastUnitLanes || !window.GS_LANE_API || type === "motorized") { note.style.display = "none"; return; }
+    var opts = laneOpts();
+    var affected = [];
+    Object.keys(_lastUnitLanes).forEach(function(l) {
+      var rec = _lastUnitLanes[l];
+      if (!rec || rec.laneComplete !== true) return;
+      var unmarked = window.GS_LANE_API.stats(l, type, opts, rec.checks || {}, window.GS_LANE_API.verOf(rec)).unmarked;
+      if (unmarked > 0) affected.push((window.gsLanes && gsLanes.short(l)) || l);
+    });
+    if (!affected.length) { note.style.display = "none"; return; }
+    note.style.display = "block";
+    note.textContent = "Toy hauler setting leaves " + affected.length + " already-submitted lane" +
+      (affected.length === 1 ? "" : "s") + " (" + affected.join(", ") + ") with unmarked lines on file — " +
+      "marks stay as submitted, nothing reopens automatically.";
+  }
+  function syncToyHaulerUI() {
+    var type = (el("unitType") && el("unitType").value) || "towable";
+    var row = el("toyHaulerRow");
+    var wallCell = el("thWallCell");
+    if (type === "motorized") {
+      toyHauler = false;
+      thWall = false;
+      if (row) row.style.display = "none";
+      if (wallCell) wallCell.style.display = "none";
+      if (el("toyHaulerSelect")) el("toyHaulerSelect").value = "no";
+      if (el("thWallSelect")) el("thWallSelect").value = "no";
+      return;
+    }
+    if (row) row.style.display = "";
+    if (el("toyHaulerSelect")) el("toyHaulerSelect").value = toyHauler ? "yes" : "no";
+    if (wallCell) wallCell.style.display = toyHauler ? "" : "none";
+    if (el("thWallSelect")) el("thWallSelect").value = thWall ? "yes" : "no";
+  }
+
+  function el(id) { return document.getElementById(id); }
+  function setStatus(msg) { el("status").textContent = msg || ""; }
+  function paintNow(){
+    return new Promise(function(ok){
+      requestAnimationFrame(function(){ requestAnimationFrame(ok); });
+    });
+  }
+  async function lockBtn(id, label){
+    var b = el(id);
+    if (b) { b.disabled = true; b.dataset.prev = b.textContent; b.textContent = label || "Working…"; }
+    await paintNow();
+  }
+  function unlockBtn(id){
+    var b = el(id);
+    if (b) { b.disabled = false; if (b.dataset.prev) b.textContent = b.dataset.prev; }
+  }
+
+  // r7a: warn (never block) when this open page is older than the deployed checklist and the lane has not started
+  if (window.GSStale) GSStale.init({ laneStarted: function () {
+    var u = (el("unitNumber").value || "").trim(), l = el("laneSelect").value;
+    var rec = _lastUnitLanes && _lastUnitLanesFor === u && l ? _lastUnitLanes[String(l)] : null;
+    return !!(rec && !rec.mergedInto);
+  } });
+
+  var NA_REASONS = [
+    "Doesn’t apply to this model",
+    "Option not installed",
+    "Not on this floor plan",
+    "Plant / process exception",
+    "Other"
+  ];
+  var naReasons = {};
+  // ---- r8a: water test result (Rain lane). Held in the page, saved in drafts, sent as payload.rainRun; never a check.
+  var RR_WHERE = [["roof","Roof"],["slide_roof","Slide roof"],["ceiling","Ceiling"],["wall","Wall"],["floor","Floor"],["window_compartment","Window / compartment"],["other_exterior_components","Other exterior components"],["other","Other"]];
+  var RR_INSIDE = { ceiling_first_pass_drip: "ceiling", wall_first_pass_drip: "wall", lino_first_pass_wet: "floor" };
+  var rainRun = { result: "", where: [], note: "" };
+  var rainErr = "";
+  var rainPromptOpen = false;
+  function rainReset() { rainRun = { result: "", where: [], note: "" }; rainErr = ""; rainPromptOpen = false; }
+  function rainShown() { return el("laneSelect").value === "R" && sheetVer("R") >= 3; }
+  function rainInsideFailed() {
+    return Object.keys(RR_INSIDE).filter(function(k){ return checks[k] === "fail"; }).map(function(k){ return RR_INSIDE[k]; });
+  }
+  function rainProblem() {
+    if (!rainRun.result) return "Answer the water test question first: No leak, Leaked or Not tested.";
+    if (rainRun.result === "leaked" && !rainRun.where.length) return "Pick where it leaked (one or more).";
+    if (rainRun.where.indexOf("other") >= 0 && !String(rainRun.note || "").trim()) return "“Other” needs a note: say where.";
+    return "";
+  }
+  function rainPayload() {
+    var r = { result: rainRun.result, where: rainRun.result === "leaked" ? RR_WHERE.map(function(w){ return w[0]; }).filter(function(k){ return rainRun.where.indexOf(k) >= 0; }) : [], note: String(rainRun.note || "").trim().slice(0, 300) };
+    return r;
+  }
+  function fillRainBox(box) {
+    box.innerHTML = "";
+    box.className = "rr-box" + (rainErr ? " rr-bad" : "");
+    var q = document.createElement("div"); q.className = "rr-q"; q.id = "rrQ"; q.textContent = "Water test result"; box.appendChild(q);
+    var opts = document.createElement("div"); opts.className = "rr-opts"; opts.setAttribute("role", "group"); opts.setAttribute("aria-labelledby", "rrQ");
+    [["no_leak", "No leak", "rr-nl"], ["leaked", "Leaked", "rr-lk"], ["not_tested", "Not tested", "rr-nt"]].forEach(function(o){
+      var b = document.createElement("button"); b.type = "button"; b.className = o[2]; b.textContent = o[1]; b.setAttribute("data-rr", o[0]);
+      b.setAttribute("aria-pressed", rainRun.result === o[0] ? "true" : "false");
+      b.onclick = function(){
+        rainRun.result = o[0]; if (o[0] !== "leaked") rainRun.where = [];
+        rainErr = ""; rainPromptOpen = false; markLaneStart(); fillRainBox(box); saveDraft();
+        var nb = box.querySelector('[data-rr="' + o[0] + '"]'); if (nb) nb.focus();
+      };
+      opts.appendChild(b);
+    });
+    box.appendChild(opts);
+    if (rainRun.result === "leaked") {
+      var wl = document.createElement("div"); wl.className = "rr-lab"; wl.textContent = "Where did it leak? (pick one or more)"; box.appendChild(wl);
+      var wh = document.createElement("div"); wh.className = "rr-where"; wh.setAttribute("role", "group");
+      RR_WHERE.forEach(function(w){
+        var b = document.createElement("button"); b.type = "button"; b.textContent = w[1]; b.setAttribute("data-where", w[0]);
+        b.setAttribute("aria-pressed", rainRun.where.indexOf(w[0]) >= 0 ? "true" : "false");
+        b.onclick = function(){
+          var i = rainRun.where.indexOf(w[0]); if (i >= 0) rainRun.where.splice(i, 1); else rainRun.where.push(w[0]);
+          rainErr = ""; fillRainBox(box); saveDraft();
+          var nb = box.querySelector('[data-where="' + w[0] + '"]'); if (nb) nb.focus();
+        };
+        wh.appendChild(b);
+      });
+      box.appendChild(wh);
+    }
+    if (rainRun.result) {
+      var nl = document.createElement("div"); nl.className = "rr-lab"; nl.id = "rrNoteLab";
+      nl.textContent = rainRun.where.indexOf("other") >= 0 ? "Note (required for Other)" : "Note (optional)"; box.appendChild(nl);
+      var ta = document.createElement("textarea"); ta.id = "rrNote"; ta.maxLength = 300; ta.rows = 2; ta.value = rainRun.note || "";
+      ta.setAttribute("aria-labelledby", "rrNoteLab");
+      var cnt = document.createElement("div"); cnt.className = "rr-count"; cnt.textContent = (ta.value.length) + " / 300";
+      ta.oninput = function(){ rainRun.note = ta.value.slice(0, 300); cnt.textContent = rainRun.note.length + " / 300"; if (rainErr) { rainErr = ""; box.classList.remove("rr-bad"); var e = box.querySelector(".rr-err"); if (e) e.remove(); } };
+      ta.onchange = function(){ saveDraft(); };
+      box.appendChild(ta); box.appendChild(cnt);
+    }
+    if (rainErr) { var er = document.createElement("div"); er.className = "rr-err"; er.setAttribute("role", "alert"); er.textContent = rainErr; box.appendChild(er); }
+    if (rainPromptOpen) {
+      var pr = document.createElement("div"); pr.className = "rr-prompt"; pr.id = "rrPrompt"; pr.setAttribute("role", "alert");
+      var pp = document.createElement("p"); pp.textContent = "A check on the inside path failed. Did the unit leak?"; pr.appendChild(pp);
+      var yes = document.createElement("button"); yes.type = "button"; yes.id = "rrPromptYes"; yes.textContent = "Yes, it leaked";
+      yes.onclick = function(){
+        var add = rainInsideFailed();
+        rainRun.result = "leaked";
+        add.forEach(function(w){ if (rainRun.where.indexOf(w) < 0) rainRun.where.push(w); });
+        rainPromptOpen = false; rainErr = ""; fillRainBox(box); saveDraft();
+        var f = box.querySelector(".rr-where button"); if (f) f.focus();
+      };
+      var no = document.createElement("button"); no.type = "button"; no.id = "rrPromptNo"; no.textContent = "No, not a leak";
+      no.onclick = function(){ rainPromptOpen = false; fillRainBox(box); submitPrimary(true); };
+      pr.appendChild(yes); pr.appendChild(no); box.appendChild(pr);
+    }
+  }
+  function paintRainBox() { var b = el("rainRunBox"); if (b) fillRainBox(b); }
+  function inspectorName(){
+    var sel = el("inspectorSelect");
+    if (sel && sel.value) return sel.value.trim();
+    return (el("inspectorName") && el("inspectorName").value || "").trim();
+  }
+  function syncInspector(){
+    if (el("inspectorName")) el("inspectorName").value = inspectorName();
+  }
+  function paintInspectors(pref){
+    var sel = el("inspectorSelect");
+    if (!sel) return;
+    var names = (window.gsRoster ? gsRoster.names(window._roster) : (window._roster || [])).filter(function(n,i,a){ return n && /\s/.test(n) && a.indexOf(n)===i; });
+    sel.innerHTML = "";
+    var z = document.createElement("option"); z.value = ""; z.textContent = "— Select full name —";
+    sel.appendChild(z);
+    names.forEach(function(n){
+      var o = document.createElement("option"); o.value = n; o.textContent = n; sel.appendChild(o);
+    });
+    sel.value = (pref && names.indexOf(pref) >= 0) ? pref : "";
+    syncInspector();
+  }
+  fetch((typeof API_BASE==="string"?API_BASE:"/.netlify/functions")+"/settings").then(function(r){return r.text();}).then(function(raw){
+    try { window._roster = (JSON.parse(raw||"{}").inspectors)||[]; } catch(e){ window._roster=[]; }
+    paintInspectors();
+  }).catch(function(){ window._roster=[]; paintInspectors(); });
+  // ---- Unit Type follows Plant (r4a) -------------------------------------
+  // Plant 53 is the only motorized plant; 51, 57 and 76 are towable only.
+  // Any other / blank plant leaves Unit Type alone.
+  // It fires ONLY when the plant (or the unit # that determines it) changes:
+  //   (a) the inspector picks a plant in the dropdown, or
+  //   (b) a VALID unit # that fixes the plant (1xxxxx / 2xxxx / 4xxxx) is
+  //       entered that differs from the one we last synced for.
+  // It does NOT run on render, on keystrokes that leave the unit the same, or
+  // on a wrong-length / unrecognised unit (those change nothing here).
+  // The Unit Type dropdown is never locked: a manual change sticks until the
+  // plant or the unit that sets it changes again. Entering a DIFFERENT valid
+  // unit re-applies the plant's type even if the plant is the same (a new
+  // unit is a new truck, so the plant's rule wins again).
+  // A restored draft sets _typeUnitKey to its own unit so the saved type is
+  // never recomputed over (see applyDraft).
+  var _typeUnitKey = "";
+  function typeForPlant(plant) {
+    if (plant === "53") return "motorized";
+    if (plant === "51" || plant === "57" || plant === "76") return "towable";
+    return "";
+  }
+  function unitFixedPlant() {
+    if (!window.gsUnit) return null;
+    var v = gsUnit.checkUnit(el("unitNumber").value, "");
+    return (v.ok && v.locked && v.plant) ? v : null;
+  }
+  function applyTypeForPlant(plant) {
+    var t = typeForPlant(plant);
+    if (!t || el("unitType").value === t) return;
+    el("unitType").value = t;
+    // SAME code path as a manual change: renderLane() + saveDraft()
+    // (renderLane -> syncToyHaulerUI hides the toy hauler row and zeroes both flags for motorized).
+    el("unitType").onchange();
+  }
+  function syncTypeToUnit() {
+    var v = unitFixedPlant();
+    if (!v) { _typeUnitKey = ""; return; }
+    if (v.unit === _typeUnitKey) return;
+    _typeUnitKey = v.unit;
+    applyTypeForPlant(v.plant);
+  }
+  if (el("plantSelect")) el("plantSelect").addEventListener("change", function(){ applyTypeForPlant(el("plantSelect").value); });
+  if (el("unitNumber") && window.gsUnit) {
+    gsUnit.bind(el("unitNumber"), el("plantSelect"), function(c){
+      if (!c.ok && el("unitNumber").value.trim()) setStatus(c.error);
+      syncTypeToUnit();
+      flushLocalPhotos();
+    });
+    el("unitNumber").addEventListener("blur", function(){
+      _marksLoaded = "";
+      applyExistingMarks();
+    });
+  }
+  if (el("inspectorSelect")) {
+    el("inspectorSelect").onchange = function(){ syncInspector(); };
+  }
+
+  function loadQueue() {
+    try { offlineQueue = JSON.parse(localStorage.getItem("gs_pdi_queue") || "[]"); }
+    catch (e) { offlineQueue = []; }
+    updateQueueBadge();
+  }
+  function saveQueue() {
+    try {
+      localStorage.setItem("gs_pdi_queue", JSON.stringify(offlineQueue));
+    } catch (e) {
+      setStatus("Queue save failed — phone storage full. Retry now or photos will be lost.");
+    }
+    updateQueueBadge();
+  }
+  function queueLabel(item) {
+    var rec = item && item.record ? item.record : item || {};
+    var unit = item.unit || rec.unit || "?";
+    var lane = item.lane || rec.lane;
+    var pics = (item.photos && item.photos.length) ? " · " + item.photos.length + " photo" + (item.photos.length === 1 ? "" : "s") + " waiting" : "";
+    return "Unit " + unit + " · " + ((window.gsLanes && gsLanes.short(lane)) || lane || "?") + pics;
+  }
+  function queuePhotoCount() {
+    return pendingPhotoCount();
+  }
+  function updateQueueBadge() {
+    var b = el("queueBadge");
+    var actions = el("queueActions");
+    var pics = queuePhotoCount();
+    if (!offlineQueue.length && !pics) {
+      b.classList.remove("on");
+      if (actions) actions.classList.remove("on");
+      return;
+    }
+    var lines = ["Waiting on this phone"];
+    offlineQueue.forEach(function(item){ lines.push(queueLabel(item)); });
+    if (pics) lines.push(pics + " photo" + (pics === 1 ? "" : "s") + " still on this device — Retry or Drop");
+    b.textContent = lines.join("\n");
+    b.classList.add("on");
+    if (actions) actions.classList.add("on");
+  }
+
+
+  function walkLaneName(k) {
+    if (window.gsLanes) return gsLanes.name(k);
+    return k;
+  }
+  function walkSections(lane) {
+    var type = (el("unitType") && el("unitType").value) || "towable";
+    if (!window.GS_LANE_API) return [];
+    return window.GS_LANE_API.pack(lane, type, laneOpts()).filter(function(x){ return x && x.key; });
+  }
+  function newWalkObs() {
+    return { id: "w_" + Date.now() + "_" + Math.floor(Math.random() * 1000), lane: "", key: "", label: "", hold: false };
+  }
+  function renderWalk() {
+    var box = el("laneBox");
+    box.innerHTML = "";
+    box.className = "card";
+    if (el("defSummaryCard")) el("defSummaryCard").style.display = "none";
+    var h = document.createElement("div");
+    h.className = "sec sec-lane";
+    h.textContent = "PDI Validation — not required to clear";
+    box.appendChild(h);
+    var note = document.createElement("p");
+    note.className = "sub";
+    note.style.margin = "8px 0";
+    note.textContent = "Pass closes the walk. Fail can take more than one observation. Each one names the lane and section. Hold keeps the coach in PDI for retraining. It does not send it back to the plant.";
+    box.appendChild(note);
+    var pf = document.createElement("div");
+    pf.className = "pf";
+    ["pass", "fail"].forEach(function(val) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = val.toUpperCase();
+      if (checks.walk1_result === val) btn.classList.add("on-" + val);
+      btn.onclick = function() {
+        checks.walk1_result = val;
+        markLaneStart();
+        if (val === "fail") {
+          if (!walkObs.length) walkObs.push(newWalkObs());
+        } else {
+          walkObs.forEach(function(o){ dropDefect(o.id); });
+          walkObs = [];
+        }
+        renderLane();
+        saveDraft();
+      };
+      pf.appendChild(btn);
+    });
+    box.appendChild(pf);
+    if (checks.walk1_result === "fail") paintWalkFail(box);
+    paintDefCount();
+  }
+  function paintWalkFail(box) {
+    if (!walkObs.length) walkObs.push(newWalkObs());
+    walkObs.forEach(function(obs, idx) {
+      var d = defectFor(obs.id) || addDefect("Walk 1 observation", 3, obs.id);
+      var wrap = document.createElement("div");
+      wrap.setAttribute("data-walk", obs.id);
+      wrap.style.marginTop = "14px";
+      wrap.style.paddingTop = "10px";
+      wrap.style.borderTop = "1px solid #d5dbe3";
+      var head = document.createElement("div");
+      head.style.display = "flex";
+      head.style.justifyContent = "space-between";
+      head.style.alignItems = "center";
+      var title = document.createElement("strong");
+      title.textContent = "Observation " + (idx + 1);
+      head.appendChild(title);
+      if (walkObs.length > 1) {
+        var rm = document.createElement("button");
+        rm.type = "button";
+        rm.className = "photo-btn";
+        rm.textContent = "Remove";
+        rm.onclick = function() {
+          dropDefect(obs.id);
+          walkObs = walkObs.filter(function(x){ return x.id !== obs.id; });
+          renderLane();
+          saveDraft();
+        };
+        head.appendChild(rm);
+      }
+      wrap.appendChild(head);
+      var lab = document.createElement("label");
+      lab.textContent = "Lane that missed it";
+      var laneSel = document.createElement("select");
+      laneSel.innerHTML = "<option value=''>— Select lane —</option>" +
+        "<option value='R'>Rain, Seals, Roofs</option><option value='S'>Systems</option>" +
+        "<option value='E'>Exterior + Underbelly</option><option value='I'>Interior</option>";
+      laneSel.value = obs.lane || "";
+      var secLab = document.createElement("label");
+      secLab.textContent = "Section";
+      secLab.style.marginTop = "8px";
+      var secSel = document.createElement("select");
+      function fillSections() {
+        var items = walkSections(laneSel.value);
+        secSel.innerHTML = "<option value=''>— Select section —</option>" + items.map(function(it){
+          return "<option value='" + it.key + "'>" + it.label + "</option>";
+        }).join("");
+        if (obs.key && items.some(function(it){ return it.key === obs.key; })) secSel.value = obs.key;
+      }
+      laneSel.onchange = function() {
+        obs.lane = laneSel.value;
+        obs.key = "";
+        obs.label = "";
+        fillSections();
+        saveDraft();
+      };
+      secSel.onchange = function() {
+        obs.key = secSel.value;
+        var hit = walkSections(laneSel.value).filter(function(it){ return it.key === secSel.value; })[0];
+        obs.label = hit ? hit.label : "";
+        d.point = obs.label || "Walk 1 observation";
+        saveDraft();
+      };
+      fillSections();
+      var detLab = document.createElement("label");
+      detLab.textContent = "Detail";
+      detLab.style.marginTop = "8px";
+      var ta = document.createElement("textarea");
+      ta.rows = 3;
+      ta.placeholder = "What the walk found. Required.";
+      ta.value = d.desc || "";
+      ta.oninput = function() { d.desc = ta.value; saveDraft(); };
+      var holdRow = document.createElement("label");
+      holdRow.style.display = "flex";
+      holdRow.style.alignItems = "center";
+      holdRow.style.gap = "8px";
+      holdRow.style.marginTop = "10px";
+      var holdBox = document.createElement("input");
+      holdBox.type = "checkbox";
+      holdBox.checked = !!obs.hold;
+      holdBox.style.width = "auto";
+      holdBox.onchange = function() { obs.hold = holdBox.checked; saveDraft(); };
+      holdRow.appendChild(holdBox);
+      holdRow.appendChild(document.createTextNode("Hold in PDI for retraining"));
+      wrap.appendChild(lab);
+      wrap.appendChild(laneSel);
+      wrap.appendChild(secLab);
+      wrap.appendChild(secSel);
+      wrap.appendChild(detLab);
+      wrap.appendChild(ta);
+      var photoHost = document.createElement("div");
+      wrap.appendChild(photoHost);
+      wrap.appendChild(holdRow);
+      box.appendChild(wrap);
+      paintFailPanel(photoHost, { key: obs.id, label: "Observation " + (idx + 1), sev: 3 });
+    });
+    var add = document.createElement("button");
+    add.type = "button";
+    add.className = "btn-add";
+    add.style.marginTop = "12px";
+    add.textContent = "+ Add observation";
+    add.onclick = function() {
+      walkObs.push(newWalkObs());
+      renderLane();
+      saveDraft();
+    };
+    box.appendChild(add);
+  }
+
+  function renderLane() {
+    formLane = el("laneSelect").value;
+    syncToyHaulerUI();
+    refreshToyHaulerNote();
+    var lane = el("laneSelect").value;
+    var unitType = el("unitType").value || "towable";
+    var box = el("laneBox");
+    box.innerHTML = "";
+    if (el("btnPartial")) el("btnPartial").style.display = (lane && lane !== "U") ? "" : "none";   // W2 PS-1: no partial save on the validation lane (U)
+    if (!lane || !LANE[lane]) { box.className = "card hidden"; return; }
+    if (el("defSummaryCard")) el("defSummaryCard").style.display = "";
+    if (lane === "U") { renderWalk(); return; }
+    box.className = "card";
+    var data = LANE[lane];
+    _renderedVer = sheetVer(lane);
+    var items = (window.GS_LANE_API && window.GS_LANE_API.pack(lane, unitType, laneOpts(), _renderedVer)) || [];
+
+    var h = document.createElement("div");
+    h.className = "sec sec-lane";
+    h.textContent = data.title + " (" + unitType + ")";
+    box.appendChild(h);
+    if (lane === "R" && _renderedVer >= 3) {
+      var rrb = document.createElement("div"); rrb.id = "rainRunBox"; fillRainBox(rrb); box.appendChild(rrb);
+    }
+
+    items.forEach(function(item) {
+      if (item.header) {
+        var sh = document.createElement("div");
+        sh.className = "sec sec-sub";
+        sh.textContent = item.header;
+        box.appendChild(sh);
+        if (item.note) { var sn = document.createElement("div"); sn.className = "sec-note"; sn.textContent = item.note; box.appendChild(sn); }
+        return;
+      }
+      var wrap = document.createElement("div");
+      wrap.className = "item-wrap";
+      wrap.setAttribute("data-key", item.key);
+      var row = document.createElement("div");
+      row.className = "item";
+      var sp = document.createElement("span");
+      sp.textContent = item.label;
+      var pf = document.createElement("div");
+      pf.className = "pf";
+      var naBox = document.createElement("div");
+      naBox.className = "na-inline" + (checks[item.key] === "na" ? " on" : "");
+      var failBox = document.createElement("div");
+      failBox.className = "fail-inline" + (checks[item.key] === "fail" ? " on" : "");
+      ["pass", "fail", "na"].forEach(function(val) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = val === "na" ? "N/A" : val.toUpperCase();
+        if (checks[item.key] === val) btn.classList.add("on-" + val);
+        if (isLockedFail(item.key)) btn.disabled = true;
+        btn.onclick = function() {
+          var prev = checks[item.key];
+          checks[item.key] = val;
+          pf.querySelectorAll("button").forEach(function(b) {
+            b.classList.remove("on-pass", "on-fail", "on-na");
+          });
+          btn.classList.add("on-" + val);
+          markLaneStart();
+          if (val === "fail") addDefect(item.label, item.sev, item.key);
+          else if (prev === "fail") dropDefect(item.key);
+          if (val !== "na") delete naReasons[item.key];
+          naBox.classList.toggle("on", val === "na");
+          failBox.classList.toggle("on", val === "fail");
+          if (val !== "na") {
+            var pickEl = naBox.querySelector("select");
+            if (pickEl) pickEl.value = "";
+          }
+          if (val === "fail") paintFailPanel(failBox, item);
+          saveDraft();
+          paintDefCount();
+        };
+        pf.appendChild(btn);
+      });
+      var pickLab = document.createElement("label");
+      pickLab.textContent = "Why N/A";
+      var pick = document.createElement("select");
+      pick.innerHTML = '<option value="">— pick a reason —</option>' +
+        NA_REASONS.map(function(r){ return '<option value="'+r+'">'+r+"</option>"; }).join("");
+      if (naReasons[item.key]) pick.value = naReasons[item.key];
+      pick.onchange = function(){
+        if (this.value) naReasons[item.key] = this.value;
+        else delete naReasons[item.key];
+        saveDraft();
+      };
+      naBox.appendChild(pickLab);
+      naBox.appendChild(pick);
+      row.appendChild(sp);
+      row.appendChild(pf);
+      wrap.appendChild(row);
+      var mh = movedHint(lane, item.key);
+      if (mh) {
+        var mhd = document.createElement("div");
+        mhd.className = "moved-hint";
+        mhd.style.cssText = "font-size:12px;opacity:.7;padding:0 2px 6px";
+        mhd.textContent = mh;
+        wrap.appendChild(mhd);
+      }
+      wrap.appendChild(naBox);
+      wrap.appendChild(failBox);
+      if (isLockedFail(item.key)) {
+        var lk = document.createElement("div");
+        lk.className = "moved-hint locked-fail";
+        lk.style.cssText = "font-size:13px;padding:2px 2px 8px;color:#b3261e";
+        var LL = loadedFor();
+        lk.textContent = "Fail on record" + (LL.by[item.key] ? " (" + LL.by[item.key] + ")" : "") + " — locked, only an admin can change it." + (LL.detail[item.key] ? " Detail: " + LL.detail[item.key] : "");
+        wrap.appendChild(lk);
+        failBox.classList.add("on");
+      } else if (checks[item.key] === "fail") {
+        addDefect(item.label, item.sev, item.key);
+        paintFailPanel(failBox, item);
+      }
+      box.appendChild(wrap);
+    });
+    paintDefCount();
+    paintExtraDefects();
+    applyExistingMarks();
+  }
+
+  var _marksLoaded = "";
+  // W2 PS-2: what the store already holds for this unit + lane, so a second inspector sees what is done and a recorded Fail is read-only.
+  // token (unit:lane) -> { checks: {key: mark}, fail: {key: true}, detail: {key: text}, by: {key: name} }
+  var _loadedMarks = {};
+  function curToken() { return (el("unitNumber").value || "").trim() + ":" + el("laneSelect").value; }
+  function loadedFor(token) { return _loadedMarks[token || curToken()] || null; }
+  function isLockedFail(k) { var L = loadedFor(); return !!(L && L.fail[k]); }
+  function myMarkedKeys(keys) {
+    var L = loadedFor();
+    return keys.filter(function(k){ return checks[k] && !(L && L.checks[k] === checks[k]); });
+  }
+  // Toy hauler flags are a unit-level thing, not a lane-level one -- loaded
+  // once per unit per sitting (not re-pulled every time the lane dropdown
+  // changes), so a flag you just set on this device isn't clobbered the
+  // moment you flip to the next lane on the same unit.
+  var _flagsLoadedForUnit = "";
+  async function applyExistingMarks(){
+    var unit = (el("unitNumber").value || "").trim();
+    var lane = el("laneSelect").value;
+    if (!/^\d+$/.test(unit) || !lane) return;
+    var token = unit + ":" + lane;
+    if (_marksLoaded === token) return;
+    try {
+      var res = await fetch(API_BASE + "/get-unit?unit=" + encodeURIComponent(unit));
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      _lastUnitLanes = data.lanes || null;
+      _lastUnitLanesFor = unit;
+      var flagsChanged = false;
+      if (_flagsLoadedForUnit !== unit) {
+        _flagsLoadedForUnit = unit;
+        if ((el("unitType").value || "towable") !== "motorized") {
+          var newToyHauler = !!data.toyHauler, newThWall = !!data.thWall;
+          flagsChanged = (newToyHauler !== toyHauler) || (newThWall !== thWall);
+          toyHauler = newToyHauler;
+          thWall = newThWall;
+        }
+      }
+      var rec = data.lanes && data.lanes[String(lane)];
+      if (window.GSStale) GSStale.refresh();
+      if (!rec || !rec.checks) {
+        // r6a: re-paint when the toy hauler flags changed, when this lane's sheet version differs, or (Systems) when the
+        // unit has an earlier Exterior / Interior record whose marks can now be shown as read-only hints.
+        var hintable = lane === "S" && _hintedFor !== token && !!(data.lanes && (data.lanes.E || data.lanes.I));
+        if (flagsChanged || sheetVer(lane) !== _renderedVer || hintable) { _marksLoaded = token; _hintedFor = token; renderLane(); }
+        return;
+      }
+      var LD = { checks: {}, fail: {}, detail: {}, by: {} };
+      Object.keys(rec.checks).forEach(function(k){
+        if (!rec.checks[k]) return;
+        LD.checks[k] = rec.checks[k];
+        if (rec.checks[k] === "fail") {
+          // a Fail on record is permanent for the floor (only an admin clears it): show it as it is, whatever this device had in a draft
+          LD.fail[k] = true;
+          if (checks[k] !== "fail") { checks[k] = "fail"; delete naReasons[k]; }
+          dropDefect(k);
+          var dd = (rec.defects || []).filter(function(d){ return d && d.checkKey === k && !d.superseded; })[0];
+          if (dd) LD.detail[k] = String(dd.desc || dd.detail || "");
+          if (rec.marksBy && rec.marksBy[k]) LD.by[k] = String(rec.marksBy[k].by || rec.marksBy[k] || "");
+        } else if (!checks[k]) checks[k] = rec.checks[k];
+      });
+      _loadedMarks[token] = LD;
+      if (rec.naReasons) {
+        Object.keys(rec.naReasons).forEach(function(k){
+          if (rec.naReasons[k] && !naReasons[k]) naReasons[k] = rec.naReasons[k];
+        });
+      }
+      _marksLoaded = token;
+      renderLane();
+      setStatus("Loaded existing marks for " + ((window.gsLanes && gsLanes.name(lane)) || lane) + " — change any line or finish the rest.");
+    } catch (e) {}
+  }
+
+  function defectFor(checkKey) {
+    if (!checkKey) return null;
+    for (var i = 0; i < defects.length; i++) {
+      if (defects[i] && defects[i].checkKey === checkKey) return defects[i];
+    }
+    return null;
+  }
+  function dropDefect(checkKey) {
+    defects = defects.filter(function(d){ return !d || d.checkKey !== checkKey; });
+    paintDefCount();
+    saveDraft();
+  }
+  function addDefect(desc, sev, checkKey) {
+    markLaneStart();
+    if (checkKey && defectFor(checkKey)) { paintDefCount(); return defectFor(checkKey); }
+    var d = {
+      id: "d_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+      reasonCode: "",
+      checkKey: checkKey || "",
+      point: desc || "",
+      desc: checkKey ? "" : (desc || ""),
+      origin: "",
+      severity: sev || 3,
+      photos: []
+    };
+    defects.push(d);
+    paintDefCount();
+    updateHard();
+    saveDraft();
+    return d;
+  }
+  function paintDefCount() {
+    var n = el("defCount");
+    if (n) n.textContent = String(laneDefects().length);
+  }
+  function extraDefects() {
+    return defects.filter(function(d){ return d && !d.checkKey; });
+  }
+  function paintExtraDefects() {
+    var list = el("defectList");
+    if (list && list.querySelector(".mic-btn.listening")) return;
+    if (!list) return;
+    list.innerHTML = "";
+    extraDefects().forEach(function(d) {
+      var card = document.createElement("div");
+      card.className = "defect";
+      card.setAttribute("data-did", d.id || "");
+      var lab = document.createElement("label");
+      lab.textContent = "Extra defect (not on the sheet)";
+      var labRow = document.createElement("div");
+      labRow.className = "def-lab-row";
+      labRow.appendChild(lab);
+      var micBtn = document.createElement("button");
+      micBtn.type = "button"; micBtn.className = "mic-btn"; micBtn.textContent = "Mic"; micBtn.title = "Speak detail";
+      labRow.appendChild(micBtn);
+      var ta = document.createElement("textarea");
+      ta.value = d.desc || "";
+      ta.placeholder = "What / where — this does not attach to a checklist line";
+      ta.oninput = function() { d.desc = ta.value; d.point = ta.value; saveDraft(); };
+      if (!Array.isArray(d.photos)) d.photos = [];
+      var photoRow = document.createElement("div");
+      photoRow.className = "photo-row";
+      (PHOTOS_ON ? d.photos : []).forEach(function(ph, pi) {
+        if (!ph) return;
+        var src = ph.thumb || ph.data;
+        var wrap = document.createElement("div");
+        if (src) {
+          var img = document.createElement("img");
+          img.className = "photo-thumb" + (ph.key ? " sent" : "");
+          img.src = src;
+          wrap.appendChild(img);
+        }
+        var clearBtn = document.createElement("button");
+        clearBtn.type = "button"; clearBtn.className = "photo-clear";
+        clearBtn.textContent = "X";
+        clearBtn.onclick = function() {
+          if (ph && ph.pid) removePid(ph.pid);
+          d.photos.splice(pi, 1);
+          paintExtraDefects(); saveDraft(); paintPhotoChip();
+        };
+        wrap.appendChild(clearBtn);
+        photoRow.appendChild(wrap);
+      });
+      var maxPhotos = (window.gsPhoto && gsPhoto.maxPerDefect) || 8;
+      if (PHOTOS_ON && d.photos.length < maxPhotos) {
+        var camBtn = document.createElement("button");
+        camBtn.type = "button"; camBtn.className = "photo-btn";
+        camBtn.textContent = d.photos.length ? "Add photo (" + d.photos.length + "/" + maxPhotos + ")" : "Photo";
+        camBtn.onclick = function() { activePhotoId = d.id; activePhotoKey = ""; el("photoInput").click(); };
+        photoRow.appendChild(camBtn);
+      }
+      var rm = document.createElement("button");
+      rm.type = "button"; rm.className = "rm"; rm.textContent = "Remove";
+      rm.onclick = function() {
+        defects = defects.filter(function(x){ return !x || x.id !== d.id; });
+        paintExtraDefects(); paintDefCount(); saveDraft();
+      };
+      card.appendChild(labRow); card.appendChild(ta); card.appendChild(photoRow); card.appendChild(rm);
+      attachMic(ta, micBtn);
+      list.appendChild(card);
+    });
+  }
+  function paintFailPanel(box, item) {
+    if (!box || !item) return;
+    if (box.querySelector(".mic-btn.listening")) return;
+    var d = defectFor(item.key) || addDefect(item.label, item.sev, item.key);
+    box.innerHTML = "";
+    var lab = document.createElement("label");
+    lab.textContent = "Detail for this line (required)";
+    var labRow = document.createElement("div");
+    labRow.className = "def-lab-row";
+    labRow.appendChild(lab);
+    var micBtn = document.createElement("button");
+    micBtn.type = "button"; micBtn.className = "mic-btn"; micBtn.textContent = "Mic"; micBtn.title = "Speak detail";
+    labRow.appendChild(micBtn);
+    var ta = document.createElement("textarea");
+    ta.value = d.desc && d.desc !== item.label ? d.desc : "";
+    ta.placeholder = "Where / what / how found — stays on THIS line";
+    ta.oninput = function() { d.desc = ta.value; saveDraft(); };
+    if (!Array.isArray(d.photos)) d.photos = [];
+    var photoRow = document.createElement("div");
+    photoRow.className = "photo-row";
+    (PHOTOS_ON ? d.photos : []).forEach(function(ph, pi) {
+      if (!ph) return;
+      var src = ph.thumb || ph.data;
+      var wrap = document.createElement("div");
+      if (src) {
+        var img = document.createElement("img");
+        img.className = "photo-thumb" + (ph.key ? " sent" : "");
+        img.src = src;
+        wrap.appendChild(img);
+      }
+      var clearBtn = document.createElement("button");
+      clearBtn.type = "button"; clearBtn.className = "photo-clear";
+      clearBtn.textContent = "X";
+      clearBtn.onclick = function() {
+        if (ph.status === "uploading") return;
+        if (ph && ph.pid) removePid(ph.pid);
+        d.photos.splice(pi, 1);
+        paintFailPanel(box, item); saveDraft(); paintPhotoChip();
+      };
+      wrap.appendChild(clearBtn);
+      photoRow.appendChild(wrap);
+    });
+    var maxPhotos = (window.gsPhoto && gsPhoto.maxPerDefect) || 8;
+    if (PHOTOS_ON && d.photos.length < maxPhotos) {
+      var camBtn = document.createElement("button");
+      camBtn.type = "button"; camBtn.className = "photo-btn";
+      camBtn.textContent = d.photos.length ? "Photo (" + d.photos.length + "/" + maxPhotos + ")" : "Photo for this line";
+      camBtn.onclick = function() { activePhotoKey = item.key; activePhotoId = ""; el("photoInput").click(); };
+      photoRow.appendChild(camBtn);
+    }
+    box.appendChild(labRow);
+    box.appendChild(ta);
+    box.appendChild(photoRow);
+    attachMic(ta, micBtn);
+  }
+  function attachMic(ta, btn) {
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR || !btn) { if (btn) btn.style.display = "none"; return; }
+    var rec = null;
+    btn.onclick = function(ev) {
+      if (ev) ev.preventDefault();
+      if (rec) {
+        try { rec.onresult = null; rec.onerror = null; rec.onend = null; rec.stop(); } catch (e) {}
+        rec = null;
+      }
+      var next = new SR();
+      next.lang = "en-US";
+      next.interimResults = true;
+      next.continuous = false;
+      var base = ta.value || "";
+      next.onresult = function(ev) {
+        var finalText = "";
+        var interim = "";
+        for (var i = 0; i < ev.results.length; i++) {
+          var chunk = ev.results[i][0].transcript || "";
+          if (ev.results[i].isFinal) finalText += chunk;
+          else interim += chunk;
+        }
+        ta.value = (base ? base.replace(/\s+$/, "") + " " : "") + (finalText + interim).replace(/^\s+/, "");
+        ta.dispatchEvent(new Event("input"));
+      };
+      next.onerror = function(ev) {
+        btn.classList.remove("listening");
+        btn.textContent = "Mic";
+        var code = (ev && ev.error) || "mic error";
+        if (code !== "aborted") setStatus("Mic: " + code);
+        if (rec === next) rec = null;
+      };
+      next.onend = function() {
+        btn.classList.remove("listening");
+        btn.textContent = "Mic";
+        if (rec === next) rec = null;
+      };
+      rec = next;
+      try {
+        btn.classList.add("listening");
+        btn.textContent = "Listening";
+        next.start();
+      } catch (e) {
+        btn.classList.remove("listening");
+        btn.textContent = "Mic";
+        setStatus("Mic: " + (e && e.message ? e.message : "could not start"));
+        rec = null;
+      }
+    };
+  }
+  function renderDefects() {
+    paintDefCount();
+    paintExtraDefects();
+    var box = el("laneBox");
+    if (!box) return;
+    defects.forEach(function(d){
+      if (!d || !d.checkKey) return;
+      var wrap = box.querySelector('.item-wrap[data-key="'+d.checkKey+'"]');
+      if (!wrap) return;
+      var failBox = wrap.querySelector(".fail-inline");
+      var item = { key: d.checkKey, label: d.point || "", sev: d.severity };
+      if (failBox && failBox.classList.contains("on")) paintFailPanel(failBox, item);
+    });
+  }
+
+  var activePhotoKey = "";
+  var activePhotoId = "";
+  function handlePhoto(e) {
+    if (!PHOTOS_ON) return;
+    var file = e.target.files && e.target.files[0];
+    var key = activePhotoKey;
+    var id = activePhotoId;
+    e.target.value = "";
+    activePhotoKey = "";
+    activePhotoId = "";
+    if (!file || (!key && !id) || !window.gsPhoto) return;
+    var bucket = id ? defects.filter(function(d){ return d && d.id === id; })[0] : defectFor(key);
+    if (!bucket) return;
+    gsPhoto.compress(file).then(function(packed){
+      if (!Array.isArray(bucket.photos)) bucket.photos = [];
+      var maxPhotos = (window.gsPhoto && gsPhoto.maxPerDefect) || 8;
+      if (bucket.photos.length >= maxPhotos) { setStatus("Max " + maxPhotos + " photos on this defect"); return; }
+      markLaneStart();   // r9a: the sitting starts when the first photo is taken, not when a background flush happens to run
+      bucket.photos.push({
+        pid: newPid(),
+        data: packed.data,
+        thumb: packed.thumb,
+        name: (bucket.checkKey || "extra") + "_" + (bucket.photos.length + 1) + ".jpg",
+        status: "local",
+        key: "",
+        checkKey: bucket.checkKey || "",
+        sessionId: sessionId,
+        laneStartedAt: laneStartedAt
+      });
+      parkLivePhotos();
+      renderDefects(); saveDraft(); paintPhotoChip();
+      setStatus("Photo on phone — sending…");
+      flushLocalPhotos({ force: true, soft: true });   // r9a: every new capture retries whatever is waiting (not one that failed seconds ago)
+    }).catch(function(){ setStatus("Could not read photo"); });
+  }
+
+  var laneStartedAt = null;
+  var laneClockTimer = null;
+  var clockStoppedAt = null;
+  var warned45 = false;
+  var sessionId = null;
+  function markLaneStart() {
+    if (!laneStartedAt) {
+      laneStartedAt = new Date().toISOString();
+      if (!sessionId) sessionId = "s" + Date.now();
+      clockStoppedAt = null;
+      warned45 = false;
+      paintLaneClock();
+      if (laneClockTimer) clearInterval(laneClockTimer);
+      laneClockTimer = setInterval(paintLaneClock, 1000);
+    }
+    var stop = el("btnStopClock"); if (stop) stop.style.display = "inline-block";
+  }
+  function clockNow() { return clockStoppedAt ? new Date(clockStoppedAt).getTime() : Date.now(); }
+  function paintLaneClock() {
+    var n = el("laneClock");
+    if (!n) return;
+    if (!laneStartedAt) { n.textContent = ""; return; }
+    var s = new Date(laneStartedAt);
+    var hh = String(s.getHours()).padStart(2,"0");
+    var mm = String(s.getMinutes()).padStart(2,"0");
+    var sec = Math.max(0, Math.round((clockNow() - s.getTime()) / 1000));
+    var m = Math.floor(sec / 60), r = sec % 60;
+    n.textContent = "Lane time  " + hh + ":" + mm + "  ·  " + m + "m " + String(r).padStart(2,"0") + "s" + (clockStoppedAt ? "  · STOPPED" : "");
+    var w = el("clockWarn");
+    if (w) w.style.display = (!clockStoppedAt && m >= 45) ? "block" : "none";
+    if (!clockStoppedAt && m >= 45 && !warned45) { warned45 = true; setStatus("Clock at 45m — stop or submit."); }
+    var stop = el("btnStopClock"); var res = el("btnResumeClock");
+    if (stop) stop.style.display = laneStartedAt && !clockStoppedAt ? "inline-block" : "none";
+    if (res) res.style.display = clockStoppedAt ? "inline-block" : "none";
+  }
+  function updateHard() {
+    // Hard-stop banner pulled off Capture (mobile). Flag still set on submit + email + Aggregator.
+  }
+
+  function buildPayload() {
+    var unit = (el("unitNumber").value || "").trim();
+    if (!/^\d+$/.test(unit)) return { error: "Unit # must be numeric only." };
+    var plant = (el("plantSelect").value || "").trim();
+    if (!plant) return { error: "Plant is required." };
+    var sc = scopeToLane();
+    return {
+      unit: unit,
+      model: (el("modelNumber").value || "").trim(),
+      date: el("pdiDate").value,
+      plant: plant,
+      lane: el("laneSelect").value,
+      inspector: inspectorName(),
+      walkResult: checks.walk1_result || "",
+      walkObs: walkObs.map(function(o){
+        var d = defectFor(o.id) || {};
+        return {
+          id: o.id, lane: o.lane, key: o.key, label: o.label, hold: !!o.hold,
+          detail: d.desc || "",
+          photos: PHOTOS_ON ? (d.photos || []).map(function(ph){ return { key: ph && ph.key }; }) : []
+        };
+      }),
+      timestamp: new Date().toISOString(),
+      startedAt: laneStartedAt || new Date().toISOString(),
+      endedAt: clockStoppedAt || new Date().toISOString(),
+      clockStopped: !!clockStoppedAt,
+      durationSec: (function(){
+        var a = Date.parse(laneStartedAt || "") || Date.now();
+        return Math.max(0, Math.round((clockNow() - a) / 1000));
+      })(),
+      unitType: el("unitType").value || "towable",
+      toyHauler: toyHauler,
+      thWall: thWall,
+      checks: sc.checks,
+      naReasons: sc.naReasons,
+      defects: sc.defects.map(function(d) {
+        return {
+          id: d.id,
+          reasonCode: d.reasonCode || "",
+          checkKey: d.checkKey || "",
+          point: d.point || d.desc || "",
+          desc: d.desc || "",
+          origin: d.origin || "",
+          severity: d.severity,
+          photos: PHOTOS_ON ? (d.photos || []).map(function(ph, pi){
+            return { index: pi, name: ph.name || "", key: ph.key || "" };
+          }).filter(function(ph){ return ph.key; }) : []
+        };
+      }),
+      photosDeferred: PHOTOS_ON,
+      hardStop: false,
+      checkCount: expectedKeys().length,
+      unmarkedCount: expectedKeys().filter(function(k){ return !checks[k]; }).length
+    };
+  }
+
+  function collectPhotos() {
+    var out = [];
+    defects.forEach(function(d, di) {
+      (d.photos || []).forEach(function(ph, pi) {
+        if (ph && ph.data) out.push({ defectIndex: di, photoIndex: pi, photoData: ph.data });
+      });
+    });
+    return out;
+  }
+
+  function photoStats() {
+    var sent = 0, wait = 0, up = 0;
+    // r9a (LM14): a restored draft shows an unsent photo as "gone" (drafts keep no bytes); if the queue still holds that photo it is waiting, not gone
+    var queued = {};
+    loadPhotoPending().forEach(function(it){ if (it && it.pid) queued[it.pid] = true; });
+    Object.keys(memItems).forEach(function(pid){ queued[pid] = true; });
+    defects.forEach(function(d) {
+      (d.photos || []).forEach(function(ph) {
+        if (!ph) return;
+        if (ph.status === "uploading") up++;
+        else if (ph.key && !ph.data) sent++;
+        else if (ph.data) wait++;
+        else if (ph.key) sent++;
+        else if (ph.pid && queued[ph.pid]) wait++;
+      });
+    });
+    return { sent: sent, wait: wait, up: up };
+  }
+
+  function lastStuckPhotoError() {
+    var list = unsentList();
+    for (var i = list.length - 1; i >= 0; i--) {
+      if (list[i] && list[i].lastError) return list[i].lastError;
+    }
+    return "";
+  }
+
+  function paintPhotoChip() {
+    if (!PHOTOS_ON) return;
+    try { paintPhotoBanner(); } catch (e0) {}
+    var n = el("photoChip");
+    if (!n) return;
+    var s = photoStats();
+    if (!s.sent && !s.wait && !s.up) { n.className = "photo-chip"; n.textContent = ""; n.title = ""; return; }
+    var parts = [];
+    if (s.sent) parts.push(s.sent + " uploaded");
+    if (s.up) parts.push(s.up + " sending");
+    if (s.wait) parts.push(s.wait + " on phone");
+    var err = (s.wait && !s.up) ? lastStuckPhotoError() : "";
+    n.textContent = "Photos · " + parts.join(" · ") + (err ? " — " + err : "");
+    n.title = err || "";
+    n.className = "photo-chip on" + (s.wait && !s.up ? " wait" : "");
+  }
+
+  // ================= r9a photo queue (items A-E) =================
+  // Every queued photo carries its own identity: pid (stable file name), unit, lane, checkKey, defectIndex, photoIndex, the sitting it was
+  // taken in (sessionId, laneStartedAt). The queue is only ever changed by merging: re-read, change the items you mean, write back.
+  var PHOTO_PENDING_KEY = "gs_pdi_photo_pending";
+  var PHOTO_SUBMITTED_KEY = "gs_pdi_photo_submitted";
+  var PHOTO_HOLD_KEY = "gs_pdi_draft_hold";
+  // Budget for the queue key. iOS Safari gives a site about 5 million characters of localStorage in all; drafts and the offline submit
+  // queue share it, so photos get 3.5 million (about 60 photos at the measured size). Over that is refused loudly, never trimmed.
+  var PHOTO_BUDGET_CHARS = 3500000;
+  var memItems = {};            // photos that could not be written to the queue; they are still sent from memory
+  var photoBannerOpen = false;
+  function newPid() { return "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function loadPhotoPending() {
+    var list;
+    try { list = JSON.parse(localStorage.getItem(PHOTO_PENDING_KEY) || "[]") || []; }
+    catch (e) { return []; }
+    // items queued by a page older than 9a have no pid / sitting: give them a stable one (same item = same id on every load) so they are
+    // listed, retried and removed like any other, instead of sitting in the queue unseen
+    list.forEach(function(it){
+      if (it && !it.pid) it.pid = "pL_" + String(it.unit || "") + "_" + String(it.lane || "") + "_" + String(it.defectIndex || 0) + "_" + String(it.photoIndex || 0) + "_" + String((it.data || "").length);
+    });
+    return list;
+  }
+  // replace-write, kept only as the seam the unit-test hook (scripts/test-pdi-html.js) calls; the page itself only ever merges
+  function savePhotoPending(list) { return mutatePending(function(){ return (list || []).slice(); }); }
+  function trySetPending(list) {
+    try { localStorage.setItem(PHOTO_PENDING_KEY, JSON.stringify(list)); return true; }
+    catch (e) { return false; }
+  }
+  // Merge-write. fn gets a fresh copy of what is stored and returns the new list. If it will not fit, existing items are kept and the NEW
+  // ones that do not fit are returned in .failed (and kept in memItems by the caller). Nothing is dropped without being reported.
+  function mutatePending(fn) {
+    var cur = loadPhotoPending();
+    var next = fn(cur.slice());
+    var str = JSON.stringify(next);
+    if (str.length <= PHOTO_BUDGET_CHARS && trySetPending(next)) return { ok: true, failed: [] };
+    var have = {};
+    cur.forEach(function(it){ if (it && it.pid) have[it.pid] = true; });
+    var kept = next.filter(function(it){ return it && have[it.pid]; });
+    var adds = next.filter(function(it){ return it && !have[it.pid]; });
+    var failed = [];
+    var size = JSON.stringify(kept).length;
+    adds.forEach(function(it){
+      var n = JSON.stringify(it).length + 1;
+      if (size + n <= PHOTO_BUDGET_CHARS) { kept.push(it); size += n; } else failed.push(it);
+    });
+    if (!trySetPending(kept)) {
+      // the phone refused even that: keep the stored queue as it is and report every new item as not saved
+      return { ok: false, failed: adds };
+    }
+    return { ok: !failed.length, failed: failed };
+  }
+  function noteStorageFull(failed) {
+    failed.forEach(function(it){ if (it && it.pid) memItems[it.pid] = it; });
+    var n = Object.keys(memItems).length;
+    if (n) {
+      var msg = "Phone storage full: " + n + " photo" + (n === 1 ? "" : "s") + " not saved on this phone";
+      setStatus(msg);
+      try { console.warn("[photo] " + msg); } catch (e) {}
+    }
+  }
+  function patchItem(pid, patch) {
+    if (memItems[pid]) Object.assign(memItems[pid], patch);
+    mutatePending(function(list){
+      list.forEach(function(it){ if (it && it.pid === pid) Object.assign(it, patch); });
+      return list;
+    });
+  }
+  function removePid(pid) {
+    delete memItems[pid];
+    mutatePending(function(list){ return list.filter(function(it){ return !(it && it.pid === pid); }); });
+  }
+  function itemsFromDefects(unit, lane, defs, sess) {
+    var out = [];
+    var queuedNow = null;
+    (defs || []).forEach(function(d, di){
+      if (!d) return;
+      (d.photos || []).forEach(function(ph, pi){
+        if (!ph || !ph.data || ph.key) return;
+        if (!ph.pid) {
+          if (!queuedNow) queuedNow = loadPhotoPending().concat(Object.keys(memItems).map(function(k){ return memItems[k]; }));
+          var same = queuedNow.filter(function(x){ return x && String(x.unit) === String(unit) && String(x.lane) === String(lane) && x.defectIndex === di && x.photoIndex === pi && x.data === ph.data; })[0];
+          ph.pid = same ? same.pid : newPid();
+        }
+        out.push({
+          pid: ph.pid, unit: unit, lane: lane, checkKey: d.checkKey || "",
+          label: d.point || d.desc || (d.checkKey ? d.checkKey : "Extra defect"),
+          defectIndex: di, photoIndex: pi,
+          sessionId: ph.sessionId || sess || "", laneStartedAt: ph.laneStartedAt || "",
+          data: ph.data, thumb: ph.thumb || "", name: ph.name || ""
+        });
+      });
+    });
+    return out;
+  }
+  // Move the photos on a form (live by default, or a given lane's state) into the queue. Merged by pid: an existing item keeps its
+  // error / tries and takes the fresh position; nothing already queued is removed.
+  function parkLivePhotos(unitOverride, laneOverride, st) {
+    if (!PHOTOS_ON) return;
+    var unit = String(unitOverride || typedUnit() || "").replace(/\D/g, "");
+    var lane = String(laneOverride || (el("laneSelect") && el("laneSelect").value) || "");
+    st = st || captureLaneState();
+    if (!unit || !lane) return;
+    var items = itemsFromDefects(unit, lane, st.defects, st.sessionId);
+    if (!items.length) return;
+    var res = mutatePending(function(list){
+      items.forEach(function(it){
+        var at = -1;
+        list.forEach(function(x, i){ if (x && x.pid === it.pid) at = i; });
+        if (at >= 0) {
+          var old = list[at];
+          list[at] = Object.assign({}, it, { lastError: old.lastError, tries: old.tries, nextAt: old.nextAt, unattached: old.unattached });
+        } else list.push(it);
+      });
+      return list;
+    });
+    if (res.failed.length) noteStorageFull(res.failed);
+  }
+  function stateSets() {
+    var sets = [{ defects: defects, sessionId: sessionId, live: true }];
+    Object.keys(laneStash).forEach(function(k){ sets.push({ defects: laneStash[k].defects, sessionId: laneStash[k].sessionId, key: k }); });
+    return sets;
+  }
+  // Everything not yet sent, counted once per photo: the queue, the memory-only ones, and photos still only on a form (live or stashed).
+  function unsentList() {
+    if (!PHOTOS_ON) return [];   // 9a1: photos left on the phone are parked and invisible: not counted, not warned about, never block a submit
+    var out = [], seen = {};
+    loadPhotoPending().forEach(function(it){ if (it && it.pid && it.data && !seen[it.pid]) { seen[it.pid] = 1; out.push(it); } });
+    Object.keys(memItems).forEach(function(pid){ if (!seen[pid]) { seen[pid] = 1; out.push(memItems[pid]); } });
+    var u = typedUnit();
+    stateSets().forEach(function(set){
+      var unit = set.live ? u : String(set.key || "").split("|")[0];
+      var lane = set.live ? (formLane || (el("laneSelect") && el("laneSelect").value) || "") : String(set.key || "").split("|")[1];
+      itemsFromDefects(unit, lane, set.defects, set.sessionId).forEach(function(it){ if (!seen[it.pid]) { seen[it.pid] = 1; out.push(it); } });
+    });
+    return out;
+  }
+  function unsentFor(unit, lane) {
+    return unsentList().filter(function(it){ return String(it.unit) === String(unit) && String(it.lane) === String(lane); }).length;
+  }
+  function pendingPhotoCount() {
+    if (!PHOTOS_ON) return 0;
+    var n = unsentList().length;
+    offlineQueue.forEach(function(j){ n += (j.photos || []).length; });
+    return n;
+  }
+  // Which sittings the server has confirmed as submitted (unit|lane|sessionId). Decides what attached:false means.
+  function readSubmitted() { try { return JSON.parse(localStorage.getItem(PHOTO_SUBMITTED_KEY) || "{}") || {}; } catch (e) { return {}; } }
+  function markSubmitted(unit, lane, sess) {
+    if (!unit || !lane || !sess) return;
+    var m = readSubmitted();
+    m[unit + "|" + lane + "|" + sess] = Date.now();
+    var ks = Object.keys(m);
+    if (ks.length > 200) { ks.sort(function(a, b){ return m[a] - m[b]; }).slice(0, ks.length - 200).forEach(function(k){ delete m[k]; }); }
+    try { localStorage.setItem(PHOTO_SUBMITTED_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  function isSubmitted(item) { return !!readSubmitted()[item.unit + "|" + item.lane + "|" + (item.sessionId || "")]; }
+  // A draft for a unit/lane whose photos are still unsent is held, not cleared; it is cleared when the last photo is up.
+  function readHeld() { try { return JSON.parse(localStorage.getItem(PHOTO_HOLD_KEY) || "[]") || []; } catch (e) { return []; } }
+  function writeHeld(l) { try { localStorage.setItem(PHOTO_HOLD_KEY, JSON.stringify(l)); } catch (e) {} }
+  function isHeld(unit, lane) { return readHeld().indexOf(unit + "|" + lane) >= 0; }
+  async function clearOrHoldDraft(unit, lane) {
+    if (unsentFor(unit, lane) > 0) {
+      var h = readHeld(); var k = unit + "|" + lane;
+      if (h.indexOf(k) < 0) { h.push(k); writeHeld(h); }
+      return false;
+    }
+    try { await clearDraftFor(unit, lane); } catch (e) {}
+    return true;
+  }
+  async function releaseHeldDrafts() {
+    var h = readHeld(); if (!h.length) return;
+    var keep = [];
+    for (var i = 0; i < h.length; i++) {
+      var p = h[i].split("|");
+      if (unsentFor(p[0], p[1]) > 0) keep.push(h[i]);
+      else { try { await clearDraftFor(p[0], p[1]); } catch (e) {} }
+    }
+    writeHeld(keep);
+  }
+  function markPhotoSent(pid, key) {
+    stateSets().forEach(function(set){
+      (set.defects || []).forEach(function(d){
+        (d && d.photos || []).forEach(function(ph){
+          if (ph && ph.pid === pid) { ph.key = key; ph.status = "sent"; delete ph.data; }
+        });
+      });
+    });
+  }
+  function markPhotoStatus(pid, status) {
+    stateSets().forEach(function(set){
+      (set.defects || []).forEach(function(d){
+        (d && d.photos || []).forEach(function(ph){ if (ph && ph.pid === pid && ph.data) ph.status = status; });
+      });
+    });
+  }
+  var photoFlushBusy = false;
+  var lastTryAt = {};
+  var photoFlushRerun = null;
+  var photoDropEpoch = 0;
+  // Strictly serial: one submit-photo in flight, ever. A photo that fails is set aside (backoff) and the ones behind it still go.
+  async function flushLocalPhotos(opts) {
+    if (!PHOTOS_ON) return;   // 9a1: no upload, no timer work, nothing touches the link. The stored queue is left exactly as it is.
+    opts = opts || {};
+    paintPhotoChip();
+    parkLivePhotos();
+    if (!window.gsPhoto) return;
+    if (photoFlushBusy) {
+      photoFlushRerun = { soft: opts.soft && (!photoFlushRerun || photoFlushRerun.soft !== false) ? true : false, force: !!(photoFlushRerun && photoFlushRerun.force) || !!opts.force, only: opts.only || (photoFlushRerun && photoFlushRerun.only) || "" };
+      return;
+    }
+    var now = Date.now();
+    var list = loadPhotoPending().filter(function(it){ return it && it.data; });
+    Object.keys(memItems).forEach(function(pid){ if (!list.some(function(x){ return x.pid === pid; })) list.push(memItems[pid]); });
+    list = list.filter(function(it){
+      if (opts.only && it.pid !== opts.only) return false;
+      if (!/^\d+$/.test(String(it.unit || "")) || !it.lane) return false;
+      if (opts.soft && lastTryAt[it.pid] && now - lastTryAt[it.pid] < 4000) return false;   // just tried: do not hammer a dead link on every capture
+      return opts.force || !it.nextAt || it.nextAt <= now;
+    });
+    if (!list.length) { paintPhotoChip(); return; }
+    photoFlushBusy = true;
+    var failsInRow = 0;
+    try {
+      for (var i = 0; i < list.length; i++) {
+        var item = list[i];
+        // dropped or discarded while an earlier photo was uploading
+        if (!memItems[item.pid] && !loadPhotoPending().some(function(x){ return x && x.pid === item.pid; })) continue;
+        markPhotoStatus(item.pid, "uploading"); paintPhotoChip();
+        var t0 = Date.now(); lastTryAt[item.pid] = t0;
+        try {
+          var upArgs = {
+            stage: "pdi", unit: item.unit, lane: item.lane,
+            sessionId: item.sessionId || "", timestamp: item.laneStartedAt || "",
+            idempKey: item.pid,
+            checkKey: item.checkKey || "", defectIndex: item.defectIndex, photoIndex: item.photoIndex,
+            photoData: item.data, tries: 2
+          };
+          // a page that still has an older cached photo-send.js (no uploadFull) keeps working: it just cannot read the attached answer
+          var res = gsPhoto.uploadFull ? await gsPhoto.uploadFull(upArgs) : { photoKey: await gsPhoto.upload(upArgs), attached: true };
+          if (res && res.attached === false && isSubmitted(item)) {
+            // the lane is already in the saved record and the server still could not attach this photo: that is a fault, not success
+            var why = "uploaded, not attached";
+            patchItem(item.pid, { lastError: why, unattached: true, tries: (item.tries || 0) + 1, nextAt: Date.now() + Math.min(300000, 15000 * Math.pow(2, item.tries || 0)) });
+            markPhotoStatus(item.pid, "local");
+            try { console.warn("[photo] " + why + " " + JSON.stringify({ unit: item.unit, lane: item.lane, checkKey: item.checkKey, ms: Date.now() - t0 })); } catch (e) {}
+            setStatus("Photo uploaded but not attached to its defect — will retry (see banner)");
+            continue;
+          }
+          removePid(item.pid);
+          markPhotoSent(item.pid, res.photoKey);
+          setStatus("Photo uploaded");
+          failsInRow = 0;
+        } catch (e) {
+          var tries = (item.tries || 0) + 1;
+          patchItem(item.pid, { lastError: (e && e.message) || "failed", tries: tries, nextAt: Date.now() + Math.min(300000, 15000 * Math.pow(2, tries - 1)) });
+          markPhotoStatus(item.pid, "local");
+          setStatus("Photo not sent — " + ((e && e.message) || "will retry") + " (" + tries + " tr" + (tries === 1 ? "y" : "ies") + ")");
+          // three failures in a row: the link is down. Stop this pass (the rest are untouched and go first on the next trigger) instead of
+          // spending two full timeouts on every queued photo while the signal is out.
+          if (++failsInRow >= 3) { setStatus("Link looks down — " + (list.length - i - 1) + " more photo(s) wait for the next try"); break; }
+        }
+      }
+      autoSkipBlank = true; saveDraft(); autoSkipBlank = false;
+      renderDefects();
+      try { await releaseHeldDrafts(); } catch (e) {}
+    } finally {
+      photoFlushBusy = false;
+      paintPhotoChip();
+      if (photoFlushRerun) { var rr = photoFlushRerun; photoFlushRerun = null; flushLocalPhotos(rr); }
+    }
+  }
+  // r9a item H: the "new version" banner calls this before it reloads. Save the open form's draft, park every photo that is only on a form
+  // (live or stashed) into the queue, and refuse the reload - with the reason - if the phone could not keep them.
+  window.gsBeforeReload = async function () {
+    try {
+      await saveDraft({ lane: formLane || (el("laneSelect") && el("laneSelect").value) || "", st: captureLaneState() }).catch(function(){});
+      var unit = typedUnit();
+      stateSets().forEach(function(set){
+        var u = set.live ? unit : String(set.key || "").split("|")[0];
+        var l = set.live ? (formLane || (el("laneSelect") && el("laneSelect").value) || "") : String(set.key || "").split("|")[1];
+        parkLivePhotos(u, l, { defects: set.defects, sessionId: set.sessionId });
+      });
+      var stuck = Object.keys(memItems).length;
+      if (stuck) return { ok: false, reason: "Phone storage full: " + stuck + " photo" + (stuck === 1 ? "" : "s") + " cannot be saved on this phone, so the page will not reload until they are sent" };
+      var left = unsentList().filter(function(it){ return !loadPhotoPending().some(function(x){ return x && x.pid === it.pid; }); });
+      if (left.length) return { ok: false, reason: left.length + " photo" + (left.length === 1 ? "" : "s") + " could not be parked (unit or lane missing)" };
+      return { ok: true };
+    } catch (e) { return { ok: false, reason: "saving your work failed (" + ((e && e.message) || e) + ")" }; }
+  };
+  function retryPhotoNow(pid) {
+    if (pid) patchItem(pid, { nextAt: 0 });
+    flushLocalPhotos({ force: true, only: pid || "" });
+  }
+  function discardPhoto(it) {
+    if (!confirm("Discard this photo (unit " + it.unit + ", " + laneWord(it.lane) + ", " + (it.label || "defect") + ")?\n\nIt will not be uploaded. Recapture it later if you still need it.")) return;
+    photoDropEpoch++;
+    removePid(it.pid);
+    stateSets().forEach(function(set){
+      (set.defects || []).forEach(function(d){
+        (d && d.photos || []).forEach(function(ph){ if (ph && ph.pid === it.pid) { delete ph.data; delete ph.thumb; ph.status = "gone"; } });
+      });
+    });
+    renderDefects(); paintPhotoChip();
+    releaseHeldDrafts();
+  }
+  function paintPhotoBanner() {
+    if (!PHOTOS_ON) return;
+    var b = el("photoBanner");
+    if (!b) return;
+    var list = unsentList();
+    var full = Object.keys(memItems).length;
+    if (!list.length && !full) { b.className = "photo-banner"; b.innerHTML = ""; photoBannerOpen = false; return; }
+    b.className = "photo-banner on";
+    b.innerHTML = "";
+    var head = document.createElement("button");
+    head.type = "button"; head.className = "pb-head"; head.id = "pbHead";
+    head.textContent = list.length + " photo" + (list.length === 1 ? "" : "s") + " not sent. Tap to see.";
+    head.onclick = function(){ photoBannerOpen = !photoBannerOpen; paintPhotoBanner(); };
+    b.appendChild(head);
+    if (full) {
+      var w = document.createElement("div");
+      w.className = "pb-warn"; w.id = "pbFull";
+      w.textContent = "Phone storage full: " + full + " photo" + (full === 1 ? "" : "s") + " not saved on this phone. Keep this page open until they send.";
+      b.appendChild(w);
+    }
+    if (!photoBannerOpen) return;
+    var box = document.createElement("div");
+    box.className = "pb-list";
+    var all = document.createElement("button");
+    all.type = "button"; all.id = "pbRetryAll"; all.textContent = "Retry all";
+    all.onclick = function(){ retryPhotoNow(""); };
+    box.appendChild(all);
+    list.forEach(function(it){
+      var row = document.createElement("div");
+      row.className = "pb-row";
+      var t = document.createElement("div");
+      t.textContent = "Unit " + it.unit + " · " + laneWord(it.lane) + " · " + (it.label || it.checkKey || "Extra defect");
+      row.appendChild(t);
+      var er = document.createElement("small");
+      er.textContent = it.lastError ? it.lastError : "waiting to send";
+      row.appendChild(er);
+      var rb = document.createElement("button");
+      rb.type = "button"; rb.className = "pb-retry"; rb.textContent = "Retry";
+      rb.onclick = function(){ retryPhotoNow(it.pid); };
+      var db = document.createElement("button");
+      db.type = "button"; db.className = "pb-discard"; db.textContent = "Discard";
+      db.onclick = function(){ discardPhoto(it); };
+      row.appendChild(rb); row.appendChild(db);
+      box.appendChild(row);
+    });
+    b.appendChild(box);
+  }
+
+  function makeIdemp(p) {
+    return "pdi-" + p.unit + "-L" + p.lane + "-" + String(sessionId || p.startedAt || p.timestamp).replace(/[^0-9A-Za-z]/g, "").slice(0, 20);
+  }
+
+  function fetchTimeout(url, opts, ms) {
+    var ctrl = new AbortController();
+    var t = setTimeout(function(){ ctrl.abort(); }, ms || 8000);
+    return fetch(url, Object.assign({}, opts, { signal: ctrl.signal })).then(function(r){
+      clearTimeout(t); return r;
+    }, function(err){ clearTimeout(t); throw err; });
+  }
+
+  function expectedKeys() {
+    var lane = el("laneSelect").value;
+    var type = el("unitType").value || "towable";
+    if (!window.GS_LANE_API) return [];
+    return window.GS_LANE_API.keys(lane, type, laneOpts(), sheetVer(lane));
+  }
+  // ---- r9a item I: lane-scoped state, named validation ----------------------------------------------------------------------
+  // The form has ONE live set of marks (checks, naReasons, defects, walkObs, rainRun, sessionId). Leaving a lane stashes that set under
+  // "unit|lane" (and writes the lane's own draft); entering a lane takes its stash, else its draft, else starts blank. Nothing crosses lanes.
+  // Changing the UNIT number does not touch any of it: the live marks follow the typed unit, as before.
+  var formLane = "";
+  var laneStash = {};
+  function typedUnit() { return String((el("unitNumber") && el("unitNumber").value) || "").replace(/\D/g, ""); }
+  function stashKey(unit, lane) { return String(unit) + "|" + String(lane); }
+  function captureLaneState() { return { checks: checks, naReasons: naReasons, defects: defects, walkObs: walkObs, rainRun: rainRun, sessionId: sessionId }; }
+  function laneStateHasWork(st) {
+    if (!st) return false;
+    var rr = st.rainRun || {};
+    return Object.keys(st.checks || {}).length > 0 || (st.defects || []).length > 0 || (st.walkObs || []).length > 0 ||
+      !!(rr.result || (rr.where || []).length || rr.note);
+  }
+  function applyLaneState(st) {
+    st = st || {};
+    checks = st.checks || {};
+    naReasons = st.naReasons || {};
+    defects = st.defects || [];
+    walkObs = st.walkObs || [];
+    rainReset();
+    if (st.rainRun) rainRun = st.rainRun;
+    sessionId = st.sessionId || null;
+  }
+  function leaveLane(from, to) {
+    var unit = typedUnit();
+    var out = captureLaneState();
+    if (from && laneStateHasWork(out)) {
+      laneStash[stashKey(unit, from)] = out;
+      try { parkLivePhotos(unit, from); } catch (e) {}
+      saveDraft({ lane: from, st: out });
+    } else if (from) {
+      delete laneStash[stashKey(unit, from)];
+    }
+    var inn = to ? laneStash[stashKey(unit, to)] : null;
+    if (inn) delete laneStash[stashKey(unit, to)];
+    applyLaneState(inn);
+    laneStartedAt = null;
+    if (laneClockTimer) { clearInterval(laneClockTimer); laneClockTimer = null; }
+    return !!inn;
+  }
+  // a lane that is not in the stash starts from its own saved draft, if there is one (page reloaded, or the draft list was used earlier)
+  async function loadLaneDraftIfBlank(unit, lane) {
+    if (!unit || !lane) return;
+    try {
+      var list = await readDrafts();
+      var d = list.filter(function(x){ return String(x.unitNumber) === String(unit) && String(x.lane) === String(lane); })[0];
+      if (!d || isHeld(unit, lane)) return;
+      if (el("laneSelect").value !== lane || typedUnit() !== unit || laneStateHasWork(captureLaneState())) return;
+      checks = d.checks || {};
+      naReasons = d.naReasons || {};
+      rainReset();
+      if (d.rainRun && typeof d.rainRun === "object") rainRun = { result: String(d.rainRun.result || ""), where: Array.isArray(d.rainRun.where) ? d.rainRun.where.slice() : [], note: String(d.rainRun.note || "") };
+      defects = d.defects || [];
+      walkObs = Array.isArray(d.walkObs) ? d.walkObs : [];
+      renderLane();
+      renderDefects();
+      setStatus("Restored your saved work for " + laneWord(lane) + " on unit " + unit + ".");
+    } catch (e) {}
+  }
+  function laneWord(lane) {
+    if (!window.gsLanes) return String(lane);
+    return lane === "U" ? gsLanes.name(lane) : gsLanes.short(lane);
+  }
+  // Keys that belong to THIS lane on any unit type: a mark made before the unit type was changed still belongs to the lane (it rides in the
+  // payload as it always has); only keys from another lane are foreign.
+  function laneKeySet() {
+    var set = {};
+    expectedKeys().forEach(function(k){ set[k] = true; });
+    var lane = el("laneSelect").value;
+    if (window.GS_LANE_API && lane) {
+      ["towable", "motorized"].forEach(function(t){
+        try { window.GS_LANE_API.keys(lane, t, laneOpts(), sheetVer(lane)).forEach(function(k){ set[k] = true; }); } catch (e) {}
+      });
+    }
+    return set;
+  }
+  // The defects that belong on the form in front of you: free-text ones (no check key) and the ones for this lane's checks. PDI Validation
+  // observations (lane U) carry their own ids and always belong.
+  function laneDefects() {
+    var lane = el("laneSelect").value;
+    if (!lane || lane === "U") return defects.slice();
+    var set = laneKeySet();
+    return defects.filter(function(d){ return d && (!d.checkKey || set[d.checkKey]); });
+  }
+  // What goes into the record. Anything that is not on this lane's sheet is left out AND shown to the inspector, never dropped silently.
+  var lastDropped = [];
+  function scopeToLane() {
+    var lane = el("laneSelect").value;
+    var out = { checks: {}, naReasons: {}, defects: [] };
+    var dropped = [];
+    if (lane === "U") {
+      out.checks = Object.assign({}, checks); out.naReasons = Object.assign({}, naReasons); out.defects = defects.slice();
+    } else {
+      var set = laneKeySet();
+      Object.keys(checks).forEach(function(k){ if (set[k]) out.checks[k] = checks[k]; else dropped.push(k); });
+      Object.keys(naReasons).forEach(function(k){ if (set[k]) out.naReasons[k] = naReasons[k]; });
+      defects.forEach(function(d){
+        if (!d) return;
+        if (!d.checkKey || set[d.checkKey]) out.defects.push(d); else dropped.push(d.checkKey);
+      });
+    }
+    lastDropped = dropped.filter(function(k, i, a){ return a.indexOf(k) === i; });
+    if (lastDropped.length) {
+      var msg = "Left out of this " + laneWord(lane) + " record (not on its sheet): " + lastDropped.join(", ");
+      try { console.warn("[pdi] " + msg); } catch (e) {}
+      setStatus(msg);
+      var dn = el("dropNotice");
+      if (dn) { dn.textContent = msg; dn.style.display = "block"; }
+    }
+    return out;
+  }
+  // An Extra Defect card with no text and no photo is an accident: it goes away at submit, no message.
+  function discardEmptyExtras() {
+    var before = defects.length;
+    defects = defects.filter(function(d){
+      if (!d || d.checkKey) return true;
+      var hasText = !!String(d.desc || "").trim();
+      var hasPhoto = PHOTOS_ON && (d.photos || []).some(function(ph){ return !!ph; });
+      return hasText || hasPhoto;
+    });
+    if (defects.length !== before) { paintExtraDefects(); paintDefCount(); }
+  }
+  var valTarget = null;
+  function labelForKey(k) {
+    var w = el("laneBox") && el("laneBox").querySelector('.item-wrap[data-key="' + k + '"] .item > span');
+    return (w && w.textContent.trim()) || k;
+  }
+  function showValidationProblem(msg) {
+    try {
+      var bad = document.querySelectorAll(".val-bad");
+      for (var i = 0; i < bad.length; i++) bad[i].classList.remove("val-bad");
+      var t = valTarget, node = null;
+      if (t && t.type === "row") node = el("laneBox").querySelector('.item-wrap[data-key="' + t.key + '"]');
+      else if (t && t.type === "extra") node = document.querySelector('#defectList .defect[data-did="' + t.id + '"]');
+      else if (t && t.type === "walk") node = el("laneBox").querySelector('[data-walk="' + t.id + '"]') || el("laneBox").querySelector(".pf");
+      else if (t && t.type === "lane") node = el("laneBox");
+      if (node) { node.classList.add("val-bad"); if (node.scrollIntoView) node.scrollIntoView({ block: "center" }); }
+    } catch (e) {}
+    alert(msg);
+  }
+  function validateDefects(partial) {
+    valTarget = null;
+    var lane = el("laneSelect").value;
+    var ln = laneWord(lane);
+    if (lane === "U") {
+      if (checks.walk1_result !== "pass" && checks.walk1_result !== "fail") {
+        valTarget = { type: "lane" };
+        return ln + ": Walk 1 needs Pass or Fail.";
+      }
+      if (checks.walk1_result === "fail") {
+        if (!walkObs.length) { valTarget = { type: "lane" }; return "PDI Validation: Fail — add at least one observation."; }
+        for (var wi = 0; wi < walkObs.length; wi++) {
+          var o = walkObs[wi];
+          var wid = o.id;
+          if (!o.lane) { valTarget = { type: "walk", id: wid }; return ln + ": Observation " + (wi + 1) + " — pick the lane."; }
+          if (!o.key) { valTarget = { type: "walk", id: wid }; return ln + ": Observation " + (wi + 1) + " — pick the section."; }
+          var d = defectFor(o.id);
+          if (!d || !String(d.desc || "").trim()) { valTarget = { type: "walk", id: wid }; return ln + ": Observation " + (wi + 1) + " — detail is required."; }
+        }
+      }
+      return null;
+    }
+    var keys = expectedKeys();
+    if (!keys.length) return null;
+    var unmarked = keys.filter(function(k){ return !checks[k]; });
+    if (partial && !myMarkedKeys(keys).length) {
+      valTarget = { type: "lane" };
+      return ln + ": mark at least one line before Save partial.";
+    }
+    if (unmarked.length && !partial) {
+      valTarget = { type: "row", key: unmarked[0] };
+      return ln + ": " + unmarked.length + " of " + keys.length + " lines still unmarked. First one: '" + labelForKey(unmarked[0]) + "'. Every line needs Pass, Fail, or N/A.";
+    }
+    var naMissing = keys.filter(function(k){ return checks[k] === "na" && !naReasons[k]; });
+    if (naMissing.length) {
+      valTarget = { type: "row", key: naMissing[0] };
+      return ln + ": '" + labelForKey(naMissing[0]) + "' is marked N/A but has no reason" + (naMissing.length > 1 ? " (" + (naMissing.length - 1) + " more)" : "") + " — pick why N/A.";
+    }
+    var fails = keys.filter(function(k){ return checks[k] === "fail" && !isLockedFail(k); });
+    var missing = fails.filter(function(k){
+      return !defects.some(function(d){ return d && d.checkKey === k && String(d.desc || "").trim(); });
+    });
+    if (missing.length) {
+      valTarget = { type: "row", key: missing[0] };
+      return ln + ": '" + labelForKey(missing[0]) + "' is marked Fail but has no detail" + (missing.length > 1 ? " (" + (missing.length - 1) + " more)" : "") + ".";
+    }
+    // an Extra Defect with a photo and no text (empty ones were discarded before this ran)
+    var extras = laneDefects().filter(function(d){ return d && !d.checkKey; });
+    for (var xi = 0; xi < extras.length; xi++) {
+      if (!String(extras[xi].desc || "").trim()) {
+        valTarget = { type: "extra", id: extras[xi].id };
+        return ln + ": Extra Defect " + (xi + 1) + " has a photo but no text. Type what it is, or remove that card.";
+      }
+    }
+    return null;
+  }
+
+    // ---- Draft encryption (AES-GCM, at-rest on device) ----
+  // Key is app-derived — stops casual localStorage reads / device forensics lite.
+  // Not a substitute for auth; key lives in the client.
+  var DRAFT_CRYPTO = {
+    salt: "gs-pdi-gulfstream-2026-v1",
+    iterations: 100000
+  };
+  var _draftKeyPromise = null;
+
+  function _bytesToB64(buf) {
+    var bytes = new Uint8Array(buf);
+    var s = "";
+    for (var i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+    return btoa(s);
+  }
+  function _b64ToBytes(b64) {
+    var s = atob(b64);
+    var bytes = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) bytes[i] = s.charCodeAt(i);
+    return bytes;
+  }
+  async function getDraftKey() {
+    if (_draftKeyPromise) return _draftKeyPromise;
+    _draftKeyPromise = (async function() {
+      if (!window.crypto || !window.crypto.subtle) throw new Error("WebCrypto unavailable");
+      var enc = new TextEncoder();
+      var base = await crypto.subtle.importKey(
+        "raw", enc.encode(DRAFT_CRYPTO.salt + "|gulf-stream-pdi"),
+        "PBKDF2", false, ["deriveKey"]
+      );
+      return crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: enc.encode(DRAFT_CRYPTO.salt),
+          iterations: DRAFT_CRYPTO.iterations,
+          hash: "SHA-256"
+        },
+        base,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    })();
+    return _draftKeyPromise;
+  }
+  async function encryptDraftPayload(obj) {
+    var key = await getDraftKey();
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var plain = new TextEncoder().encode(JSON.stringify(obj));
+    var cipher = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, plain);
+    return {
+      v: 1,
+      iv: _bytesToB64(iv),
+      data: _bytesToB64(cipher)
+    };
+  }
+  async function decryptDraftPayload(wrapped) {
+    if (!wrapped || !wrapped.data || !wrapped.iv) throw new Error("bad envelope");
+    var key = await getDraftKey();
+    var iv = _b64ToBytes(wrapped.iv);
+    var data = _b64ToBytes(wrapped.data);
+    var plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, data);
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+
+  function draftStoreKey() { return "gs_pdi_drafts_v2_enc"; }
+  async function readDrafts() {
+    try {
+      var raw = localStorage.getItem(draftStoreKey());
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      var out = [];
+      for (var i = 0; i < parsed.length; i++) {
+        var item = parsed[i];
+        try {
+          if (item && item.v === 1 && item.data) {
+            out.push(await decryptDraftPayload(item));
+          } else if (item && item.unitNumber !== undefined) {
+            // legacy plaintext — migrate on next save
+            out.push(item);
+          }
+        } catch (e) {
+          console.warn("draft decrypt failed, skipping", e);
+        }
+      }
+      return out;
+    } catch (e) { return []; }
+  }
+  async function writeDrafts(list) {
+    var wrapped = [];
+    for (var i = 0; i < list.length; i++) {
+      try {
+        wrapped.push(await encryptDraftPayload(list[i]));
+      } catch (e) {
+        console.error("draft encrypt failed", e);
+        throw e;
+      }
+    }
+    localStorage.setItem(draftStoreKey(), JSON.stringify(wrapped));
+  }
+  function stripPhotoBytes(list) {
+    return (list || []).map(function(d) {
+      var c = Object.assign({}, d);
+      delete c.photoData;
+      if (Array.isArray(c.photos)) {
+        c.photos = c.photos.map(function(ph, pi) {
+          return { index: pi, name: (ph && ph.name) || "", key: (ph && ph.key) || "", status: (ph && ph.key) ? "sent" : "gone", pid: (ph && ph.pid) || "" };
+        });
+      }
+      return c;
+    });
+  }
+  function scrubStoredPhotos() {
+    try {
+      offlineQueue.forEach(function(j) {
+        j.photos = [];
+        if (j.record && Array.isArray(j.record.defects)) j.record.defects = stripPhotoBytes(j.record.defects);
+      });
+      saveQueue();
+    } catch (e) {}
+    readDrafts().then(function(list) {
+      var dirty = false;
+      list.forEach(function(d) {
+        if (!d || !Array.isArray(d.defects)) return;
+        d.defects = stripPhotoBytes(d.defects);
+        dirty = true;
+      });
+      if (dirty) writeDrafts(list);
+    }).catch(function(){});
+  }
+  var draftChain = Promise.resolve();
+  var autoSkipBlank = false;
+  function buildDraftPayload(snap) {
+    var unit = (el("unitNumber").value || "").trim();
+    var lane = snap ? snap.lane : el("laneSelect").value;
+    if (!unit && !lane) return null;
+    var st = snap ? snap.st : captureLaneState();
+    if (!snap && autoSkipBlank && !laneStateHasWork(st)) return null;   // the photo flush must not write a draft row for a blank form
+    return {
+      id: "dr_" + Date.now(),
+      savedAt: new Date().toISOString(),
+      unitNumber: el("unitNumber").value,
+      modelNumber: el("modelNumber").value,
+      date: el("pdiDate").value,
+      plant: el("plantSelect").value,
+      inspector: el("inspectorName").value,
+      unitType: el("unitType").value,
+      toyHauler: toyHauler,
+      thWall: thWall,
+      lane: lane,
+      startedAt: snap ? null : laneStartedAt,
+      checks: st.checks,
+      naReasons: st.naReasons,
+      rainRun: st.rainRun,
+      walkObs: st.walkObs,
+      defects: stripPhotoBytes(st.defects)
+    };
+  }
+  async function writeDraftPayload(payload) {
+    var list = await readDrafts();
+    list = list.filter(function(d) {
+      return !(String(d.unitNumber) === String(payload.unitNumber) && String(d.lane) === String(payload.lane));
+    });
+    list.unshift(payload);
+    if (list.length > 20) list = list.slice(0, 20);
+    await writeDrafts(list);
+    await renderDraftList();
+  }
+  function saveDraft(snap) {
+    var payload;
+    try { payload = buildDraftPayload(snap); } catch (e) { setStatus("Draft save failed"); return Promise.resolve(); }
+    if (!payload) return Promise.resolve();
+    draftChain = draftChain.then(function(){ return writeDraftPayload(payload); }).then(function(){
+      setStatus("Draft saved (encrypted)");
+    }, function(){ setStatus("Draft save failed (storage full?)"); });
+    return draftChain;
+  }
+  function applyDraft(d) {
+    el("unitNumber").value = d.unitNumber || "";
+    el("modelNumber").value = d.modelNumber || "";
+    if (d.date) el("pdiDate").value = d.date;
+    if (d.plant) el("plantSelect").value = d.plant;
+    paintInspectors(d.inspector || "");
+    if (d.unitType) el("unitType").value = d.unitType;
+    // r4a: a restored draft keeps its SAVED unit type; pin the sync key to the restored unit
+    // so the next blur/input on the same unit does not recompute type over it.
+    (function(){ var v = unitFixedPlant(); _typeUnitKey = v ? v.unit : ""; })();
+    toyHauler = !!d.toyHauler;
+    thWall = !!d.thWall;
+    if (d.lane) el("laneSelect").value = d.lane;
+    delete laneStash[stashKey(String(d.unitNumber || "").replace(/\D/g, ""), d.lane || "")];
+    checks = d.checks || {};
+    naReasons = d.naReasons || {};
+    rainReset();
+    if (d.rainRun && typeof d.rainRun === "object") rainRun = { result: String(d.rainRun.result || ""), where: Array.isArray(d.rainRun.where) ? d.rainRun.where.slice() : [], note: String(d.rainRun.note || "") };
+    defects = d.defects || [];
+    walkObs = Array.isArray(d.walkObs) ? d.walkObs : [];
+    if (d.startedAt && new Date(d.startedAt).toDateString() === new Date().toDateString()) {
+      laneStartedAt = d.startedAt;
+    } else if (d.startedAt) {
+      laneStartedAt = new Date().toISOString();
+    } else {
+      laneStartedAt = null;
+    sessionId = null;
+    }
+    if (laneClockTimer) { clearInterval(laneClockTimer); laneClockTimer = null; }
+    paintLaneClock();
+    if (laneStartedAt) laneClockTimer = setInterval(paintLaneClock, 1000);
+    if (typeof renderLane === "function") renderLane();
+    else if (typeof renderChecklist === "function") renderChecklist();
+    renderDefects();
+    updateHard();
+    var timerNote = (d.startedAt && new Date(d.startedAt).toDateString() !== new Date().toDateString())
+      ? " — timer reset (draft was yesterday)"
+      : "";
+    setStatus("Draft loaded — Unit " + (d.unitNumber || "?") + " Lane " + (d.lane || "?") + timerNote);
+    window.scrollTo(0, 0);
+    if (window.gsUnit) gsUnit.syncPlantLock(el("plantSelect"), gsUnit.checkUnit(el("unitNumber").value, el("plantSelect").value));
+    paintPhotoChip();
+    flushLocalPhotos();
+  }
+  
+  // r9a: clears go through the same one-at-a-time chain as saves, so a save still in flight cannot write a cleared draft back
+  function clearDraftFor(unit, lane) {
+    var u = String(unit || "");
+    var l = String(lane || "");
+    if (!u && !l) return Promise.resolve();
+    draftChain = draftChain.then(async function() {
+      var list = await readDrafts();
+      list = list.filter(function(d) {
+        return !(String(d.unitNumber) === u && String(d.lane) === l);
+      });
+      await writeDrafts(list);
+      await renderDraftList();
+    }).catch(function(){});
+    return draftChain;
+  }
+
+  async function renderDraftList() {
+    var panel = el("draftPanel");
+    var card = el("draftsCard");
+    if (!panel || !card) return;
+    var list = await readDrafts();
+    panel.innerHTML = "";
+    if (!list.length) { card.style.display = "none"; return; }
+    card.style.display = "block";
+    list.forEach(function(d) {
+      var row = document.createElement("div");
+      row.className = "draft-row";
+      var left = document.createElement("div");
+      left.textContent = "Unit " + (d.unitNumber || "?") + " · L" + (d.lane || "?") + " · " + (d.inspector || "") + " · " + (d.date || "");
+      var nUns = unsentFor(String(d.unitNumber || "").replace(/\D/g, ""), d.lane || "");
+      if (nUns) {
+        var warnTag = document.createElement("div");
+        warnTag.className = "draft-unsent"; warnTag.style.cssText = "color:#b3261e;font-weight:700;font-size:13px";
+        warnTag.textContent = nUns + " photo" + (nUns === 1 ? "" : "s") + " not sent";
+        left.appendChild(warnTag);
+      }
+      var right = document.createElement("div");
+      var openBtn = document.createElement("button");
+      openBtn.type = "button";
+      openBtn.textContent = "Open";
+      openBtn.onclick = function() { applyDraft(d); };
+      var delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "del";
+      delBtn.textContent = "Delete";
+      delBtn.onclick = async function() {
+        var all = await readDrafts();
+        await writeDrafts(all.filter(function(x) { return x.id !== d.id; }));
+        await renderDraftList();
+      };
+      right.appendChild(openBtn);
+      right.appendChild(delBtn);
+      row.appendChild(left);
+      row.appendChild(right);
+      panel.appendChild(row);
+    });
+  }
+  function resetForm(opts) {
+    opts = opts || {};
+    if (!opts.silent) {
+      if (!confirm("Clear the form and start over?")) return;
+      laneStash = {};
+    }
+    el("unitNumber").value = "";
+    el("modelNumber").value = "";
+    el("pdiDate").valueAsDate = new Date();
+    el("plantSelect").value = "";
+    el("unitType").value = "towable";
+    _typeUnitKey = "";
+    el("laneSelect").value = "";
+    toyHauler = false;
+    thWall = false;
+    _flagsLoadedForUnit = "";
+    _lastUnitLanes = null;
+    _lastUnitLanesFor = "";
+    checks = {};
+    naReasons = {};
+    _loadedMarks = {};
+    rainReset();
+    defects = [];
+    walkObs = [];
+    if (el("plantSelect")) el("plantSelect").disabled = false;
+    paintPhotoChip();
+    paintInspectors();
+    laneStartedAt = null;
+    sessionId = null;
+    if (laneClockTimer) { clearInterval(laneClockTimer); laneClockTimer = null; }
+    paintLaneClock();
+    if (typeof renderLane === "function") renderLane();
+    renderDefects();
+    updateHard();
+    if (!opts.silent) setStatus("Form reset");
+  }
+
+
+
+  
+
+  async function sendRecord(p) {
+    var res = await fetchTimeout(API_BASE + "/submit-pdi", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(p)
+    }, 8000);
+    var data = {};
+    try { data = await res.json(); } catch (e) {}
+    if (!res.ok) throw new Error(data.error || ("Server " + res.status));
+    return data;
+  }
+  async function flushJob(job) {
+    var data = await sendRecord(job.record);
+    job.timestamp = data.timestamp || job.record.timestamp;
+    job.photos = [];
+    markSubmitted(job.unit || job.record.unit, job.lane || job.record.lane, job.sessionId || "");
+    return data;
+  }
+  function dropLeftoverPhotos() {
+    if (!PHOTOS_ON) return;   // 9a1: must never delete the parked queue
+    var n = pendingPhotoCount();
+    if (!n) { setStatus("No leftover photos on this phone"); return; }
+    if (!confirm("Drop " + n + " leftover photo" + (n === 1 ? "" : "s") + " on this phone?\n\nLane records already on the server stay. Pictures on this device are discarded. Recapture later if you still need them.")) return;
+    photoDropEpoch++;
+    memItems = {};
+    mutatePending(function(){ return []; });
+    offlineQueue.forEach(function(j){ j.photos = []; });
+    stateSets().forEach(function(set){
+      (set.defects || []).forEach(function(d){
+        (d && d.photos || []).forEach(function(ph){ if (ph && ph.data) { delete ph.data; delete ph.thumb; ph.status = "gone"; } });
+      });
+    });
+    saveQueue();
+    renderDefects(); paintPhotoChip();
+    setStatus("Dropped " + n + " photo" + (n === 1 ? "" : "s") + " on this phone — records stay");
+    retryQueue();
+    releaseHeldDrafts();
+    flushLocalPhotos();
+  }
+
+
+  async function afterWalk(p, liveObs) {
+    var obs = (liveObs && liveObs.length) ? liveObs : (Array.isArray(p.walkObs) ? p.walkObs : []);
+    var n = 0;
+    var held = [];
+    for (var i = 0; i < obs.length; i++) {
+      var o = obs[i];
+      if (!o || !o.lane || !o.key) continue;
+      var photoKeys = [];
+      var live = defectFor(o.id) || {};
+      var shots = !PHOTOS_ON ? [] : ((live.photos && live.photos.length) ? live.photos : (o.photos || []));
+      for (var pi = 0; pi < shots.length; pi++) {
+        var ph = shots[pi];
+        if (!ph) continue;
+        if (ph.key) { photoKeys.push(ph.key); continue; }
+        if (ph.data && window.gsPhoto) {
+          try {
+            var up = await gsPhoto.upload({
+              stage: "pdi", unit: p.unit, lane: o.lane, checkKey: o.key,
+              defectIndex: i, photoIndex: pi, photoData: ph.data
+            });
+            if (up) photoKeys.push(up);
+          } catch (ePhoto) {}
+        }
+      }
+      var assist = {
+        unit: p.unit,
+        model: p.model,
+        date: p.date,
+        plant: p.plant,
+        lane: o.lane,
+        inspector: p.inspector,
+        section: o.label || "",
+        timestamp: new Date().toISOString(),
+        checks: {},
+        defects: [{
+          id: o.id || ("walk_" + Date.now() + "_" + i),
+          checkKey: o.key,
+          point: o.label || "Walk 1 observation",
+          desc: o.detail || "",
+          severity: 3,
+          origin: "Walk 1",
+          photos: photoKeys.map(function(key, idx){ return { index: idx, key: key }; })
+        }]
+      };
+      assist.checks[o.key] = "fail";
+      var res = await fetchTimeout(API_BASE + "/submit-assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(assist)
+      }, 8000);
+      var data = {};
+      try { data = await res.json(); } catch (e) {}
+      if (!res.ok) throw new Error(data.error || ("observation " + (i + 1) + " did not land"));
+      n++;
+      if (o.hold) held.push(walkLaneName(o.lane) + " / " + (o.label || o.key) + ". " + (o.detail || ""));
+    }
+    var note = " · " + n + " observation" + (n === 1 ? "" : "s");
+    if (held.length) {
+      var reason = "Hold in PDI for retraining — Walk 1. " + held.join(" | ");
+      var hr = await fetchTimeout(API_BASE + "/submit-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "hold",
+          unit: p.unit,
+          plant: p.plant,
+          markedBy: p.inspector,
+          dateOnHold: p.date,
+          ready: false,
+          reason: reason
+        })
+      }, 8000);
+      var hd = {};
+      try { hd = await hr.json(); } catch (e2) {}
+      if (!hr.ok) throw new Error(hd.error || ("hold " + hr.status));
+      note += " · held in PDI for retraining";
+    }
+    return note;
+  }
+
+  async function submitPrimary(skipRainPrompt, partial) {
+    partial = partial === true;
+    if (window.GSStale) { try { GSStale.check(); } catch (e0) {} }   // r7a: warning only; fire and forget, the save never waits on it
+    discardEmptyExtras();
+    var dnb = el("dropNotice"); if (dnb) dnb.style.display = "none";
+    var p = buildPayload();
+    if (window.gsUnit) {
+      var cu = gsUnit.checkUnit(el("unitNumber").value, el("plantSelect").value);
+      if (!cu.ok) { alert(cu.error); return; }
+      el("unitNumber").value = cu.unit;
+      if (cu.plant) el("plantSelect").value = cu.plant;
+      if (cu.locked) el("plantSelect").disabled = true;
+    }
+    var v = validateDefects(partial); if (v) { showValidationProblem(v); return; }
+    if (p.error) { alert(p.error); return; }
+    if (!p.inspector || !p.lane) { alert("Inspector and Lane are required."); return; }
+    if (!(window.gsRoster ? gsRoster.isFullName(p.inspector) : /\s/.test(p.inspector))) {
+      alert("Full name required — pick from the roster. First name only is not allowed.");
+      return;
+    }
+    if ((window._roster || []).length && (window._roster.indexOf(p.inspector) < 0) && !(window.gsRoster && gsRoster.names(window._roster).indexOf(p.inspector) >= 0)) {
+      alert("Pick a full name from the roster.");
+      return;
+    }
+    if (!p.plant) { alert("Plant is required."); return; }
+    // r8a: the water test answer. No alert / prompt: the problem is written at the question. The contradiction prompt is soft, once per submit
+    // attempt, client-only (nothing about it is stored or sent): No leak with a failed inside-path check asks "Did the unit leak?".
+    if (p.lane === "R" && rainShown()) {
+      var rp = rainProblem();
+      if (rp && !partial) {
+        rainErr = rp; paintRainBox(); setStatus(rp);
+        var rbx = el("rainRunBox"); if (rbx && rbx.scrollIntoView) rbx.scrollIntoView({ block: "center" });
+        return;
+      }
+      if (!rp) {   // W2 PS-1: a partial save may leave the water test answer for whoever finishes the lane
+        if (!partial && skipRainPrompt !== true && rainRun.result === "no_leak" && rainInsideFailed().length) {
+          rainPromptOpen = true; paintRainBox();
+          var pbx = el("rrPrompt"); if (pbx && pbx.scrollIntoView) pbx.scrollIntoView({ block: "center" });
+          return;
+        }
+        p.rainRun = rainPayload();
+      }
+    }
+    parkLivePhotos(p.unit, p.lane);
+    var nUnsent = unsentList().length;
+    if (nUnsent && !confirm(nUnsent + " photo" + (nUnsent === 1 ? " is" : "s are") + " not uploaded yet. Submit anyway?")) { setStatus("Submit cancelled — photos still sending"); return; }
+    p.idempKey = makeIdemp(p);
+    var job = { idempKey: p.idempKey, unit: p.unit, lane: p.lane, timestamp: p.timestamp, record: p, photos: [], tries: 0, sessionId: sessionId || "" };
+    setStatus(partial ? "Saving partial…" : "Submitting lane…");
+    await lockBtn("btnSubmit", "Submitting…");
+    if (el("btnPartial")) el("btnPartial").disabled = true;
+    try {
+      await flushJob(job);
+      var walkNote = "";
+      if (p.lane === "U" && p.walkResult === "fail") {
+        try { walkNote = await afterWalk(p, walkObs.slice()); }
+        catch (werr) { walkNote = " · Validation saved, miss did not land (" + (werr.message || werr) + ")"; }
+      }
+      var statusLine = "Lane " + p.lane + " saved · Unit " + p.unit;
+      try {
+        var ur = await fetch(API_BASE + "/get-unit?unit=" + encodeURIComponent(p.unit));
+        var rawU = await ur.text();
+        var ud = rawU ? JSON.parse(rawU) : {};
+        var present = (ud.present || []).map(String);
+        if (present.indexOf(String(p.lane)) < 0) present.push(String(p.lane));
+        present = present.filter(function(l,i,a){ return a.indexOf(l)===i; });
+        var missing = (window.gsLanes ? gsLanes.missing(present) : (ud.missing || []));
+        function tag(l){ return window.gsLanes ? gsLanes.short(l) : l; }
+        statusLine = (window.gsLanes ? gsLanes.short(p.lane) : ("Lane "+p.lane)) + " saved · Unit " + p.unit +
+          " — in: " + present.map(tag).join(" · ") +
+          (missing.length ? (" · missing: " + missing.map(tag).join(" · ")) : " · required seats in");
+      } catch (e3) {}
+      if (walkNote) statusLine += walkNote;
+      if (partial) statusLine = "PARTIAL " + statusLine + " — lines you did not mark are still open";
+      job.photos = [];
+      await clearOrHoldDraft(p.unit, p.lane);
+      delete laneStash[stashKey(p.unit, p.lane)];
+      resetForm({ silent: true });
+      paintPhotoChip();
+      setStatus(statusLine);
+    } catch (err) {
+      job.photos = [];
+      offlineQueue.push(job); saveQueue();
+      setStatus("Queued on this phone — " + offlineQueue.length + " waiting (" + (err.message || err) + ")");
+      delete laneStash[stashKey(p.unit, p.lane)];
+      resetForm({ silent: true });
+      flushLocalPhotos();
+    } finally {
+      unlockBtn("btnSubmit");
+      if (el("btnPartial")) el("btnPartial").disabled = false;
+    }
+  }
+
+  async function retryQueue() {
+    if (!offlineQueue.length) return;
+    if (!API_BASE) { setStatus("Backend not live — cannot retry yet"); return; }
+    setStatus("Retrying " + offlineQueue.length + " queued…");
+    var remaining = [];
+    for (var i = 0; i < offlineQueue.length; i++) {
+      var item = offlineQueue[i];
+      if (item && item.unit && !item.record) item = { idempKey: item.idempKey, unit: item.unit, lane: item.lane, timestamp: item.timestamp, record: item, photos: [], tries: 0 };
+      try {
+        await flushJob(item);
+        await clearOrHoldDraft(item.unit || item.record.unit, item.lane || item.record.lane);
+      } catch (e) { remaining.push(item); }
+    }
+    offlineQueue = remaining; saveQueue();
+    setStatus(remaining.length ? (remaining.length + " still pending") : "All queued submits sent");
+  }
+
+  async function pollPunchOut() {
+    if (document.hidden) return;
+    if (!laneStartedAt || clockStoppedAt) return;
+    var name = inspectorName();
+    var date = el("pdiDate") && el("pdiDate").value;
+    if (!name || !date) return;
+    try {
+      var res = await fetch(API_BASE + "/clock-stop?date=" + encodeURIComponent(date) + "&inspector=" + encodeURIComponent(name));
+      var data = await res.json();
+      if (!data || !data.stop || !data.out) return;
+      var freeze = new Date(date + "T" + data.out + ":00");
+      var start = new Date(laneStartedAt);
+      if (isNaN(freeze.getTime()) || freeze.getTime() <= start.getTime()) return;
+      clockStoppedAt = freeze.toISOString();
+      paintLaneClock();
+      setStatus("Clock stopped at punch-out " + data.out);
+    } catch (e) {}
+  }
+  var flushTimer = null;
+  function armAutoFlush() {
+    if (flushTimer) return;
+    flushTimer = setInterval(function(){
+      if (document.hidden) return;
+      if (offlineQueue.length) retryQueue();
+      if (PHOTOS_ON) flushLocalPhotos();
+      pollPunchOut();
+    }, 30000);
+    window.addEventListener("online", function(){
+      if (offlineQueue.length) retryQueue();
+      if (PHOTOS_ON) flushLocalPhotos({ force: true });
+    });
+    document.addEventListener("visibilitychange", function(){
+      if (document.hidden) return;
+      if (offlineQueue.length) retryQueue();
+      if (PHOTOS_ON) flushLocalPhotos({ force: true });
+    });
+  }
+
+  el("laneSelect").onchange = function(){
+    var now = el("laneSelect").value;
+    var from = formLane;
+    var restored = false;
+    // r9a item I: a different lane is a different form. The old lane's marks are kept (stash + its own draft) and do not come along.
+    if (from && now !== from) restored = leaveLane(from, now);
+    renderLane();
+    paintLaneClock();
+    flushLocalPhotos();
+    if (now && !restored && from !== now) loadLaneDraftIfBlank(typedUnit(), now);
+  };
+  el("unitType").onchange = function(){ renderLane(); saveDraft(); };
+  if (el("toyHaulerSelect")) el("toyHaulerSelect").onchange = function(){
+    toyHauler = el("toyHaulerSelect").value === "yes";
+    if (!toyHauler) thWall = false;
+    renderLane();
+    saveDraft();
+  };
+  if (el("thWallSelect")) el("thWallSelect").onchange = function(){
+    thWall = el("thWallSelect").value === "yes";
+    renderLane();
+    saveDraft();
+  };
+  el("btnAdd").onclick = function() { addDefect("", 3, ""); paintExtraDefects(); setStatus("Extra defect added — not tied to a checklist line."); };
+  el("btnSave").onclick = function(){ return saveDraft(); };
+  if (el("btnReset")) el("btnReset").onclick = resetForm;
+  if (el("btnStopClock")) el("btnStopClock").onclick = function(){ if (!laneStartedAt) return; clockStoppedAt = new Date().toISOString(); paintLaneClock(); setStatus("Clock stopped"); };
+  if (el("btnResumeClock")) el("btnResumeClock").onclick = function(){ clockStoppedAt = null; paintLaneClock(); setStatus("Clock resumed"); };
+  el("btnSubmit").onclick = function () { return submitPrimary(false, false); };
+  el("btnPartial").onclick = function () { return submitPrimary(false, true); };
+  if (PHOTOS_ON) el("photoInput").onchange = handlePhoto;
+  else ["photoInput", "photoChip", "photoBanner", "btnDropPhotos"].forEach(function(id){ var n = el(id); if (n && n.parentNode) n.parentNode.removeChild(n); });
+  el("queueBadge").onclick = retryQueue;
+  if (el("btnRetryQueue")) el("btnRetryQueue").onclick = retryQueue;
+  if (PHOTOS_ON && el("btnDropPhotos")) el("btnDropPhotos").onclick = dropLeftoverPhotos;
+
+  el("pdiDate").valueAsDate = new Date();
+  syncToyHaulerUI();
+  paintInspectors();
+  loadQueue();
+  scrubStoredPhotos();
+  armAutoFlush();
+  paintPhotoChip();   // r9a: photos left on the phone from an earlier session show in the banner as soon as the page opens
+  renderDraftList(); // no auto-restore — form starts blank
+  
+  // ---- Today's units (date index) ----
+  function initReviewDate() {
+    var rd = el("reviewDate");
+    if (rd) rd.valueAsDate = new Date();
+  }
+  // ---- Load Day's Units (r7a): a picker screen. Counts and buckets are the server's (day-units `rpt`, from _buckets.js); nothing is invented here.
+  var LD = (function () {
+    var st = { g: "attn", p: "all", open: null, units: [], date: "", banners: [], loading: false, error: "" };
+    var PLANTS = ["51", "53", "57", "76"];
+    var TITLES = { attn: "Need attention · worst first", open: "Open today", done: "Cleared today" };
+    var LBL = { attn: "Need attention", open: "Open today", done: "Cleared" };
+    function root() { return el("ldScreen"); }
+    function x(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function md(s) { var m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(s || "")); return m ? (Number(m[1]) + "/" + Number(m[2])) : ""; }
+    function rptOf(u) { return u && u.rpt && typeof u.rpt === "object" ? u.rpt : null; }
+    function grpOf(u) {                      // the same four-way split the old list used
+      var r = rptOf(u);
+      if (r && r.bucket === "rain-queue") return "await";
+      if (u.bucket === "carryover") return "carry";
+      if (u.bucket === "today-open") return "open";
+      if (u.bucket === "today-cleared") return "cleared";
+      return "other";
+    }
+    function laneName(l) { return window.gsLanes ? gsLanes.short(l) : l; }
+    function laneState(info) {
+      info = info || {};
+      var exists = !!(info.in || info.of || info.inspector || info.date || info.completedOn || info.unmarked);
+      if (!exists) return "n";
+      return (info.in && !(info.unmarked > 0)) ? "d" : "p";
+    }
+    function slotsOf(u) {
+      var lanes = u.lanes || {};
+      function real(k) { return laneState(lanes[k]) !== "n"; }
+      var newTouched = ["R", "S", "E", "I", "U"].some(real), oldTouched = ["1", "2", "3", "4"].some(real);
+      var legacy = !(newTouched || !oldTouched);
+      var slots = legacy ? ["1", "2", "3", "4"] : ["R", "S", "E", "I"];
+      if (real("U")) slots = slots.concat(["U"]);
+      return { slots: slots, legacy: legacy, both: newTouched && oldTouched };
+    }
+    // one partial lane -> "Systems: 26 of 31 unmarked, started by Bob via Add Inspection"
+    function partialNote(l, info) {
+      var name = laneName(l);
+      var of = info.of;
+      if (!of && info.unmarked > 0 && window.GS_LANE_API) {
+        // an Add Inspection that started the lane sends no checkCount, so the board has no total: take it from the lane's own sheet (towable list; used only if it can hold the unmarked count)
+        try { var tot = window.GS_LANE_API.keys(l, "towable", {}).length; if (tot >= info.unmarked) of = tot; } catch (e) {}
+      }
+      var cnt = info.unmarked > 0 ? (of ? info.unmarked + " of " + of + " unmarked" : info.unmarked + " unmarked") : (info.rainRunMissing ? "" : "not complete");
+      // r8a: a Rain lane with every check marked but no water test answer says why it is not complete
+      if (info.rainRunMissing) cnt = cnt ? cnt + ", water test result missing" : "water test result missing";
+      if (info.assistOnly) return name + ": " + cnt + ", started by " + (info.inspector || "?") + " via Add Inspection";
+      return name + ": " + cnt;
+    }
+    function model(u) {
+      var g0 = grpOf(u);
+      if (g0 === "other") return null;
+      var r = rptOf(u) || {};
+      var g = g0 === "cleared" ? "done" : (r.red ? "attn" : "open");
+      var sl = slotsOf(u), lanes = u.lanes || {};
+      var parts = [], partial = [];
+      sl.slots.forEach(function (l) {
+        var info = lanes[l] || {};
+        if (laneState(info) === "p" && (info.unmarked > 0 || info.assistOnly || info.rainRunMissing)) partial.push(partialNote(l, info));
+      });
+      var last = md(r.lastActivity || u.lastDate);
+      if (g0 === "await") { if (last) parts.push("Rain done " + last); }
+      else if (g0 === "carry" || g === "attn") { if (last) parts.push("Last " + last); }
+      if (r.rainFails > 0) parts.push(r.rainFails + " rain fail" + (r.rainFails === 1 ? "" : "s"));
+      if (u.adminClosed) parts.push("Administratively closed");
+      parts = parts.concat(partial);
+      var pill = null;
+      if (g !== "done" && r.tag) {
+        var t = String(r.tag).replace(/^\w+/, function (w) { return w.toUpperCase(); });
+        pill = [/^stalled/i.test(r.tag) ? "red" : "amber", t];
+      }
+      var more = [];
+      if (g0 === "done") more.push("Cleared today");
+      else if (g0 === "await") more.push("Rain queue since " + (last || "?") + " · " + (r.waitDays || 0) + " business day" + (r.waitDays === 1 ? "" : "s"));
+      else if (g0 === "carry" || g === "attn") more.push("Last activity " + (last || "?") + " · " + (r.waitDays || 0) + " business day" + (r.waitDays === 1 ? "" : "s") + " idle");
+      else more.push("Started today");
+      if (r.held) more.push("On hold");
+      if (sl.both) more.push("The old 4-lane sheet is also on this serial");
+      return { unit: String(u.unit), plant: String(u.plant || "—"), g: g, g0: g0, red: !!r.red, rain: g0 === "await", wait: Number(r.waitDays) || 0,
+        pill: pill, note: parts.join(" · ") || "No flags", more: more.join(" · "), partial: partial,
+        lanes: sl.slots.map(function (l) { var info = lanes[l] || {}; return { k: l, s: laneState(info), lab: laneName(l) + (laneState(info) === "d" ? ": complete" : laneState(info) === "p" ? ": started, not complete" : ": not started") }; }),
+        legacy: sl.legacy, hasU: sl.slots.indexOf("U") >= 0 };
+    }
+    function numCmp(a, b) { return String(a.unit).localeCompare(String(b.unit), undefined, { numeric: true }); }
+    function sorted(rows, g) {
+      return rows.slice().sort(function (a, b) {
+        if (g === "done") return numCmp(a, b);
+        // most business days idle first, then Rain-queue waiting after stalled at the same age, then unit number
+        return (b.wait - a.wait) || ((a.rain ? 1 : 0) - (b.rain ? 1 : 0)) || numCmp(a, b);
+      });
+    }
+    function all() { return st.units.map(model).filter(Boolean); }
+    function count(rows, g) { return rows.filter(function (m) { return m.g === g; }).length; }
+    function dateLabel() {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(st.date || ""); if (!m) return st.date || "";
+      var d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+      return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][d.getUTCDay()] + " " + (+m[2]) + "/" + (+m[3]);
+    }
+    function paint() {
+      var s = root(); if (!s) return;
+      var rows = all();
+      el("ldDate").textContent = dateLabel();
+      el("ldTiles").innerHTML = ["attn", "open", "done"].map(function (k) {
+        return '<button type="button" class="ld-tile" data-k="' + k + '" aria-pressed="' + (st.g === k) + '"><span class="ld-n">' + count(rows, k) + '</span><span class="ld-l">' + LBL[k] + "</span></button>";
+      }).join("");
+      var plants = PLANTS.slice();
+      rows.forEach(function (m) { if (plants.indexOf(m.plant) < 0) plants.push(m.plant); });
+      var h = '<button type="button" class="ld-chip" data-p="all" aria-pressed="' + (st.p === "all") + '">All</button>';
+      plants.forEach(function (p) {
+        var n = rows.filter(function (m) { return m.g === "attn" && m.plant === p; }).length;
+        h += '<button type="button" class="ld-chip" data-p="' + x(p) + '" aria-pressed="' + (st.p === p) + '">' + x(p) + (n ? ' <b class="ld-cnt">' + n + "</b>" : "") + "</button>";
+      });
+      el("ldPlants").innerHTML = h;
+      el("ldBanner").innerHTML = st.banners.map(function (b) { return '<div class="ld-banner" id="scanBanner">' + x(b) + "</div>"; }).join("");
+      var list = el("ldList"), sec = el("ldSec");
+      if (st.loading && !rows.length) { sec.textContent = ""; list.innerHTML = '<div class="ld-empty" id="ldLoading">Loading…</div>'; return; }
+      if (st.error && !rows.length) { sec.textContent = ""; list.innerHTML = '<div class="ld-empty ld-err">' + x(st.error) + '</div>'; return; }
+      var shown = sorted(rows.filter(function (m) { return m.g === st.g && (st.p === "all" || m.plant === st.p); }), st.g);
+      sec.className = "ld-sec " + st.g;
+      sec.textContent = TITLES[st.g] + " · " + shown.length + (st.loading ? " · loading more…" : "");
+      if (!shown.length) {
+        list.innerHTML = '<div class="ld-empty" data-empty="1">' + (st.p === "all" ? "Nothing in " + LBL[st.g].toLowerCase() + " for " + x(dateLabel()) + "." : "Nothing here for Plant " + x(st.p) + ".") + "</div>";
+        return;
+      }
+      list.innerHTML = shown.map(function (m) {
+        var open = st.open === m.unit;
+        var sq = m.lanes.map(function (l) { return '<span class="ld-ln ' + l.s + '" data-lane="' + x(l.k) + '" data-state="' + l.s + '" title="' + x(l.lab) + '" aria-label="' + x(l.lab) + '">' + x(l.k) + "</span>"; }).join("");
+        var pill = m.pill ? '<span class="ld-pill ' + m.pill[0] + '">' + x(m.pill[1]) + "</span>" : "";
+        return '<div class="ld-row" data-unit="' + x(m.unit) + '" data-g="' + m.g + '" data-g0="' + m.g0 + '" data-plant="' + x(m.plant) + '" data-red="' + m.red + '" data-open="' + open + '">' +
+          '<button type="button" class="ld-head" data-u="' + x(m.unit) + '" aria-expanded="' + open + '">' +
+          '<span class="ld-id"><span class="ld-top"><span class="ld-unit">' + x(m.unit) + '</span><span class="ld-plant">Plant ' + x(m.plant) + '</span></span><span class="ld-note">' + x(m.note) + "</span></span>" +
+          '<span class="ld-side">' + pill + '<span class="ld-lanes">' + sq + "</span></span><span class=\"ld-chev\" aria-hidden=\"true\">&#8964;</span></button>" +
+          (open ? '<div class="ld-more"><p class="ld-last">' + x(m.more) + "</p>" + (m.partial.length ? '<p class="ld-part">' + m.partial.map(x).join("<br>") + "</p>" : "") +
+            '<div class="ld-btns"><button type="button" class="ld-btn main" data-use="' + x(m.unit) + '">Use this unit</button>' +
+            '<a class="ld-btn" href="aggregator.html?unit=' + encodeURIComponent(m.unit) + '" target="_blank" rel="noopener">View</a>' +
+            '<a class="ld-btn" href="traveler.html?unit=' + encodeURIComponent(m.unit) + '" target="_blank" rel="noopener">Traveler</a></div></div>' : "") + "</div>";
+      }).join("");
+      var key = [];
+      var any = function (f) { return rows.some(f); };
+      key.push("R Rain · S Systems · E Exterior · I Interior");
+      if (any(function (m) { return m.hasU; })) key.push("U Validation");
+      if (any(function (m) { return m.legacy; })) key.push("1–4 old sheet");
+      el("ldKey").textContent = key.join(" · ");
+    }
+    function show() {
+      var s = root(); if (!s) return;
+      s.hidden = false; document.body.classList.add("ld-lock");
+      var b = el("ldBack"); if (b) b.focus();
+    }
+    function hide() {
+      var s = root(); if (!s) return;
+      s.hidden = true; document.body.classList.remove("ld-lock");
+      var b = el("btnToday"); if (b && b.focus) b.focus();
+    }
+    function init() {
+      var s = root(); if (!s) return;
+      s.addEventListener("click", function (e) {
+        var t = e.target.closest(".ld-tile"), c = e.target.closest(".ld-chip"), h = e.target.closest(".ld-head"), u = e.target.closest("[data-use]"), b = e.target.closest("#ldBack");
+        if (b) { hide(); return; }
+        if (u) {
+          var unit = u.getAttribute("data-use");
+          el("unitNumber").value = unit;
+          setStatus("Unit " + unit + " loaded into form");
+          hide(); window.scrollTo(0, 0); return;
+        }
+        if (t) { st.g = t.getAttribute("data-k"); st.open = null; paint(); return; }
+        if (c) { st.p = c.getAttribute("data-p"); st.open = null; paint(); return; }
+        if (h) { var id = h.getAttribute("data-u"); st.open = (st.open === id ? null : id); paint(); }
+      });
+      document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !s.hidden) hide(); });
+    }
+    return { st: st, show: show, hide: hide, paint: paint, init: init };
+  })();
+
+  async function loadTodayUnits() {
+    var dateEl = el("reviewDate");
+    var date = dateEl ? dateEl.value : "";
+    if (!date) { setStatus("Pick a review date first"); var ts0 = el("todayStatus"); if (ts0) ts0.textContent = "Pick a date"; return; }
+    var st = el("todayStatus");
+    if (st) st.textContent = "Loading today…";
+    LD.st.date = date; LD.st.units = []; LD.st.banners = []; LD.st.loading = true; LD.st.error = ""; LD.st.open = null;
+    LD.show(); LD.paint();
+    await lockBtn("btnToday", "Loading…");
+    try {
+      var banners = [];
+      async function fetchScope(scope) {
+        var res = await fetch(API_BASE + "/day-units?date=" + encodeURIComponent(date) + "&scope=" + scope);
+        var raw = await res.text();
+        var data = {};
+        try { data = raw ? JSON.parse(raw) : {}; } catch (e) {
+          throw new Error(scope + " board timed out (HTTP " + res.status + ")");
+        }
+        if (!res.ok) throw new Error(data.error || ("HTTP " + res.status + (res.status === 502 ? " — function timed out, retry" : "")));
+        if (data && data.scan && data.scan.banner) banners.push(data.scan.banner);
+        return data.units || [];
+      }
+      var todayUnits = await fetchScope("today");
+      LD.st.units = todayUnits.slice(); LD.st.banners = banners.slice(); LD.paint();
+      if (st) st.textContent = date + " · " + todayUnits.length + " today — loading leftovers…";
+      var carryUnits = [];
+      try { carryUnits = await fetchScope("carry"); }
+      catch (e2) { if (st) st.textContent = date + " · today loaded · leftovers failed (" + (e2.message||e2) + ")"; LD.st.error = "Leftovers failed: " + (e2.message || e2); }
+      var units = todayUnits.concat(carryUnits);
+      LD.st.units = units; LD.st.banners = banners.slice(); LD.st.loading = false; LD.paint();
+      if (!units.length) {
+        if (st) st.textContent = "No units indexed for " + date + (banners.length ? " · " + banners.join(" ") : "");
+        return;
+      }
+      var cnt = { carry: 0, open: 0, await: 0, cleared: 0 };
+      units.forEach(function (u) { var g = (function () { var r = u && u.rpt; if (r && r.bucket === "rain-queue") return "await"; if (u.bucket === "carryover") return "carry"; if (u.bucket === "today-open") return "open"; if (u.bucket === "today-cleared") return "cleared"; return ""; })(); if (g) cnt[g]++; });
+      if (st && !LD.st.error) st.textContent = date + " · " + cnt.carry + " in PDI (leftover) · " + cnt.open + " open today · " + cnt.cleared + " cleared today · " + cnt.await + " awaiting PDI";
+    } catch (err) {
+      LD.st.loading = false; LD.st.error = "Failed: " + (err.message || err); LD.paint();
+      if (st) st.textContent = "Failed: " + (err.message || err);
+    } finally {
+      LD.st.loading = false;
+      unlockBtn("btnToday");
+    }
+  }
+  LD.init();
+  if (el("btnToday")) el("btnToday").onclick = loadTodayUnits;
+  initReviewDate();
+
+  setStatus("Ready — exact form checklists loaded");
+})();
+</script>
+<script>requireFloor();</script>
+</body>
+</html>

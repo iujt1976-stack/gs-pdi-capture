@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<script src="unit-rules.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — Hours Log</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 720px; margin: 0 auto; }
+h1 { font-size: 1.2rem; text-align: center; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; }
+input, select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; font-size: 1rem; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 90px; }
+.row > div.hrs-col { max-width: 140px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; background: #2c3e50; cursor: pointer; margin-right: 6px; margin-top: 6px; }
+.punch { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+.punch.missing { border-color: #c0392b; background: #fdecea; }
+.punch.missing input.hrs { border-color: #c0392b; background: #fff; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.hint { font-size: 0.75rem; color: #666; margin-top: 6px; }
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>HOURS LOG</h1>
+<p class="sub">Hours on the clock. Not paid hours. A 6:00–2:30 day is 8.5.</p>
+
+<div class="card">
+  <label>Date</label>
+  <input type="date" id="date">
+  <button type="button" class="btn" id="btnLoad">Load that day</button>
+  <button type="button" class="btn" id="btnCopy" style="background:#1a5276">Copy yesterday's names</button>
+  <p class="status" id="status">Pick a date. One row per person on the floor.</p>
+  <p class="hint">Paid time is figured on the uptime page. 45 minutes off a day at or over 6 hours. 15 minutes off a 4 to 6 hour day. A name with no hours stays red and will not save.</p>
+</div>
+
+<div class="card">
+  <div id="rows"></div>
+  <button type="button" class="btn" id="btnAdd" style="background:#1a5276">+ Employee</button>
+  <button type="button" class="btn" id="btnSave" style="background:#196f3d">Save day</button>
+</div>
+
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  function el(id){ return document.getElementById(id); }
+  var ROSTER = [];
+  function hoursOf(p){
+    if (!p) return "";
+    if (p.hours != null && p.hours !== "") {
+      var h = Number(p.hours);
+      return h > 0 ? String(Math.round(h * 100) / 100) : "";
+    }
+    if (p.minutes > 0) return String(Math.round((Number(p.minutes) / 60) * 100) / 100);
+    return "";
+  }
+  function paintMissing(wrap){
+    var name = (wrap.querySelector(".insp").value || "").trim();
+    var hrs = (wrap.querySelector(".hrs").value || "").trim();
+    wrap.classList.toggle("missing", !!(name && !hrs));
+  }
+  function rowHtml(p){
+    p = p || {};
+    var wrap = document.createElement("div");
+    wrap.className = "punch";
+    wrap.innerHTML =
+      '<div class="row">'+
+        '<div><label>Employee</label><select class="insp"></select></div>'+
+        '<div class="hrs-col"><label>Hours on clock</label><input type="number" class="hrs" min="0.25" max="16" step="0.25" inputmode="decimal" placeholder="8.5" value="'+hoursOf(p)+'"></div>'+
+      '</div>'+
+      '<button type="button" class="btn" style="background:#c0392b">Remove</button>';
+    var sel = wrap.querySelector(".insp");
+    if (window.gsRoster) gsRoster.paint(sel, ROSTER, p.inspector);
+    else {
+      sel.innerHTML = "";
+      var z = document.createElement("option"); z.value=""; z.textContent="— Select full name —"; sel.appendChild(z);
+      ROSTER.forEach(function(n){
+        if (!n || !/\s/.test(n)) return;
+        var o = document.createElement("option"); o.value=n; o.textContent=n; sel.appendChild(o);
+      });
+      if (p.inspector && /\s/.test(p.inspector) && ROSTER.indexOf(p.inspector)>=0) sel.value = p.inspector;
+    }
+    wrap.querySelector(".btn").onclick = function(){ wrap.remove(); };
+    sel.addEventListener("change", function(){ paintMissing(wrap); });
+    wrap.querySelector(".hrs").addEventListener("input", function(){ paintMissing(wrap); });
+    paintMissing(wrap);
+    return wrap;
+  }
+  function collect(){
+    var punches = [];
+    var missing = 0;
+    Array.prototype.forEach.call(el("rows").querySelectorAll(".punch"), function(w){
+      var name = (w.querySelector(".insp").value||"").trim();
+      var raw = (w.querySelector(".hrs").value||"").trim();
+      paintMissing(w);
+      if (!name && !raw) return;
+      if (!name || !raw) { missing++; return; }
+      var hours = Number(raw);
+      if (!(hours > 0) || hours > 16) { missing++; w.classList.add("missing"); return; }
+      punches.push({ inspector: name, hours: Math.round(hours * 100) / 100 });
+    });
+    return { punches: punches, missing: missing };
+  }
+  function prevDate(iso){
+    var p = String(iso||"").split("-");
+    var d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+    d.setDate(d.getDate() - 1);
+    var m = String(d.getMonth()+1).padStart(2,"0");
+    var day = String(d.getDate()).padStart(2,"0");
+    return d.getFullYear()+"-"+m+"-"+day;
+  }
+  async function loadDay(date, blankHours){
+    var res = await fetch(API+"/submit-clock?date="+encodeURIComponent(date));
+    var rawTxt = await res.text();
+    var data;
+    try { data = JSON.parse(rawTxt || "{}"); } catch (e) {
+      throw new Error("Clock function not live (HTTP "+res.status+"). Deploy the latest zip.");
+    }
+    if (!res.ok) throw new Error(data.error || res.status);
+    var punches = (data.punches || []).map(function(p){
+      return blankHours ? { inspector: p.inspector } : p;
+    });
+    el("rows").innerHTML = "";
+    (punches.length ? punches : [{}]).forEach(function(p){
+      el("rows").appendChild(rowHtml(p));
+    });
+    return punches.length;
+  }
+  async function load(){
+    var date = el("date").value;
+    if (!date) { alert("Pick a date"); return; }
+    el("status").textContent = "Loading…";
+    try {
+      var n = await loadDay(date, false);
+      el("status").textContent = n ? (n+" on file.") : "Blank day — add employees.";
+    } catch(e){ el("status").textContent = "Failed: "+e.message; }
+  }
+  async function copyYesterday(){
+    var date = el("date").value;
+    if (!date) { alert("Pick a date"); return; }
+    var y = prevDate(date);
+    el("status").textContent = "Copying names from "+y+"…";
+    try {
+      var n = await loadDay(y, true);
+      el("status").textContent = n ? ("Names from "+y+". Hours blank — type today.") : ("No names on "+y+".");
+    } catch(e){ el("status").textContent = "Failed: "+e.message; }
+  }
+  async function save(){
+    var date = el("date").value;
+    var got = collect();
+    if (!date) { alert("Pick a date"); return; }
+    if (got.missing) { el("status").textContent = "Red rows need a name and hours. Fix them or remove them."; return; }
+    if (!got.punches.length) { alert("Need at least one name and hours."); return; }
+    el("status").textContent = "Saving…";
+    try {
+      var res = await fetch(API+"/submit-clock", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ date: date, punches: got.punches })
+      });
+      var raw = await res.text();
+      var data;
+      try { data = JSON.parse(raw || "{}"); } catch (e) {
+        throw new Error("Clock function not live (HTTP "+res.status+"). Deploy the latest zip.");
+      }
+      if (!res.ok) throw new Error(data.error||res.status);
+      el("status").textContent = "Saved "+data.count+" for "+date+". Open lanes freeze at save.";
+    } catch(e){ el("status").textContent = "Failed: "+e.message; }
+  }
+  el("date").valueAsDate = new Date();
+  function bootRows(){
+    el("rows").innerHTML = "";
+    el("rows").appendChild(rowHtml({}));
+  }
+  if (window.gsRoster) {
+    gsRoster.load(function(list){ ROSTER = list; bootRows(); });
+  } else {
+    fetch(API+"/settings").then(function(r){return r.text();}).then(function(raw){
+      try { ROSTER = (JSON.parse(raw||"{}").inspectors)||[]; } catch(e){ ROSTER=[]; }
+      ROSTER = ROSTER.filter(function(n){ return n && /\s/.test(n); });
+      bootRows();
+    }).catch(function(){ bootRows(); });
+  }
+  el("btnAdd").onclick = function(){ el("rows").appendChild(rowHtml({})); };
+  el("btnLoad").onclick = load;
+  el("btnCopy").onclick = copyYesterday;
+  el("btnSave").onclick = save;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Daily Log</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; padding-bottom: 40px; }
+h1 { font-size: 1.25rem; text-align: center; letter-spacing: 1px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+h3 { font-size: 0.78rem; margin: 8px 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
+th { background: #1f4e79; color: #fff; }
+td.n { text-align: center; font-weight: 700; }
+.ok { color: #1e7a3a; font-weight: 700; }
+.hold { color: #c0392b; font-weight: 700; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 160px; }
+.pill { display: inline-block; background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin-right: 4px; margin-bottom: 8px; border: none; cursor: pointer; }
+.pill.dim { background: #5d6d7e; }
+.unit { border-bottom: 1px solid #eee; padding: 5px 0; font-size: 0.82rem; }
+.unit a { color: #2980b9; }
+.note { font-size: 0.75rem; color: #666; margin-top: 6px; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 10px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; cursor: pointer; margin-right: 6px; margin-top: 4px; }
+.btn-go { background: #2c3e50; }
+.btn-csv { background: #27ae60; }
+.btn-mail { background: #e67e22; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.notes { min-height: 80px; }
+.print-only, .print-only-row, .print-only-i { display: none; }
+@media print {
+  .no-print, .screen-only, .print-skip, .print-hide-57, .print-beyond-5, .print-hide { display: none !important; }
+  .print-only { display: block !important; }
+  .print-only-i { display: inline !important; }
+  .print-only-row { display: table-row !important; }
+  body { background: #fff; padding: 0; font-size: 9pt; color: #000; max-width: none; }
+  h1 { font-size: 12pt; margin-bottom: 2px; }
+  .sub { font-size: 8pt; margin-bottom: 6px; }
+  .card { border: 1px solid #000; border-radius: 0; padding: 6px 8px; margin-bottom: 6px; }
+  #unitsCard { break-inside: auto; page-break-inside: auto; }
+  th { background: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  th, td { padding: 2px 4px; font-size: 8pt; }
+  a { color: #000; text-decoration: none; }
+  .unit a { display: none !important; }
+  .unit { padding: 2px 0; font-size: 8pt; }
+  .ok, .hold { color: #000; }
+  #unitsCard .row { gap: 8px; }
+  #unitsCard .row > div { min-width: 0; }
+  #plantTopRow { gap: 8px; }
+  #plantTopRow > div { min-width: 0; }
+  #plantTopRow h3 { margin: 4px 0 2px; font-size: 8pt; }
+  #plantTopRow th, #plantTopRow td { font-size: 7.5pt; padding: 1px 3px; }
+  @page { margin: 0.4in; size: letter; }
+}
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>DAILY PDI LOG</h1>
+<p class="sub print-only" id="printStamp"></p>
+
+<div class="card no-print">
+  <div class="row">
+    <div>
+      <label>Anchor date</label>
+      <input type="date" id="date">
+    </div>
+    <div>
+      <label>Unit #s (optional)</label>
+      <input type="text" id="units" placeholder="Leave blank for all units in the period">
+    </div>
+  </div>
+  <div style="margin:6px 0 8px">
+    <button type="button" class="pill" id="perDay">Day</button>
+    <button type="button" class="pill dim" id="perWeek">Week</button>
+    <button type="button" class="pill dim" id="perMonth">Month</button>
+    <button type="button" class="pill dim" id="perYear">Year</button>
+  </div>
+  <button type="button" class="btn btn-go" id="btnLoad">Load Log</button>
+  <button type="button" class="btn btn-csv" id="btnCsv">Export CSV</button>
+  <button type="button" class="btn btn-mail" id="btnMail">Prepare Email (to me)</button>
+  <button type="button" class="btn btn-go" id="btnPrint" style="background:#8e44ad">Print one-pager</button>
+  <p class="status" id="status"></p>
+</div>
+
+<div id="report" style="display:none">
+  <div class="card">
+    <h2 id="logTitle">Daily PDI Log</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Plant</th>
+          <th>Units Cleared</th>
+          <th>PDI'd &amp; On Hold</th>
+          <th>Open / Incomplete (in PDI)</th>
+          <th>Awaiting PDI<span class="no-print"> (end of period, incl. carried in)</span></th>
+          <th>Red<span class="no-print">: stalled or waiting too long (inside Open + Awaiting)</span></th>
+        </tr>
+      </thead>
+      <tbody id="plantBody"></tbody>
+      <tfoot id="plantFoot"></tfoot>
+    </table>
+    <p class="note hold" id="scanBanner" style="display:none;font-weight:700"></p>
+    <label class="no-print" style="margin-top:10px;">Notes / edits before send</label>
+    <textarea class="notes no-print" id="notes" placeholder="Optional notes... print on the one-pager if filled."></textarea>
+    <p class="print-only note" id="printNotes"></p>
+  </div>
+
+  <div class="card no-print" id="sendSheet"></div>
+
+  <div class="card" id="topCard">
+    <h2>Top Inspection-Point Failures</h2>
+    <p class="sub" id="topRangeLabel" style="text-align:left;margin:0 0 8px"></p>
+    <div class="no-print">
+      <button type="button" class="pill" id="topBtnDay">Day</button>
+      <button type="button" class="pill dim" id="topBtnWeek">Week</button>
+      <button type="button" class="pill dim" id="topBtnMonth">Month</button>
+      <button type="button" class="pill dim" id="topBtnYear">Year</button>
+    </div>
+    <h3>OVERALL</h3>
+    <table>
+      <thead><tr><th>#</th><th>Inspection Point</th><th>Count</th></tr></thead>
+      <tbody id="topOverallBody"></tbody>
+    </table>
+    <div class="row" id="plantTopRow">
+      <div>
+        <h3>PLANT 51</h3>
+        <table><thead><tr><th>#</th><th>Point</th><th>N</th></tr></thead><tbody id="topP51"></tbody></table>
+      </div>
+      <div>
+        <h3>PLANT 53</h3>
+        <table><thead><tr><th>#</th><th>Point</th><th>N</th></tr></thead><tbody id="topP53"></tbody></table>
+      </div>
+      <div class="print-hide-57">
+        <h3>PLANT 57</h3>
+        <table><thead><tr><th>#</th><th>Point</th><th>N</th></tr></thead><tbody id="topP57"></tbody></table>
+      </div>
+      <div>
+        <h3>PLANT 76</h3>
+        <table><thead><tr><th>#</th><th>Point</th><th>N</th></tr></thead><tbody id="topP76"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="unitsCard">
+    <h2>Units by Plant</h2>
+    <div class="row">
+      <div>
+        <h3>PLANT 51</h3>
+        <div id="unitCol51"></div>
+      </div>
+      <div>
+        <h3>PLANT 53</h3>
+        <div id="unitCol53"></div>
+      </div>
+      <div class="print-hide-57">
+        <h3>PLANT 57</h3>
+        <div id="unitCol57"></div>
+      </div>
+      <div>
+        <h3>PLANT 76</h3>
+        <div id="unitCol76"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="rainCard">
+    <h2>Rain</h2>
+    <p class="note" id="rainRunStats"></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Day</th>
+          <th>Plant</th>
+          <th>Unit #</th>
+          <th>Result</th>
+          <th>Where</th>
+          <th>Note</th>
+          <th>Inspector</th>
+        </tr>
+      </thead>
+      <tbody id="rainRunBody"></tbody>
+    </table>
+    <p class="note" id="rainRunNotRec"></p>
+  </div>
+
+  <div class="card" id="holdCard">
+    <h2>Hold Units</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Unit #</th>
+          <th>Date On Hold</th>
+          <th>Reason</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="holdBody"></tbody>
+    </table>
+    <p class="note" id="holdTotal"></p>
+  </div>
+  <div class="card" id="postCard">
+    <h2>Post-PDI findings</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Unit #</th>
+          <th>Date found</th>
+          <th>Source</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody id="postBody"></tbody>
+    </table>
+    <p class="note" id="postTotal"></p>
+  </div>
+</div>
+
+<script src="gs-lanes.js"></script>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var MAIL_TO = "jthompson@gulfstreamcoach.com";
+  var PLANTS = ["51", "53", "57", "76"];
+  var current = null;
+  var topPeriod = "day";
+  var logPeriod = "day";
+  var filterPoint = "";
+
+  document.getElementById("date").valueAsDate = new Date();
+
+  function el(id){ return document.getElementById(id); }
+  function setStatus(m){ el("status").textContent = m || ""; }
+  function esc(s){ return String(s == null ? "" : s); }
+
+  function renderTopTable(tbodyId, rows) {
+    var body = el(tbodyId);
+    if (!body) return;
+    body.innerHTML = "";
+    if (!rows || !rows.length) {
+      body.innerHTML = '<tr><td colspan="3"><span class="no-print">No failed points yet.</span><span class="print-only-i">None</span></td></tr>';
+      return;
+    }
+    var total = 0;
+    rows.forEach(function(r, i) {
+      var tr = document.createElement("tr");
+      var label = r.point || r.code || "";
+      total += Number(r.count) || 0;
+      var on = filterPoint && filterPoint === label;
+      tr.style.cursor = "pointer";
+      if (on) tr.style.background = "#d4e6f1";
+      tr.innerHTML = '<td class="n">' + (i + 1) + "</td><td>" + esc(label) + '</td><td class="n">' + r.count + "</td>";
+      if (i >= 5) tr.className = "print-beyond-5";
+      tr.onclick = function(){
+        filterPoint = (filterPoint === label) ? "" : label;
+        render(current);
+      };
+      body.appendChild(tr);
+    });
+    var tf = document.createElement("tr");
+    tf.className = "print-hide";
+    tf.innerHTML = '<td></td><td><strong>Total</strong></td><td class="n"><strong>' + total + "</strong></td>";
+    body.appendChild(tf);
+  }
+  function paintTopPeriod() {
+    if (!current || !current.topDefects) return;
+    var td = current.topDefects;
+    var pack = td[topPeriod] || { overall: [], byPlant: {} };
+    if (topPeriod === "day") el("topRangeLabel").textContent = "Day — " + (current.summary.date || "");
+    else if (topPeriod === "week") el("topRangeLabel").textContent = "Week — " + (td.weekStart || "") + " → " + (td.weekEnd || "");
+    else if (topPeriod === "year") el("topRangeLabel").textContent = "Year — " + (td.yearLabel || "");
+    else el("topRangeLabel").textContent = "Month — " + (td.monthLabel || "");
+    renderTopTable("topOverallBody", pack.overall);
+    renderTopTable("topP51", (pack.byPlant || {})["51"]);
+    renderTopTable("topP53", (pack.byPlant || {})["53"]);
+    renderTopTable("topP57", (pack.byPlant || {})["57"]);
+    renderTopTable("topP76", (pack.byPlant || {})["76"]);
+    ["Day","Week","Month","Year"].forEach(function(name){
+      var b = el("topBtn" + name);
+      if (!b) return;
+      b.className = "pill" + (topPeriod === name.toLowerCase() ? "" : " dim");
+    });
+  }
+
+  function plantOf(u) {
+    for (var l in (u.lanes || {})) {
+      if (u.lanes[l] && u.lanes[l].plant) return String(u.lanes[l].plant);
+    }
+    if (u.plantGuess) return String(u.plantGuess);
+    // r8a: a unit that exists only because of an old Rain Bay form (no lane record) used to take its plant from that form row. The form is gone from this page,
+    // so the serial prefix decides (the same rule the server uses for list-only units: 1xxxxx = 51, 2xxxx = 76, 4xxxx = 53); other serials stay "—".
+    var sn = String(u.unit || "");
+    if (/^1\d{5}$/.test(sn)) return "51";
+    if (/^2\d{4}$/.test(sn)) return "76";
+    if (/^4\d{4}$/.test(sn)) return "53";
+    return "";
+  }
+  function isActiveHold(u) {
+    return (u.holds || []).some(function(h){ return !h.ready; });
+  }
+  // r5a: every bucket comes from the server (u.rpt). Nothing in this file decides a bucket.
+  function bucketOf(u) {
+    if (u && u.rpt && u.rpt.bucket) return u.rpt.bucket;
+    if (u.rainOnly) return "old-sheet-rain";
+    if (u.priorClear) return "prior-clear";
+    return u.complete ? "cleared" : "open";
+  }
+  function skipUnit(u) {
+    var b = bucketOf(u);
+    return (b === "prior-clear" || b === "old-sheet-rain") && !isActiveHold(u);
+  }
+  function isOpenU(u) { return bucketOf(u) === "open" && !isActiveHold(u); }
+  function isRedU(u) { return !!(u.rpt && u.rpt.red) && !isActiveHold(u); }
+  function carryList(data) { return (data && data.carryIn) || []; }
+  function emptyStat() { return { cleared: 0, hold: 0, open: 0, await: 0, red: 0 }; }
+  function plantStats(units, carry) {
+    var map = {};
+    PLANTS.forEach(function(p){ map[p] = emptyStat(); });
+    map["—"] = emptyStat();
+    units.forEach(function(u){
+      if (skipUnit(u)) return;
+      var p = plantOf(u) || "—";
+      if (!map[p]) map[p] = emptyStat();
+      var b = bucketOf(u);
+      if (isActiveHold(u)) map[p].hold++;
+      else if (b === "cleared") map[p].cleared++;
+      else if (b === "rain-queue") map[p].await++;
+      else map[p].open++;
+      if (isRedU(u) && (b === "rain-queue" || b === "open")) map[p].red++;
+    });
+    (carry || []).forEach(function(u){
+      // carried in from before the period: only the awaiting queue joins the plant table
+      if (!u.rpt || u.rpt.bucket !== "rain-queue") return;
+      var p = String(u.plant || "—");
+      if (!map[p]) map[p] = emptyStat();
+      map[p].await++;
+      if (u.rpt.red) map[p].red++;
+    });
+    return map;
+  }
+  function sumStats(stats, plants) {
+    var t = emptyStat();
+    plants.forEach(function(p){
+      var x = stats[p] || emptyStat();
+      t.cleared += x.cleared; t.hold += x.hold; t.open += x.open; t.await += x.await; t.red += x.red;
+    });
+    return t;
+  }
+  function tagText(u) {
+    var r = u && u.rpt;
+    if (!r) return "";
+    var t = "";
+    if (r.bucket === "rain-queue") t = (r.red ? "RED · " : "") + "AWAITING PDI" + (r.waitDays > 0 ? " · " + r.waitDays + " business day" + (r.waitDays === 1 ? "" : "s") + " since last activity" : " · today");
+    else if (r.bucket === "open" && r.red && !r.held) t = "RED · STALLED " + r.waitDays + " business day" + (r.waitDays === 1 ? "" : "s");
+    return t;
+  }
+
+  async function load(){
+    var date = el("date").value;
+    var units = (el("units").value || "").trim();
+    setStatus("Loading...");
+    try {
+      var url = API + "/daily-report?date=" + encodeURIComponent(date) + "&period=" + encodeURIComponent(logPeriod);
+      if (units) url += "&units=" + encodeURIComponent(units);
+      var res = await fetch(url);
+      var rawTxt = await res.text();
+      var data;
+      try { data = JSON.parse(rawTxt || "{}"); } catch (e) {
+        throw new Error("daily-report empty (HTTP " + res.status + "). Redeploy zip — function may have timed out.");
+      }
+      if (!res.ok) throw new Error(data.error || res.status);
+      current = data;
+      render(data);
+      var s = data.summary || {};
+      var label = (s.period || "day") + " " + (s.rangeStart || date) + (s.rangeEnd && s.rangeEnd !== s.rangeStart ? " → " + s.rangeEnd : "");
+      setStatus("Loaded " + (s.uniqueUnits || data.units.length) + " units · " + label + (s.truncated ? " · totals only (too many units to expand)" : ""));
+    } catch (e) {
+      setStatus("Failed: " + e.message);
+      current = null;
+    }
+  }
+
+
+  // ---- r8a: the water test. ONE source: summary.rainRun (daily-report -> _rainrun.tally). The screen, the printed page, the send-out sheet,
+  // the email text and the CSV all read these numbers and nothing else. Nothing here looks at check marks, seal fails or the old Rain Bay form.
+  var RR_RES = { no_leak: "No leak", leaked: "Leaked", not_tested: "Not tested" };
+  var RR_WH = { roof: "Roof", slide_roof: "Slide roof", ceiling: "Ceiling", wall: "Wall", floor: "Floor", window_compartment: "Window / compartment", other_exterior_components: "Other exterior components", other: "Other" };
+  var RR_COUNTS = [["tested", "Tested"], ["noLeak", "No leak"], ["leaked", "Leaked"], ["retestPassed", "Retest passed"], ["notTested", "Not tested"], ["notRecorded", "Result not recorded"]];
+  function rrOf(sm) { return sm && sm.rainRun && !sm.truncated ? sm.rainRun : null; }
+  function rrWhere(row) { return (row.where || []).map(function(w){ return RR_WH[w] || w; }).join(", "); }
+  function rrResult(row) { return (RR_RES[row.result] || row.result) + (row.retestPassed ? " (retest passed)" : ""); }
+  function rrDetail(row) { var w = rrWhere(row); return [w, row.note || ""].filter(function(x){ return x; }).join(" \u2014 "); }
+  function rrNotRecText(r) {
+    var u = (r.notRecordedUnits || []).map(function(x){ return x.unit; });
+    return u.length ? "Result not recorded: " + u.join(", ") : "";
+  }
+  function rainRunStatsText(sm) {
+    var r = rrOf(sm);
+    if (!r) return "Water test numbers not available (totals-only view).";
+    var per = (sm.period && sm.period !== "day") ? sm.period : "day";
+    return "Water test, " + per + ": " + RR_COUNTS.map(function(k){ return k[1] + " " + r.counts[k[0]]; }).join(" \u00b7 ");
+  }
+  // exception lines for the send-out sheet and the email: Leaked (with where and note) and Not tested
+  function rainRunExceptions(sm) {
+    var r = rrOf(sm), out = [];
+    if (!r) return out;
+    r.rows.forEach(function(row){
+      if (row.result === "leaked") out.push({ unit: row.unit, plant: row.plant, kind: "WATER TEST LEAKED", detail: rrDetail(row) || "Leaked" });
+      else if (row.result === "not_tested") out.push({ unit: row.unit, plant: row.plant, kind: "WATER TEST NOT TESTED", detail: row.note || "Not tested" });
+    });
+    return out;
+  }
+
+  function countsLine(t) {
+    return "Counts: Cleared " + t.cleared + " · On hold " + t.hold + " · Open / incomplete (in PDI) " + t.open +
+      " · Awaiting PDI " + t.await + " · Red (inside Open + Awaiting) " + t.red;
+  }
+  function render(data){
+    el("report").style.display = "block";
+    var s0 = data.summary || {};
+    var per = (s0.period || "day").toUpperCase();
+    el("logTitle").textContent = per + " PDI LOG — " + (s0.rangeStart || s0.date || "") + (s0.rangeEnd && s0.rangeEnd !== s0.rangeStart ? " → " + s0.rangeEnd : "");
+    if (s0.period && s0.period !== "day") topPeriod = s0.period;
+    var ps = el("printStamp");
+    if (ps) ps.textContent = "Gulf Stream Coach · Daily PDI Log · Printed " + new Date().toLocaleString() + " · Plants 51 / 53 / 76";
+
+    var stats = plantStats(data.units, carryList(data));
+    var body = el("plantBody");
+    body.innerHTML = "";
+    var tot = sumStats(stats, PLANTS);
+    var printTot = sumStats(stats, ["51", "53", "76"]);
+    PLANTS.forEach(function(p){
+      var s = stats[p] || emptyStat();
+      var tr = document.createElement("tr");
+      if (p === "57") tr.className = "print-hide-57";
+      tr.innerHTML =
+        "<td>Plant " + p + "</td>" +
+        '<td class="n ok">' + s.cleared + "</td>" +
+        '<td class="n">' + s.hold + "</td>" +
+        '<td class="n">' + s.open + "</td>" +
+        '<td class="n">' + s.await + "</td>" +
+        '<td class="n' + (s.red ? ' hold' : '') + '">' + s.red + "</td>";
+      body.appendChild(tr);
+    });
+    var foot = el("plantFoot");
+    if (foot) {
+      foot.innerHTML =
+        "<tr class='print-hide'><th>TOTAL</th><th class='n'>"+tot.cleared+"</th><th class='n'>"+tot.hold+"</th><th class='n'>"+tot.open+"</th><th class='n'>"+tot.await+"</th><th class='n'>"+tot.red+"</th></tr>" +
+        "<tr class='print-only-row'><th>TOTAL (51 / 53 / 76)</th><th class='n'>"+printTot.cleared+"</th><th class='n'>"+printTot.hold+"</th><th class='n'>"+printTot.open+"</th><th class='n'>"+printTot.await+"</th><th class='n'>"+printTot.red+"</th></tr>";
+    }
+    var scanLine = el("scanBanner");
+    if (scanLine) {
+      var cb = (data.summary && data.summary.carryIn && data.summary.carryIn.banner) || "";
+      scanLine.textContent = cb;
+      scanLine.style.display = cb ? "block" : "none";
+    }
+
+    paintTopPeriod();
+
+    var buckets = { "51": [], "53": [], "57": [], "76": [] };
+    data.units.forEach(function(u){
+      if (skipUnit(u)) return;
+      var pl = plantOf(u);
+      if (buckets[pl]) buckets[pl].push(u);
+    });
+    carryList(data).forEach(function(u){
+      if (!u.rpt || u.rpt.bucket !== "rain-queue" && !u.rpt.red) return;   // carried-in units listed: whole awaiting queue + anything red
+      var cu = { unit: u.unit, lanes: {}, holds: [], plantGuess: u.plant, rpt: u.rpt, carried: true };
+      if (buckets[u.plant]) buckets[u.plant].push(cu);
+    });
+    ["51","53","57","76"].forEach(function(p){
+      buckets[p].sort(function(x, y){ return (isRedU(y) ? 1 : 0) - (isRedU(x) ? 1 : 0) || String(x.unit).localeCompare(String(y.unit), undefined, { numeric: true }); });
+    });
+    function unitHasPoint(u, point){
+      if (!point) return true;
+      var hit = false;
+      Object.keys(u.lanes || {}).forEach(function(l){
+        ((u.lanes[l] && u.lanes[l].defects) || []).forEach(function(d){
+          var label = d.point || d.checkKey || d.code || "";
+          if (label === point) hit = true;
+        });
+      });
+      return hit;
+    }
+    function unitLine(u){
+      var status = u.listOnly
+        ? "IN PERIOD"
+        : (bucketOf(u) === "cleared" && !isActiveHold(u)
+        ? '<span class="ok">CLEARED</span>'
+        : (isActiveHold(u) ? '<span class="hold">ON HOLD</span>'
+            : (bucketOf(u) === "rain-queue" ? '<span class="' + (u.rpt.red ? 'hold' : '') + '">' + esc(tagText(u)) + '</span>'
+            : "OPEN " + (u.missing || []).map(function(x){return window.gsLanes?gsLanes.short(x):("L"+x);}).join(",") + (tagText(u) ? ' · <span class="hold">' + esc(tagText(u)) + '</span>' : ""))));
+      if (u.carried) status += " · last activity " + esc(u.rpt.lastActivity || "?");
+      if (u.adminClosed) status += ' · <span class="hold">Administratively Closed</span>';
+      var skip = (u.unmarked || []).map(function(x){ return "L"+x.lane+" "+x.n+" unmarked"; }).join(", ");
+      return '<div class="unit"><strong>' + u.unit + "</strong> — " + status +
+        (skip ? ' · <span class="hold">' + skip + "</span>" : "") +
+        '<span class="no-print"> \u00b7 <a href="aggregator.html?unit=' + u.unit + '" target="_blank">Agg</a>' +
+        ' \u00b7 <a href="traveler.html?unit=' + u.unit + '" target="_blank">Trav</a>' +
+        ' \u00b7 <a href="timeline.html?unit=' + u.unit + '" target="_blank">Sum</a></span></div>';
+    }
+    var filterNote = el("topRangeLabel");
+    if (filterPoint && filterNote) filterNote.textContent = (filterNote.textContent || "") + " · showing units with: " + filterPoint + " (tap row again to clear)";
+    PLANTS.forEach(function(p){
+      var col = el("unitCol" + p);
+      if (!col) return;
+      var list = buckets[p].filter(function(u){ return unitHasPoint(u, filterPoint); });
+      if (!list.length) { col.innerHTML = '<div class="unit">None'+(filterPoint?" for that point":"")+'</div>'; return; }
+      var nCar = list.filter(function(u){ return u.carried; }).length;
+      col.innerHTML = list.map(unitLine).join("") + '<div class="note">'+list.length+' unit'+(list.length===1?"":"s")+(nCar ? ' (' + nCar + ' carried in)' : '')+'</div>';
+    });
+
+    var rr = rrOf(data.summary);
+    var rrBody = el("rainRunBody");
+    rrBody.innerHTML = "";
+    var rrRows = rr ? rr.rows : [];
+    if (!rrRows.length) {
+      rrBody.innerHTML = '<tr><td colspan="7">No water test results for this period.</td></tr>';
+    } else {
+      rrRows.forEach(function(row){
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + esc(row.day) + "</td>" +
+          "<td>" + esc(row.plant || "\u2014") + "</td>" +
+          "<td>" + esc(row.unit) + "</td>" +
+          "<td>" + esc(rrResult(row)) + "</td>" +
+          "<td>" + esc(row.result === "leaked" ? rrWhere(row) : "") + "</td>" +
+          "<td>" + esc(row.note || "") + "</td>" +
+          "<td>" + esc(row.by || "") + "</td>";
+        rrBody.appendChild(tr);
+      });
+    }
+    el("rainRunStats").textContent = rainRunStatsText(data.summary);
+    el("rainRunNotRec").textContent = rr ? rrNotRecText(rr) : "";
+    if (el("rainCard")) el("rainCard").classList.toggle("print-skip", !rrRows.length && !(rr && rr.counts.notRecorded));
+
+    var holdBody = el("holdBody");
+    holdBody.innerHTML = "";
+    var holdRows = [];
+    data.units.forEach(function(u){
+      (u.holds || []).forEach(function(h){ holdRows.push({ unit: u.unit, h: h }); });
+    });
+    if (!holdRows.length) {
+      holdBody.innerHTML = '<tr><td colspan="4">No hold entries for this date.</td></tr>';
+    } else {
+      holdRows.forEach(function(item){
+        var h = item.h;
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + esc(item.unit) + "</td>" +
+          "<td>" + esc(h.dateOnHold) + "</td>" +
+          "<td>" + esc(h.reason) + "</td>" +
+          "<td>" + (h.ready ? "Released" : "ON HOLD") + "</td>";
+        holdBody.appendChild(tr);
+      });
+    }
+    if (el("holdTotal")) el("holdTotal").textContent = holdRows.length + " hold row" + (holdRows.length===1?"":"s");
+    if (el("holdCard")) el("holdCard").classList.toggle("print-skip", !holdRows.length);
+    var postBody = el("postBody");
+    if (postBody) {
+      postBody.innerHTML = "";
+      var postRows = [];
+      data.units.forEach(function(u){
+        (u.postPdi || []).forEach(function(p){ postRows.push({ unit: u.unit, p: p }); });
+      });
+      if (!postRows.length) postBody.innerHTML = '<tr><td colspan="4">No post-PDI findings for this date.</td></tr>';
+      else postRows.forEach(function(item){
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>"+esc(item.unit)+"</td><td>"+esc(item.p.dateFound||item.p.date||"")+"</td><td>"+esc(item.p.source||"")+"</td><td>"+esc(item.p.desc||"")+"</td>";
+        postBody.appendChild(tr);
+      });
+      if (el("postTotal")) el("postTotal").textContent = postRows.length + " post-PDI row" + (postRows.length===1?"":"s");
+      if (el("postCard")) el("postCard").classList.toggle("print-skip", !postRows.length);
+    }
+    buildSendSheet(data);
+  }
+
+  function buildSendSheet(data) {
+    var box = el("sendSheet");
+    if (!box) return;
+    var s0 = data.summary || {};
+    var stats = plantStats(data.units, carryList(data));
+    var tot = sumStats(stats, PLANTS);
+    var pack = (data.topDefects && data.topDefects[topPeriod]) || { overall: [] };
+    var tops = (pack.overall || []).slice(0, 5);
+    var holdActive = [];
+    var opens = [];
+    var posts = [];
+    data.units.forEach(function(u){
+      (u.holds || []).forEach(function(h){
+        if (!h.ready) holdActive.push({ unit: u.unit, plant: plantOf(u), detail: h.reason || "On hold" });
+      });
+      if (isOpenU(u)) {
+        var miss = (u.missing || []).length ? "Open " + (u.missing || []).join(",") : "Open / incomplete";
+        if (u.unmarked && u.unmarked.length) miss += " · unmarked";
+        if (isRedU(u)) miss = tagText(u) + " — " + miss;
+        opens.push({ unit: u.unit, plant: plantOf(u), detail: miss, red: isRedU(u) });
+      }
+      if (bucketOf(u) === "rain-queue" && !isActiveHold(u) && u.rpt.red) {
+        opens.push({ unit: u.unit, plant: plantOf(u), detail: tagText(u), red: true });
+      }
+      (u.postPdi || []).forEach(function(p){
+        posts.push({ unit: u.unit, plant: plantOf(u), detail: (p.source ? p.source + " — " : "") + (p.desc || p.detail || "Post-PDI") });
+      });
+    });
+    carryList(data).forEach(function(u){
+      if (u.rpt && u.rpt.red && !u.rpt.held) opens.push({ unit: u.unit, plant: u.plant, detail: tagText({ rpt: u.rpt }) + " \u00b7 last activity " + (u.rpt.lastActivity || "?"), red: true });
+    });
+    opens.sort(function(x, y){ return (y.red ? 1 : 0) - (x.red ? 1 : 0); });
+    var html = "<h2>Send-out</h2>";
+    html += '<p class="note">' + esc(countsLine(tot)) + "</p>";
+    html += '<p class="note">' + esc(rainRunStatsText(data.summary)) + "</p>";
+    html += "<h3>Top 5 inspection-point failures</h3>";
+    if (!tops.length) {
+      html += '<p class="note">No failed points in this period.</p>';
+    } else {
+      html += "<table><thead><tr><th>#</th><th>Inspection point</th><th>Count</th></tr></thead><tbody>";
+      tops.forEach(function(r, i){
+        html += '<tr><td class="n">' + (i + 1) + "</td><td>" + esc(r.point || r.code || "") + '</td><td class="n">' + r.count + "</td></tr>";
+      });
+      html += "</tbody></table>";
+    }
+    var ex = [];
+    opens.forEach(function(x){ ex.push(x); });
+    holdActive.forEach(function(x){ ex.push({ unit: x.unit, plant: x.plant, detail: "HOLD — " + x.detail }); });
+    rainRunExceptions(data.summary).forEach(function(x){ ex.push({ unit: x.unit, plant: x.plant, detail: x.kind + " \u2014 " + x.detail }); });
+    posts.forEach(function(x){ ex.push({ unit: x.unit, plant: x.plant, detail: "POST-PDI — " + x.detail }); });
+    html += "<h3>Exceptions</h3>";
+    if (!ex.length) {
+      html += '<p class="note">No open units. No holds. No water test leaks. No post-PDI findings.</p>';
+    } else {
+      html += "<table><thead><tr><th>Unit</th><th>Plant</th><th>What</th></tr></thead><tbody>";
+      ex.forEach(function(x){
+        html += "<tr><td>" + esc(x.unit) + "</td><td>" + esc(x.plant || "—") + "</td><td>" + esc(x.detail) + "</td></tr>";
+      });
+      html += "</tbody></table>";
+    }
+    var notes = (el("notes") && el("notes").value || "").trim();
+    if (notes) html += "<h3>Notes</h3><p>" + esc(notes) + "</p>";
+    box.innerHTML = html;
+  }
+
+  function exportCsv(){
+    if (!current) return;
+    var lines = ["Section,Plant,Unit,Model,Status,Result,Date,Detail,Inspector"];
+    current.units.forEach(function(u){
+      if (!skipUnit(u)) {
+      var st = isActiveHold(u) ? "ON HOLD" : (bucketOf(u) === "cleared" ? "CLEARED" : (bucketOf(u) === "rain-queue" ? "AWAITING PDI" : "OPEN"));
+      lines.push(["UNIT", plantOf(u), u.unit, "", st, "", current.summary.date, (u.missing||[]).join("|"), ""].join(","));
+      }
+      (u.holds || []).forEach(function(h){
+        lines.push(["HOLD", "", u.unit, "", h.ready ? "Released" : "ON HOLD", "", h.dateOnHold||"", (h.reason||"").replace(/,/g,";"), h.markedBy||""].join(","));
+      });
+    });
+    // r8a: the water test, from the same summary.rainRun the screen shows: one line per metric, then one line per unit result
+    var rrc = rrOf(current.summary);
+    if (rrc) {
+      RR_COUNTS.forEach(function(k){ lines.push(["WATER TEST TOTAL", "", "", "", "", k[1], "", String(rrc.counts[k[0]]), ""].join(",")); });
+      rrc.rows.forEach(function(row){
+        lines.push(["WATER TEST", row.plant||"", row.unit, "", "", rrResult(row), row.day||"", rrDetail(row).replace(/,/g,";"), row.by||""].join(","));
+      });
+      (rrc.notRecordedUnits || []).forEach(function(x){ lines.push(["WATER TEST", x.plant||"", x.unit, "", "", "Result not recorded", x.day||"", "", ""].join(",")); });
+    }
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "GS_PDI_Daily_Log_" + current.summary.date + ".csv";
+    a.click();
+  }
+
+  function prepareEmail(){
+    if (!current) return;
+    buildSendSheet(current);
+    var s = current.summary || {};
+    var notes = el("notes").value.trim();
+    var stats = plantStats(current.units, carryList(current));
+    var dateLabel = (s.rangeStart || s.date || "") + (s.rangeEnd && s.rangeEnd !== s.rangeStart ? " → " + s.rangeEnd : "");
+    var body = "DAILY PDI LOG — " + dateLabel + "\nPlants 51 / 53 / 76\n\n";
+    body += "COUNTS\n";
+    ["51","53","76"].forEach(function(p){
+      var x = stats[p] || emptyStat();
+      body += "Plant " + p + ": Cleared " + x.cleared + " · Hold " + x.hold + " · Open (in PDI) " + x.open + " · Awaiting PDI " + x.await + " · Red " + x.red + "\n";
+    });
+    var pTot = sumStats(stats, ["51","53","76"]);
+    body += "TOTAL (51 / 53 / 76): Cleared " + pTot.cleared + " · Hold " + pTot.hold + " · Open (in PDI) " + pTot.open + " · Awaiting PDI " + pTot.await + " · Red (inside Open + Awaiting) " + pTot.red + "\n";
+    var cbn = current.summary && current.summary.carryIn && current.summary.carryIn.banner;
+    if (cbn) body += "WARNING: " + cbn + "\n";
+    body += "\nUNITS BY PLANT\n";
+    ["51","53","76"].forEach(function(p){
+      body += "Plant " + p + "\n";
+      var any = false;
+      current.units.forEach(function(u){
+        if (plantOf(u) !== p) return;
+        if (skipUnit(u)) return;
+        any = true;
+        var st = isActiveHold(u) ? "ON HOLD" : (bucketOf(u) === "cleared" ? "CLEARED" : (bucketOf(u) === "rain-queue" ? tagText(u) : ("OPEN " + ((u.missing||[]).join(",") || "incomplete") + (tagText(u) ? " · " + tagText(u) : ""))));
+        body += "  " + u.unit + " — " + st + "\n";
+      });
+      carryList(current).forEach(function(u){
+        if (String(u.plant) !== p || !u.rpt || (u.rpt.bucket !== "rain-queue" && !u.rpt.red)) return;
+        any = true;
+        body += "  " + u.unit + " — " + tagText({ rpt: u.rpt }) + " · last activity " + (u.rpt.lastActivity || "?") + "\n";
+      });
+      if (!any) body += "  (none)\n";
+    });
+    var exLines = [];
+    current.units.forEach(function(u){
+      (u.holds || []).forEach(function(h){
+        if (!h.ready) exLines.push("HOLD · " + u.unit + (h.reason ? " — " + h.reason : ""));
+      });
+      if (isOpenU(u)) {
+        exLines.push((isRedU(u) ? "RED · " : "") + "OPEN · " + u.unit + (u.missing && u.missing.length ? " · " + u.missing.join(",") : "") + (isRedU(u) ? " · " + tagText(u) : ""));
+      }
+      if (bucketOf(u) === "rain-queue" && !isActiveHold(u) && u.rpt.red) exLines.push("RED · " + u.unit + " · " + tagText(u));
+      (u.postPdi || []).forEach(function(p){
+        exLines.push("POST-PDI · " + u.unit + (p.desc ? " — " + p.desc : ""));
+      });
+    });
+    body += "\n" + rainRunStatsText(current.summary) + "\n";
+    rainRunExceptions(current.summary).forEach(function(x){ exLines.push(x.kind + " \u00b7 " + x.unit + " \u00b7 " + x.detail); });
+    carryList(current).forEach(function(u){
+      if (u.rpt && u.rpt.red && u.rpt.bucket === "open" && !u.rpt.held) exLines.push("RED · " + u.unit + " · " + tagText({ rpt: u.rpt }) + " · last activity " + (u.rpt.lastActivity || "?"));
+      if (u.rpt && u.rpt.red && u.rpt.bucket === "rain-queue") exLines.push("RED · " + u.unit + " · " + tagText({ rpt: u.rpt }) + " · last activity " + (u.rpt.lastActivity || "?"));
+    });
+    body += "\nTOP 5 INSPECTION POINTS\n";
+    var pack = (current.topDefects && current.topDefects[topPeriod]) || { overall: [] };
+    var tops = (pack.overall || []).slice(0, 5);
+    if (!tops.length) body += "(none)\n";
+    tops.forEach(function(r, i) {
+      body += (i + 1) + ". " + (r.point || r.code || "") + " — " + r.count + "\n";
+    });
+    body += "\nEXCEPTIONS\n";
+    if (!exLines.length) body += "No open units. No holds. No water test leaks. No post-PDI findings.\n";
+    else exLines.forEach(function(line){ body += line + "\n"; });
+    if (notes) body += "\nNotes:\n" + notes + "\n";
+    body += "\nFull log (incl. plant 57) is on the site.\n— GS PDI";
+    var subj = encodeURIComponent("Daily PDI Log — " + dateLabel);
+    window.location.href = "mailto:" + MAIL_TO + "?subject=" + subj + "&body=" + encodeURIComponent(body);
+  }
+
+  el("btnLoad").onclick = load;
+  el("btnCsv").onclick = exportCsv;
+  el("btnMail").onclick = prepareEmail;
+  el("btnPrint").onclick = function(){
+    if (!current) { alert("Load the log first"); return; }
+    var notes = (el("notes") && el("notes").value || "").trim();
+    if (el("printNotes")) el("printNotes").textContent = notes ? ("Notes: " + notes) : "";
+    buildSendSheet(current);
+    window.print();
+  };
+  el("topBtnDay").onclick = function(){ topPeriod = "day"; paintTopPeriod(); };
+  el("topBtnWeek").onclick = function(){ topPeriod = "week"; paintTopPeriod(); };
+  el("topBtnMonth").onclick = function(){ topPeriod = "month"; paintTopPeriod(); };
+  if (el("topBtnYear")) el("topBtnYear").onclick = function(){ topPeriod = "year"; paintTopPeriod(); };
+  function paintLogPeriod(){
+    ["Day","Week","Month","Year"].forEach(function(name){
+      var b = el("per" + name);
+      if (!b) return;
+      b.className = "pill" + (logPeriod === name.toLowerCase() ? "" : " dim");
+    });
+  }
+  ["Day","Week","Month","Year"].forEach(function(name){
+    var b = el("per" + name);
+    if (!b) return;
+    b.onclick = function(){ logPeriod = name.toLowerCase(); paintLogPeriod(); };
+  });
+  paintLogPeriod();
+})();
+</script>
+</body>
+</html>

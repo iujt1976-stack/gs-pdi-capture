@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GS PDI Aggregator</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #111;
+  padding: 14px;
+  padding-bottom: 40px;
+}
+h1 { font-size: 1.25rem; text-align: center; margin-bottom: 10px; }
+.home { text-align: center; margin: 0 0 10px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 14px; }
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #ddd;
+}
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 10px;
+}
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > * { flex: 1; min-width: 100px; }
+.btn {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+}
+.btn-go { background: #2c3e50; }
+.btn-csv { background: #27ae60; }
+.btn-print { background: #8e44ad; }
+.btn-clear { background: #7f8c8d; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
+.pill {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #fff;
+}
+.pill-ok { background: #27ae60; }
+.pill-miss { background: #95a5a6; }
+.pill-hard { background: #c0392b; }
+.pill-fail { background: #c0392b; }
+.hard {
+  background: #c0392b;
+  color: #fff;
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: none;
+}
+.hard.on { display: block; }
+.defect {
+  background: #fff5f5;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+.sev {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  margin-right: 6px;
+}
+.sev1 { background: #c0392b; }
+.sev2 { background: #2980b9; }
+.sev3 { background: #27ae60; }
+.sev4 { background: #8e44ad; }
+.sev5 { background: #7f8c8d; }
+.lane-block { margin-bottom: 16px; }
+.lane-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #2c3e50;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+.check-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 0.85rem;
+}
+.pass { color: #27ae60; font-weight: 700; }
+.fail { color: #c0392b; font-weight: 700; }
+.na { color: #95a5a6; }
+.status { text-align: center; font-size: 0.8rem; color: #666; margin-top: 8px; }
+.meta { font-size: 0.8rem; color: #555; margin-bottom: 6px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; padding: 0; }
+  .card { border: none; box-shadow: none; }
+}
+
+.defect-photo {
+  margin-top: 6px;
+  max-width: 160px;
+  max-height: 120px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  object-fit: cover;
+  cursor: pointer;
+  display: block;
+}
+.photo-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.photo-modal.on { display: flex; }
+.photo-modal img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 8px;
+}
+.photo-modal .close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  color: #fff;
+  font-size: 1.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<p class="home"><a href="index.html">← Main</a></p>
+<h1>GS PDI Aggregator</h1>
+
+<div class="card no-print">
+  <div class="row">
+    <div>
+      <label>Unit #</label>
+      <input type="text" id="unitInput" inputmode="numeric" pattern="[0-9]*" placeholder="Unit number">
+    </div>
+  </div>
+  <div class="actions">
+    <button type="button" class="btn btn-go" id="btnLoad">Load Unit</button>
+    <button type="button" class="btn btn-csv" id="btnCsv">Export Combined CSV</button>
+    <button type="button" class="btn btn-print" id="btnPrint">Print / Save PDF</button>
+    <button type="button" class="btn" id="btnSummary" style="background:#8e44ad">Unit summary</button>
+    <button type="button" class="btn btn-clear" id="btnClear">Clear</button>
+  </div>
+  <p class="status" id="status"></p>
+</div>
+
+
+
+<div id="summary" class="card" style="display:none"></div>
+<div id="results"></div>
+
+<div class="photo-modal" id="photoModal">
+  <button type="button" class="close" id="photoClose">&times;</button>
+  <img id="photoFull" src="" alt="Defect photo">
+</div>
+
+
+<script src="gs-lanes.js"></script>
+<script src="lane-data.js"></script>
+<script src="floor-boot.js"></script>
+<script src="build.js"></script>
+<script src="lane-history.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var API = "/.netlify/functions";
+  var current = null;
+  var LANE_NAMES = (function(){var o={}; if(window.gsLanes) gsLanes.ALL.forEach(function(k){o[k]=gsLanes.name(k);}); return o;})();
+  var SEV = { 1: "Safe", 2: "Dry", 3: "Func", 4: "Aes", 5: "Other" };
+
+  var SHEETS = {
+    "1": [
+      ["recepts_gfis_usbs","Recepts / GFIs / USBs"],["continuity_test","Continuity Test"],
+      ["ac_dc_panel","AC/DC Panel / Breakers / Fuses"],["converter_recept_check","Converter to Recept Check"],
+      ["monitor_panel_converter_water_pump","Monitor Panel / Converter / Water Pump"],["brake_amp_test","Brake Test (10 amp)"],
+      ["battery_hookup_disconnect","Battery Hookup / Disconnect / Strap"],["inverter","Inverter Function"],
+      ["tv_antenna_booster","TV / Antenna / Booster"],["black_grey_fresh_tanks","Black / Grey / Fresh Tanks"],
+      ["bypass_valve","Bypass Valve"],["city_fill_backflow","City Fill / Backflow Check"],
+      ["faucets_pressurize","Faucets / Pressurize Lines"],["hot_cold_orientation","Hot / Cold Line Orientation"],
+      ["drainage_pipes","Drains / P-Traps"],["low_point_tank_drains","Low Point / Tank Drains / Term Cap"],
+      ["outside_shower","Outside Shower"],["water_heater","Water Heater (110 OFF after test)"],
+      ["ac_air_vents","A/C & Air Vents"],["thermostat","Thermostat Function"],
+      ["refrigerator_microwave","Refrigerator / Microwave"],["fireplace_function","Fireplace Function"],
+      ["range_hood_fan","Range Hood / Fantastic Fan"],["awning_function","Awning Function"],
+      ["slideout_function_sys","Slideout Function / Switches"],["jacks_leveling_function","Jacks / Leveling Function"],
+      ["lp_drop_test","LP Regulator / Drop Test / Soap Fittings"],["lp_burnoff","LP Appliance Burn-Off"],
+      ["detectors","Smoke / LP / CO Detectors"]
+    ],
+    "2": [
+      ["hitch_chains_cables_battery_disconnect","Hitch Chains, Cables, Battery Disconnect"],
+      ["lugs_axles_springs","Lugs / Axles / Springs / Brake Wires"],["tire_pressure_spare","Tire Pressure / Spare Secured"],
+      ["stab_hitch_jacks","Stab / Hitch Jacks"],["underbelly","Underbelly Secure / Protection"],
+      ["varmint_foam_loom","Varmint / Foam Holes / Loomed Wires"],["lp_lines_secured","LP Lines Secured (Rubber / Copper)"],
+      ["plumbing_slope_tank_leaks","Plumbing Slope / Tank Leaks"],["wheel_well","Wheel Well"],
+      ["slideout_roof_underneath_floor","Slide Floor / Screws / Corner Cups / Seals"],
+      ["rubber_roof_decking_self_level_seal","Membrane / Decking / Self Level Seal"],
+      ["roof_penetrations","Rails / Vents / Antenna / Ladder Penetrations"],
+      ["vents_skylights_roof","Vents / Skylights / AC (Roof)"],["cap_transition","Cap Transition / Front Seam"],
+      ["vin_tags_rvia_qai_sticker","Vin Tags / RVIA / QAI Sticker"]
+    ],
+    "3": [
+      ["metal_glass_diamond_plate","Metal / Glass / Diamond Plate"],["exterior_seal_graphics","Exterior Seal / Anti-Wick / Graphics"],
+      ["screw_gutter_rails","Screw & Gutter Rails"],["windows_compartment_doors","Windows & Compartment Doors"],
+      ["entry_screen_door_entry_steps","Entry / Screen Door & Entry Steps"],
+      ["passthrough_power_cord_jack_handle","Passthrough / Cord / Jack Handle"],
+      ["slideout_t_rails_alignment","Slide Rails / Sweeps / Bulb Seal"],["awning","Awning Rail / Splice / Full Travel"],
+      ["marker_tail_turn_signal_lights","Marker / Tail / Turn"],["power_inlet_city_fresh_fill","Power Inlet / City / Fresh Fill"],
+      ["air_test_water_lines","Air Test / Water Lines"]
+    ],
+    "4": [
+      ["lino_floor_decking","Lino & Floor Decking / Squeaks"],["ceiling_wall_panels_trim","Ceiling & Wall Panels / Trim"],
+      ["cabinet_doors_panels_trim_stiles","Cabinet Doors / Panels / Trim / Stiles"],["drawers","Drawers"],
+      ["countertops","Countertops / Extensions"],["window_valances","Windows / Valances / Shades"],
+      ["tub_shower_sinks_faucets","Tub / Shower / Toilet / Sinks / Faucets"],["bed_bath_doors","Bed / Bath Doors / Struts"],
+      ["dinette_table_booths","Dinette Table / Booths / Code"],["beds_bunks_under_furniture","Beds / Bunks / Under Furniture"],
+      ["sofa_chairs_ladders","Sofa / Chairs / Ladders"],["interior_lights","Interior Lights"],
+      ["range_hood_stove_fireplace","Range Hood / Stove / Fireplace"],["furnace_heat_vents","Furnace & Heat Vents"],
+      ["gas_pressure_light_off_test","Gas Pressure & Light Off Test"],["fire_extinguisher","Fire Extinguisher (10BC)"],
+      ["egress_windows","Egress Windows (Opposite Sides / Code)"]
+    ]
+  };
+  // One alias table -- lane-data.js's own, inverted to canonical->[aliases]
+  // by GS_LANE_API.aliasesOf() (same shape this file always used KEY_ALIAS
+  // as). No local copy here any more, so the 9:43 build's dry/wet seal
+  // collision (it aliased the 4 dry E-lane seal keys into Rain's wet keys)
+  // cannot come back in through this file.
+  var KEY_ALIAS = (window.GS_LANE_API && window.GS_LANE_API.aliasesOf()) || {};
+  function checkVal(checks, key){
+    if (!checks) return "";
+    if (checks[key]) return checks[key];
+    var al = KEY_ALIAS[key] || [];
+    for (var i=0;i<al.length;i++) if (checks[al[i]]) return checks[al[i]];
+    return "";
+  }
+  function sheetsFromLaneData(kind, flagOpts, ver){
+    if (!window.GS_LANE_API) return {};
+    var out = {};
+    Object.keys(window.GS_LANE || {}).forEach(function(k){
+      var items = [];
+      window.GS_LANE_API.pack(k, kind || "towable", flagOpts || {}, ver).forEach(function(row){
+        if (row.key) items.push([row.key, row.label]);
+      });
+      out[k] = items;
+    });
+    return out;
+  }
+  // Fails, canonicalized -- an old record marked under both an alias and its
+  // canonical key (or two aliases of the same key) must count once, not
+  // twice; tabled keys were never real lines and don't inflate the count.
+  // r6a: a check that moved to Systems and was marked there replaces the older Exterior/Interior mark for the unit, so a
+  // fail on the old record is not counted a second time in the unit total (once per canonical key per unit).
+  function movedFailOverlap(data){
+    var A = window.GS_LANE_API, S = data && data.lanes && data.lanes.S;
+    if (!A || !S || A.verOf(S) < 2 || !S.checks) return 0;
+    var t = S.unitType || "towable", fo = { toyHauler: !!S.toyHauler, thWall: !!S.thWall };
+    var sHas = {};
+    Object.keys(S.checks).forEach(function(k){ if (S.checks[k]) sHas[A.canon(k)] = true; });
+    var n = 0;
+    ["E", "I"].forEach(function(l){
+      var rec = data.lanes[l], seen = {};
+      if (!rec || !rec.checks || A.verOf(rec) !== 1) return;
+      Object.keys(rec.checks).forEach(function(k){
+        if (rec.checks[k] !== "fail") return;
+        var c = A.canon(k);
+        if (seen[c] || !sHas[c] || A.ownerOf(c, t, fo) !== "S") return;
+        seen[c] = true; n++;
+      });
+    });
+    return n;
+  }
+  function failCount(lane){
+    if (!lane) return 0;
+    var checks = lane.checks || {};
+    var seenFail = {};
+    Object.keys(checks).forEach(function(k){
+      if (checks[k] !== "fail") return;
+      var c = (window.GS_LANE_API && window.GS_LANE_API.canon(k)) || k;
+      seenFail[c] = true;
+    });
+    var n = Object.keys(seenFail).length;
+    var openN = (lane.defects || []).filter(function (d) { return !(d && d.superseded); }).length;   // r6d: a fail a later PASS cleared no longer counts
+    if (openN > n) n = openN;
+    return n;
+  }
+  // r6d: who marked what and when (only lanes saved by r6d carry it; older lanes show nothing new)
+  function hDate(at){ var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(at || "")); return m ? (Number(m[2]) + "/" + Number(m[3])) : ""; }
+  function esc2(t){ return String(t == null ? "" : t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+
+  // r8a: the water test answer of a Rain lane, one line per sitting that gave one (an admin correction replaces the answer of its sitting).
+  // Reads only rainRunV / rainRunLog / rainRunMissing; a lane without rainRunV returns nothing, so older lanes print exactly as before.
+  var RR_WH_TXT = { roof:"Roof", slide_roof:"Slide roof", ceiling:"Ceiling", wall:"Wall", floor:"Floor", window_compartment:"Window / compartment", other_exterior_components:"Other exterior components", other:"Other" };
+  var RR_RES_TXT = { no_leak:"No leak", leaked:"Leaked", not_tested:"Not tested" };
+  function rainLines(lane){
+    if (!lane || lane.rainRunV !== 1) return [];
+    var log = Array.isArray(lane.rainRunLog) ? lane.rainRunLog : [], by = {}, order = [];
+    log.forEach(function(e, i){ var k = e.sess || ("i" + i); if (!by[k]) order.push(k); by[k] = e; });
+    var out = order.map(function(k){
+      var e = by[k], m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(e.day || ""));
+      var wh = (e.result === "leaked" && (e.where || []).length) ? " — " + e.where.map(function(w){ return RR_WH_TXT[w] || w; }).join(", ") : "";
+      return "Water test: " + (RR_RES_TXT[e.result] || e.result) + wh + (e.note ? " — " + e.note : "") + (e.by ? " · " + e.by : "") + (m ? " " + Number(m[1]) + "/" + Number(m[2]) : "") + (e.kind === "admin_edit" ? " · corrected by admin" : "");
+    });
+    if (!out.length) out.push("Water test result missing");
+    return out;
+  }
+  function contribLine(lane){
+    if (!lane || lane.attrV !== 1 || !lane.secBy) return "";
+    var names = Object.keys(lane.secBy);
+    if (!names.length) return "";
+    return "Worked by: " + names.map(function (n) { var m = Math.round((lane.secBy[n] || 0) / 60); return n + (m ? " " + m + "m" : ""); }).join(" · ");
+  }
+  function clearedLine(d){
+    if (!d || !d.superseded) return "";
+    return "FAIL by " + (d.by || "?") + " " + hDate(d.at) + ", cleared PASS by " + (d.superseded.by || "?") + " " + hDate(d.superseded.at);
+  }
+  function naOverFailLine(lane, key){
+    var A = window.GS_LANE_API, c = A && A.canon ? A.canon(key) : key, out = [];
+    (lane.history || []).forEach(function (h) { if (h.naOverFail && h.check === c) out.push("N/A over fail by " + (h.by || "?") + " " + hDate(h.at) + " (fail stays open)"); });
+    return out.join(" · ");
+  }
+
+
+  function el(id) { return document.getElementById(id); }
+
+  function fmtDur(lane){
+    if (!lane) return "";
+    var sec = lane.durationSec;
+    if (sec == null && lane.startedAt && lane.endedAt) {
+      sec = Math.max(0, Math.round((Date.parse(lane.endedAt)-Date.parse(lane.startedAt))/1000));
+    }
+    if (sec == null || isNaN(sec)) return "";
+    var m = Math.floor(sec/60), s = sec%60;
+    var clock = "";
+    if (lane.startedAt && lane.endedAt) {
+      function hm(iso){ var d=new Date(iso); if(isNaN(d)) return ""; return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+      clock = hm(lane.startedAt) + "–" + hm(lane.endedAt) + " ";
+    }
+    return clock + "(" + m + "m " + s + "s)";
+  }
+
+  function setStatus(m) { el("status").textContent = m || ""; }
+
+  async function loadUnit() {
+    var unit = (el("unitInput").value || "").trim();
+    if (!/^\d+$/.test(unit)) {
+      alert("Unit # must be numeric.");
+      return;
+    }
+    setStatus("Loading unit " + unit + "...");
+    el("results").innerHTML = "";
+    el("summary").style.display = "none";
+
+    try {
+      var res = await fetch(API + "/get-unit?unit=" + encodeURIComponent(unit));
+      var raw = await res.text();
+      var data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error("Server " + res.status + " empty"); }
+      if (!res.ok) throw new Error(data.error || ("Server " + res.status));
+      current = data;
+      render(data);
+      setStatus("Loaded — " + (data.present.length) + " lanes present");
+    } catch (err) {
+      setStatus("Load failed: " + (err.message || err));
+      current = null;
+    }
+  }
+
+  function render(data) {
+    // Summary pills
+    var sum = el("summary");
+    sum.style.display = "block";
+    var pills = "";
+    var failTotal = 0;
+    (window.gsLanes ? (gsLanes.hasNew(Object.keys((data&&data.lanes)||{})) ? gsLanes.ALL : gsLanes.LEGACY) : ["1","2","3","4"]).forEach(function (l) {
+      if (data.present.indexOf(l) >= 0) {
+        var n = failCount(data.lanes[l]);
+        failTotal += n;
+        if (n) pills += '<span class="pill pill-fail">L' + l + " FAIL " + n + "</span>";
+        else pills += '<span class="pill pill-ok">L' + l + " OK</span>";
+      } else {
+        pills += '<span class="pill pill-miss">L' + l + " missing</span>";
+      }
+    });
+    failTotal -= movedFailOverlap(data);
+    sum.innerHTML =
+      '<div class="meta"><strong>Unit ' + data.unit + "</strong>" +
+      (data.complete ? " — LANES IN" : " — INCOMPLETE") +
+      (failTotal ? " — " + failTotal + " fails" : "") + "</div>" +
+      '<div class="pills">' + pills + "</div>";
+
+
+    // Lanes
+    var out = el("results");
+    out.innerHTML = "";
+    (window.gsLanes ? (gsLanes.hasNew(Object.keys((data&&data.lanes)||{})) ? gsLanes.ALL : gsLanes.LEGACY) : ["1","2","3","4"]).forEach(function (l) {
+      var lane = data.lanes[l];
+      if (!lane) return;
+
+      var block = document.createElement("div");
+      block.className = "card lane-block";
+
+      var title = document.createElement("div");
+      title.className = "lane-title";
+      title.textContent = LANE_NAMES[l] + " — " + (lane.inspector || "?") + " — " + (lane.date || "") + (fmtDur(lane) ? " — " + fmtDur(lane) : "") + (lane.passCount>1 ? (" — "+lane.passCount+" passes") : "");
+      block.appendChild(title);
+      var cl = contribLine(lane);
+      if (cl) { var who = document.createElement("div"); who.className = "meta"; who.textContent = cl; block.appendChild(who); }
+      rainLines(lane).forEach(function (t) { var rl = document.createElement("div"); rl.className = "meta rr-line"; rl.style.cssText = "font-weight:700"; rl.textContent = t; block.appendChild(rl); });
+      // r7a: read-only Lane History on any lane that has more than one sitting (or an Add Inspection on it); loads when opened
+      if (window.GSHistory && GSHistory.worth(lane)) { var hh = document.createElement("div"); hh.className = "no-print"; GSHistory.mount(hh, { unit: data.unit, lane: l, api: API }); block.appendChild(hh); }
+
+      if (false && lane.hardStop) {
+        var hs = document.createElement("div");
+        hs.style.cssText = "color:#c0392b;font-weight:700;margin-bottom:8px;font-size:0.85rem;";
+        hs.textContent = "HARD STOP on this lane";
+        block.appendChild(hs);
+      }
+
+      // Checks — same sheet the Traveler prints, not just keys she tapped
+      var flagOpts = { toyHauler: !!lane.toyHauler, thWall: !!lane.thWall };
+      var sheet = (window.GS_LANE_API ? (sheetsFromLaneData(lane.unitType || "towable", flagOpts, window.GS_LANE_API.verOf(lane))[l] || SHEETS[l]) : SHEETS[l]) || [];
+      var seen = {};
+      sheet.forEach(function (pair) {
+        var key = pair[0], label = pair[1];
+        seen[key] = true;
+        (KEY_ALIAS[key]||[]).forEach(function(a){ seen[a]=true; });
+        var val = checkVal(lane.checks, key);
+        var row = document.createElement("div");
+        row.className = "check-row";
+        var cls = val === "pass" ? "pass" : val === "fail" ? "fail" : val === "na" ? "na" : "na";
+        var mark = val === "pass" ? "PASS" : val === "fail" ? "FAIL" : val === "na" ? "N/A" : "—";
+        var why = (val === "na" && lane.naReasons && lane.naReasons[key]) ? (" — " + lane.naReasons[key]) : "";
+        var stamp = (lane.attrV === 1 && lane.marksBy && lane.marksBy[(window.GS_LANE_API && window.GS_LANE_API.canon(key)) || key]) || null;
+        var by = stamp ? ' <span class="meta">' + esc2(stamp.by) + " " + esc2(hDate(stamp.at)) + "</span>" : "";
+        var nof = lane.attrV === 1 ? naOverFailLine(lane, key) : "";
+        row.innerHTML = "<span>" + label + why + by + (nof ? ' <span class="meta">' + esc2(nof) + "</span>" : "") + '</span><span class="' + cls + '">' + mark + "</span>";
+        block.appendChild(row);
+      });
+      Object.keys(lane.checks || {}).forEach(function (k) {
+        if (seen[k]) return;
+        var row = document.createElement("div");
+        row.className = "check-row";
+        var val = lane.checks[k];
+        var cls = val === "pass" ? "pass" : val === "fail" ? "fail" : "na";
+        row.innerHTML = "<span>" + k.replace(/_/g, " ") + '</span><span class="' + cls + '">' + String(val).toUpperCase() + "</span>";
+        block.appendChild(row);
+      });
+
+      // Defects
+      if (lane.defects && lane.defects.length) {
+        lane.defects.forEach(function (d) {
+          var card = document.createElement("div");
+          card.className = "defect";
+          var sev = d.severity || 3;
+          var sevLabel = SEV[sev] || (sev === 5 ? "Other" : "");
+          if (d.superseded) card.style.opacity = "0.6";
+          card.innerHTML =
+            '<span class="sev sev' + sev + '">' + sev + " " + sevLabel + "</span>" +
+            (d.superseded ? "<div class='meta'><b>CLEARED</b> — " + esc2(clearedLine(d)) + "</div>" : "") +
+            
+            (d.desc ? "<div>" + d.desc + "</div>" : "") +
+            (d.origin ? "<div class='meta'>Origin: " + d.origin + "</div>" : "");
+          var keys = [];
+          if (d.photos && d.photos.length) {
+            d.photos.forEach(function(ph){ var k = ph && (ph.key || ph.photoKey); if (k) keys.push(k); });
+          }
+          if (d.photoKey && keys.indexOf(d.photoKey) < 0) keys.unshift(d.photoKey);
+          keys.forEach(function(k){
+            var img = document.createElement("img");
+            img.className = "defect-photo";
+            img.alt = "Defect photo";
+            img.src = API + "/get-photo?key=" + encodeURIComponent(k) + (data.photoToken ? "&tok=" + encodeURIComponent(data.photoToken) : "");
+            img.onclick = function() {
+              el("photoFull").src = img.src;
+              el("photoModal").classList.add("on");
+            };
+            img.onerror = function() { img.style.display = "none"; };
+            card.appendChild(img);
+          });
+          block.appendChild(card);
+        });
+      } else {
+        var none = document.createElement("div");
+        none.className = "meta";
+        none.textContent = "No defects logged on this lane.";
+        block.appendChild(none);
+      }
+
+      out.appendChild(block);
+    });
+  }
+
+  function exportCsv() {
+    if (!current) { alert("Load a unit first."); return; }
+    function esc(v) {
+      var s = v == null ? "" : String(v);
+      if (s.indexOf(",") >= 0 || s.indexOf('"') >= 0 || s.indexOf("\n") >= 0)
+        return '"' + s.replace(/"/g, '""') + '"';
+      return s;
+    }
+    var lines = ["Unit,Lane,Inspector,Date,Severity,SeverityLabel,Description,Origin,HardStop,Timestamp"];
+    (window.gsLanes ? (gsLanes.hasNew(Object.keys((data&&data.lanes)||{})) ? gsLanes.ALL : gsLanes.LEGACY) : ["1","2","3","4"]).forEach(function (l) {
+      var lane = current.lanes[l];
+      if (!lane) return;
+      if (!lane.defects || !lane.defects.length) {
+        lines.push([current.unit, l, lane.inspector, lane.date, "", "", "(no defects)", "", lane.hardStop ? "Y" : "N", lane.timestamp].map(esc).join(","));
+      } else {
+        lane.defects.forEach(function (d) {
+          if (d.superseded) return;      // r6d: the export lists open defects only; the cleared ones are in the history on the page
+          lines.push([
+            current.unit, l, lane.inspector, lane.date,
+            d.severity, SEV[d.severity] || "", d.desc || "", d.origin || "",
+            lane.hardStop ? "Y" : "N", lane.timestamp
+          ].map(esc).join(","));
+        });
+      }
+    });
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "GS_PDI_Unit_" + current.unit + "_combined.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setStatus("CSV downloaded");
+  }
+
+  function doPrint() {
+    if (!current) { alert("Load a unit first."); return; }
+    window.print();
+  }
+
+  function clearAll() {
+    current = null;
+    el("unitInput").value = "";
+    el("results").innerHTML = "";
+    el("summary").style.display = "none";
+    setStatus("");
+  }
+
+  el("btnLoad").onclick = loadUnit;
+  el("btnCsv").onclick = exportCsv;
+  el("btnPrint").onclick = doPrint;
+  el("btnSummary").onclick = function(){
+    var unit = ((current && current.unit) || (el("unitInput").value || "")).trim();
+    if (!/^\d+$/.test(unit)) { alert("Load a unit first."); return; }
+    window.location.href = "timeline.html?unit=" + encodeURIComponent(unit);
+  };
+  el("btnClear").onclick = clearAll;
+  el("unitInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") loadUnit();
+  });
+
+  
+  el("photoClose").onclick = function() {
+    el("photoModal").classList.remove("on");
+    el("photoFull").src = "";
+  };
+  el("photoModal").onclick = function(e) {
+    if (e.target === el("photoModal")) {
+      el("photoModal").classList.remove("on");
+      el("photoFull").src = "";
+    }
+  };
+
+  // Deep link: ?unit=10001
+  var params = new URLSearchParams(window.location.search);
+  if (params.get("unit")) {
+    el("unitInput").value = params.get("unit");
+    loadUnit();
+  }
+})();
+</script>
+<script>requireFloor();</script>
+</body>
+</html>

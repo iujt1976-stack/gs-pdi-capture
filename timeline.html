@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Unit Timeline</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; padding-bottom: 40px; }
+h1 { font-size: 1.25rem; text-align: center; letter-spacing: 1px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+h3 { font-size: 0.78rem; margin: 8px 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
+th { background: #1f4e79; color: #fff; }
+td.n { text-align: center; font-weight: 700; }
+.ok { color: #1e7a3a; font-weight: 700; }
+.hold { color: #c0392b; font-weight: 700; }
+.pill { display: inline-block; background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin: 0 4px 8px 0; border: none; cursor: pointer; }
+.pill.dim { background: #5d6d7e; }
+.pill.ok { background: #1e7a3a; }
+.pill.miss { background: #95a5a6; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 10px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 160px; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.note { font-size: 0.75rem; color: #666; margin-top: 6px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; cursor: pointer; background: #2c3e50; }
+.fail-block { border: 1px solid #ccc; padding: 8px; margin-bottom: 10px; page-break-inside: avoid; }
+.fail-block img { max-width: 320px; max-height: 240px; border: 1px solid #999; margin-top: 6px; display: block; }
+.print-foot { font-size: 0.7rem; color: #666; margin-top: 16px; text-align: center; display: none; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; max-width: none; padding: 0; }
+  h1 { font-size: 16pt; }
+  .card { border: 1px solid #000; break-inside: avoid; }
+  th { background: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .fail-block img { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .print-foot { display: block; }
+  a { color: #000; text-decoration: none; }
+}
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>UNIT TIMELINE</h1>
+
+<div class="card no-print">
+  <div class="row">
+    <div>
+      <label>Unit #</label>
+      <input type="text" id="unit" inputmode="numeric" placeholder="Serial only — 169069 not 51-169069">
+    </div>
+  </div>
+  <button type="button" class="btn" id="btnLoad">Load timeline</button>
+  <button type="button" class="btn" id="btnPrint" style="background:#8e44ad">Download summary</button>
+  <p class="status" id="status"></p>
+
+</div>
+
+<div id="report" style="display:none">
+  <div class="card">
+    <h2 id="head">Unit</h2>
+    <div id="pills"></div>
+    <p class="note" id="headNote"></p>
+  </div>
+  <div class="card">
+    <h2>Built — production stations</h2>
+    <div id="builtPills"></div>
+    <div id="builtBox"></div>
+  </div>
+  <div class="card">
+    <h2>PDI lanes</h2>
+    <div id="pdiBox"></div>
+  </div>
+  <div class="card">
+    <h2>PDI fails + photos</h2>
+    <div id="failBox"></div>
+  </div>
+  <div class="card">
+    <h2>Rain / Hold</h2>
+    <div id="metaBox"></div>
+  </div>
+  <div class="card">
+    <h2>Warranty field hits</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Code</th><th>PDI Point</th><th>Problem</th><th>Cost</th><th>vs PDI</th></tr></thead>
+      <tbody id="wBody"></tbody>
+    </table>
+    <p class="note" id="wNote"></p>
+  </div>
+  <p class="print-foot">Unit summary — not the traveler. Photos from PDI Capture. Gulf Stream Quality.</p>
+</div>
+
+<script src="gs-lanes.js"></script>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var warrantyHits = null;
+  function el(id){ return document.getElementById(id); }
+  function fmtDur(lane){
+    if (!lane) return '';
+    var sec = lane.durationSec;
+    if (sec == null && lane.startedAt && lane.endedAt) sec = Math.max(0, Math.round((Date.parse(lane.endedAt)-Date.parse(lane.startedAt))/1000));
+    if (sec == null || isNaN(sec)) return '';
+    var m = Math.floor(sec/60), s = sec % 60;
+    function hm(iso){ var d=new Date(iso); if(isNaN(d)) return ''; return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+    var clock = (lane.startedAt && lane.endedAt) ? (hm(lane.startedAt)+'–'+hm(lane.endedAt)+' ') : '';
+    var tag = '';
+    if (lane.durationVoid) tag = ' VOID';
+    else if (lane.durationExempt) tag = ' EXEMPT';
+    else if (lane.durationOverride && lane.durationOverride.action === 'set') tag = ' SET';
+    return clock + '(' + m + 'm ' + s + 's)' + tag;
+  }
+  function setStatus(m){ el("status").textContent = m || ""; }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+  function money(n){ return "$" + Math.round(n||0).toLocaleString(); }
+  function norm(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim(); }
+
+  function scorePoint(pdi, hit){
+    if (!pdi || !pdi.present || !pdi.present.length) return "NO_PDI";
+    var laneKey = (hit.lane||"").replace("L","");
+    var lane = (pdi.lanes||{})[laneKey];
+    if (!lane) return "ESCAPE";
+    var target = norm(hit.point).replace(/^l[1-4] /,"");
+    var matched = null;
+    Object.keys(lane.checks||{}).forEach(function(k){
+      var lab = norm(k);
+      if (target.indexOf(lab)>=0 || lab.indexOf(target.slice(0,18))>=0) matched = lane.checks[k];
+    });
+    (lane.defects||[]).forEach(function(d){
+      if (d.superseded) return;
+      var lab = norm(d.point||d.desc||"");
+      if (lab && (target.indexOf(lab)>=0 || lab.indexOf(target.slice(0,18))>=0)) matched = "fail";
+    });
+    if (matched === "fail") return "CAUGHT";
+    return "ESCAPE";
+  }
+
+  async function loadWarranty(){
+    if (warrantyHits) return warrantyHits;
+    var r = await fetch("/.netlify/functions/warranty");
+    var raw = await r.text(); var d = {};
+    try { d = raw ? JSON.parse(raw) : {}; } catch (pe) { throw new Error("warranty reply unreadable (" + r.status + ")"); }
+    if (!r.ok) throw new Error("warranty read failed: " + (r.status === 401 ? "Ops PIN needed or wrong (401)" : (d.error || r.status)));
+    warrantyHits = (d && d.hits) ? d.hits : [];
+    return warrantyHits;
+  }
+
+  async function load(){
+    var unit = (el("unit").value||"").trim();
+    if (unit.indexOf("-")>=0) unit = unit.split("-").pop().trim();
+    if (!/^\d+$/.test(unit)) { alert("Unit # must be numeric (serial only)."); return; }
+    el("status").textContent = "Loading unit " + unit + "…";
+    if (el("banner")) el("banner").style.display = "none";
+    try {
+      var wh = await loadWarranty();
+      var photoTok="";
+      var pdiP = fetch(API+"/get-unit?unit="+encodeURIComponent(unit)).then(function(r){return r.json();}).then(function(d){ photoTok=d.photoToken||""; return d; });
+      var metaP = fetch(API+"/submit-meta?unit="+encodeURIComponent(unit)).then(function(r){return r.json();});
+      var prodP = fetch(API+"/get-prod?unit="+encodeURIComponent(unit)).then(function(r){return r.json();});
+      var pdi = await pdiP;
+      var meta = await metaP;
+      var prod = await prodP;
+      var field = wh.filter(function(h){ return String(h.unit)===String(unit) && !h.policy; });
+      render(unit, pdi, meta, field, prod, (pdi && pdi.photoToken) || photoTok || "");
+      el("status").textContent = "Loaded.";
+    } catch(e){
+      el("status").textContent = "Failed: " + e.message;
+      var bn = el("banner");
+      if (!bn) { bn = document.createElement("div"); bn.id = "banner"; bn.setAttribute("role", "alert"); bn.style.cssText = "background:#fdecea;border:2px solid #c0392b;color:#7b1d12;border-radius:8px;padding:12px;margin:8px 0;font-size:.85rem;font-weight:700"; el("status").parentNode.insertBefore(bn, el("status").nextSibling); }
+      bn.style.display = "block"; bn.textContent = "NOT LOADED: " + e.message + ". Nothing below is current for this unit.";
+    }
+  }
+
+  function render(unit, pdi, meta, field, prod, photoTok){
+    photoTok = photoTok || (pdi && pdi.photoToken) || "";
+    el("report").style.display = "block";
+    el("head").textContent = "Unit " + unit;
+    var ST = ["floors","shelling","electrical","metal","prefinal","final"];
+    var SN = {floors:"Floors",shelling:"Shelling",electrical:"Elec",metal:"Metal",prefinal:"Pre-final",final:"Final"};
+    var prodPresent = (prod && prod.present) || [];
+    var bp = "";
+    ST.forEach(function(s){
+      bp += prodPresent.indexOf(s)>=0 ? '<span class="pill ok">'+SN[s]+"</span>" : '<span class="pill miss">'+SN[s]+"</span>";
+    });
+    if (el("builtPills")) el("builtPills").innerHTML = bp;
+    if (el("builtBox")) {
+      if (!prodPresent.length) el("builtBox").innerHTML = "<p class='note'>No production stations submitted.</p>";
+      else {
+        var bh = "";
+        ST.forEach(function(s){
+          var rec = (prod.stations||{})[s];
+          if (!rec) return;
+          bh += "<div class='note'><strong>"+SN[s]+"</strong> — "+esc(rec.inspector||"?")+" — fails "+((rec.defects||[]).length)+(fmtDur(rec)?(" — "+fmtDur(rec)):"")+"</div>";
+        });
+        el("builtBox").innerHTML = bh;
+      }
+    }
+    var present = (pdi && pdi.present) || [];
+    var pills = "";
+    var slots = window.gsLanes ? gsLanes.required(present) : ["R","S","E","I"];
+    Object.keys((pdi && pdi.lanes) || {}).forEach(function(k){ if (slots.indexOf(k)<0) slots.push(k); });
+    slots.forEach(function(l){
+      pills += present.indexOf(l)>=0
+        ? '<span class="pill ok">' + (window.gsLanes?gsLanes.short(l):l) + ' in</span>'
+        : '<span class="pill miss">' + (window.gsLanes?gsLanes.short(l):l) + ' missing</span>';
+    });
+    el("pills").innerHTML = pills;
+    el("headNote").textContent = present.length
+      ? (pdi.complete ? "PDI complete (4 lanes)." : "PDI incomplete.")
+      : "No PDI file for this serial.";
+
+    var pb = el("pdiBox");
+    var fb = el("failBox");
+    if (!present.length) {
+      pb.innerHTML = "<p class='note'>No Capture submits.</p>";
+      fb.innerHTML = "<p class='note'>No PDI photos.</p>";
+    } else {
+      var html = "";
+      var failsHtml = "";
+      var failCount = 0;
+      slots.forEach(function(l){
+        var lane = (pdi.lanes||{})[l];
+        if (!lane) return;
+        var fails = 0;
+        Object.keys(lane.checks||{}).forEach(function(k){ if (lane.checks[k]==="fail") fails++; });
+        html += "<div class='note'><strong>L"+l+"</strong> — "+esc(lane.inspector||"?")+" — "+esc(lane.date||"")+" — fails "+fails+(fmtDur(lane)?(" — "+fmtDur(lane)):"")+(lane.passCount?(" — "+lane.passCount+" passes"):"")+(lane.durationVoid?" — VOID":"")+(lane.durationExempt&&!lane.durationVoid?" — EXEMPT":"")+(lane.adminClose?" — ADMIN CLOSE":"")+" — <a class='no-print' href='aggregator.html?unit="+unit+"'>Agg</a> · <a class='no-print' href='traveler.html?unit="+unit+"'>Trav</a></div>";
+        (lane.passes||[]).forEach(function(pass, pi){
+          if ((lane.passes||[]).length < 2) return;
+          var pd = (pass.defects||[]).length;
+          html += "<div class='note' style='padding-left:12px'>Pass "+(pi+1)+" — "+esc(pass.inspector||"?")+" — "+esc((pass.timestamp||pass.endedAt||"").slice(0,16).replace("T"," "))+" — "+pd+" defects"+(pass.sessionDurationSec!=null?(" — "+Math.round(pass.sessionDurationSec/60)+"m session"):"")+"</div>";
+        });
+        // r6d: who worked the lane, and each fail that a later PASS cleared (kept, labelled, not counted as open)
+        if (lane.attrV === 1 && lane.secBy) {
+          var who = Object.keys(lane.secBy).map(function(n){ var m = Math.round((lane.secBy[n]||0)/60); return esc(n)+(m?(" "+m+"m"):""); }).join(" · ");
+          if (who) html += "<div class='note' style='padding-left:12px'>Worked by "+who+"</div>";
+        }
+        function hd(at){ var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(at||"")); return m ? (Number(m[2])+"/"+Number(m[3])) : ""; }
+        (lane.history||[]).forEach(function(h){
+          if (h.naOverFail) html += "<div class='note' style='padding-left:12px'>N/A over fail — "+esc(h.check)+" by "+esc(h.by)+" "+hd(h.at)+" (fail stays open)</div>";
+          if (h.adminEdit) html += "<div class='note' style='padding-left:12px'>Admin edit by "+esc(h.by)+" "+hd(h.at)+" — "+esc(h.reason)+"</div>";
+        });
+        (lane.defects||[]).forEach(function(d){
+          if (d.superseded) {
+            html += "<div class='note' style='padding-left:12px'>CLEARED — L"+l+" "+esc(d.point||d.desc||d.checkKey||"")+": FAIL by "+esc(d.by||"?")+" "+hd(d.at)+", cleared PASS by "+esc(d.superseded.by||"?")+" "+hd(d.superseded.at)+"</div>";
+            return;
+          }
+          failCount++;
+          var cap = "L"+l+" Sev "+esc(d.severity)+" — "+esc(d.point||d.desc||"");
+          var keys=(d.photos||[]).map(function(ph){return ph&&(ph.key||ph.photoKey);}).filter(Boolean);
+          if(d.photoKey&&keys.indexOf(d.photoKey)<0) keys.unshift(d.photoKey);
+          var img = keys.length
+            ? keys.map(function(k){ return '<img src="'+API+'/get-photo?key='+encodeURIComponent(k)+(photoTok?('&tok='+encodeURIComponent(photoTok)):'')+'" alt="defect">'; }).join("")
+            : '<p class="note">No photo</p>';
+          failsHtml += '<div class="fail-block"><div><strong>'+cap+"</strong></div><div class='note'>"+esc(d.desc||"")+"</div>"+img+"</div>";
+        });
+      });
+      pb.innerHTML = html;
+      fb.innerHTML = failsHtml || "<p class='note'>Lanes in — no defects logged.</p>";
+    }
+
+    var mb = el("metaBox");
+    var holds = (meta && meta.holds) || [];
+    var rain = (meta && meta.rainBay) || [];
+    var posts = (meta && meta.postPdi) || [];
+    if (!holds.length && !rain.length && !posts.length) mb.innerHTML = "<p class='note'>No rain bay, hold, or post-PDI records.</p>";
+    else {
+      var h = "";
+      rain.forEach(function(r){ h += "<div class='note'>Rain "+esc(r.date)+" — "+esc(r.result)+" — "+esc(r.issues||"")+"</div>"; });
+      holds.forEach(function(r){ h += "<div class='note'>"+(r.ready?"Released":"<span class='hold'>ON HOLD</span>")+" "+esc(r.dateOnHold)+" — "+esc(r.reason||"")+"</div>"; });
+      posts.forEach(function(r){ h += "<div class='note'>Post-PDI "+esc(r.dateFound||r.date||"")+" — "+esc(r.source||"")+" — "+esc(r.desc||"")+"</div>"; });
+      mb.innerHTML = h;
+    }
+
+    var wb = el("wBody"); wb.innerHTML = "";
+    if (!field.length) {
+      wb.innerHTML = '<tr><td colspan="6">No warranty hits on this serial in the YTD dumps.</td></tr>';
+    } else {
+      field.sort(function(a,b){ return String(b.offline).localeCompare(String(a.offline)); });
+      field.forEach(function(h){
+        var vs = scorePoint(pdi, h);
+        var cls = vs==="CAUGHT"?"ok":(vs==="ESCAPE"?"hold":"");
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>"+esc(h.offline)+"</td><td>"+esc(h.code)+"</td><td>"+esc(h.point)+"</td><td>"+esc(h.problem)+"</td><td class='n'>"+money(h.cost)+"</td><td class='"+cls+"'>"+vs+"</td>";
+        wb.appendChild(tr);
+      });
+    }
+    el("wNote").textContent = field.length
+      ? (field.length + " collapsed hits. ESCAPE = PDI passed or never failed that point. NO_PDI = no Capture file.")
+      : "Warranty overlay uses the locked YTD dumps. New claims land when you refresh those files.";
+  }
+
+  el("btnLoad").onclick = load;
+  el("btnPrint").onclick = function(){
+    if (el("report").style.display === "none") { alert("Load a unit first."); return; }
+    var imgs = Array.prototype.slice.call(document.querySelectorAll("#failBox img"));
+    var pending = imgs.filter(function(img){ return !img.complete; });
+    if (!pending.length) { window.print(); return; }
+    el("status").textContent = "Waiting on photos…";
+    var left = pending.length;
+    pending.forEach(function(img){
+      img.onload = img.onerror = function(){
+        left--;
+        if (left <= 0) { el("status").textContent = "Loaded."; window.print(); }
+      };
+    });
+    setTimeout(function(){ window.print(); }, 4000);
+  };
+  el("unit").addEventListener("keydown", function(e){ if (e.key==="Enter") load(); });
+  var q = new URLSearchParams(location.search).get("unit");
+  if (q){ el("unit").value = q; load(); }
+})();
+</script>
+</body>
+</html>

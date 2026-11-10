@@ -1,0 +1,61 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[functions."day-units"]
+  timeout = 26
+
+[functions."inspector-stats"]
+  timeout = 26
+
+[functions."daily-report"]
+  timeout = 26
+
+[functions."submit-photo"]
+  timeout = 26
+
+[functions."blob-transfer"]
+  timeout = 26
+
+[functions."submit-pdi"]
+  timeout = 26
+
+[functions."warranty"]
+  timeout = 26
+
+[functions."warranty-ingests"]
+  timeout = 26
+
+[functions."cohort-units"]
+  timeout = 26
+
+[functions."submit-assist"]
+  timeout = 26
+
+[functions."lane-audit"]
+  timeout = 26
+
+[functions."repair-day-index"]
+  timeout = 26
+
+[functions."lane-health"]
+  timeout = 26
+
+[functions."fail-clear"]
+  timeout = 26
+
+[functions."lane-restore"]
+  timeout = 26
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+
+[[headers]]
+  for = "/version.json"
+  [headers.values]
+    Cache-Control = "no-store"

@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — Warranty Trends</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, Arial, Helvetica, sans-serif; background: #eef2f5; color: #1c2833; padding: 16px; max-width: 1100px; margin: 0 auto; }
+h1 { font-size: 1.25rem; color: #1b4f72; }
+.lede { color: #148f77; font-size: 0.9rem; margin: 2px 0 8px; }
+.card { background: #fff; border: 1px solid #c5d0da; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+h2 { font-size: 0.86rem; color: #1b4f72; text-transform: uppercase; letter-spacing: 0.4px; border-bottom: 2px solid #1b4f72; padding-bottom: 4px; margin: 4px 0 8px; }
+h3 { font-size: 0.8rem; margin: 10px 0 6px; color: #1b4f72; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+label { font-size: 0.78rem; font-weight: 700; }
+select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid #bbb; }
+.pill { border: none; background: #1f4e79; color: #fff; font-weight: 800; padding: 8px 12px; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+.pill.dim { background: #5d6d7e; }
+.status, .note { font-size: 0.75rem; color: #566573; margin-top: 6px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.74rem; }
+th, td { border: 1px solid #bfc9d4; padding: 3px 5px; }
+th { background: #1b4f72; color: #fff; text-align: center; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+td.c { text-align: center; }
+.up { color: #922b21; font-weight: 800; }
+.dn { color: #196f3d; font-weight: 800; }
+.flat { color: #566573; }
+.tot { background: #d4e6f1; font-weight: 800; }
+.now { background: #fcf3cf; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.barwrap { height: 8px; background: #e8eef3; border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.bar { height: 100%; background: #1b4f72; }
+.chartbox { height: 240px; margin: 6px 0 12px; position: relative; }
+@media (max-width: 800px) { .grid { grid-template-columns: 1fr; } .chartbox { height: 200px; } }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; max-width: none; padding: 0; }
+  .card { break-inside: avoid; border: none; }
+  th, .now, .tot { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { margin: 0.45in; size: letter; }
+}
+
+.banner{background:#fdecea;border:2px solid #c0392b;color:#7b1d12;border-radius:8px;padding:12px;margin:8px 0;font-size:.85rem;font-weight:700}
+.banner button{margin-left:8px;font:inherit;padding:4px 10px;border-radius:6px;border:1px solid #7b1d12;background:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="no-print card">
+  <div class="row">
+    <label>Model year</label>
+    <select id="yearSel"></select>
+    <label>Weeks</label>
+    <select id="weekN">
+      <option value="8">8</option>
+      <option value="12" selected>12</option>
+      <option value="16">16</option>
+      <option value="26">26</option>
+    </select>
+    <label>Months</label>
+    <select id="monthN">
+      <option value="6">6</option>
+      <option value="12" selected>12</option>
+      <option value="18">18</option>
+    </select>
+    <label><input type="checkbox" id="incPolicy" checked> Include policy</label>
+    <button type="button" class="pill" id="btnPrint">Print / PDF</button>
+    <a class="pill dim" href="ops.html">← Main</a>
+  </div>
+  <p class="status" id="status">Loading live warranty set…</p>
+  <div id="banner" class="banner" style="display:none" role="alert"></div>
+  <p class="note" id="setStamp"></p>
+</div>
+
+<h1>WARRANTY TREND — WEEK / MONTH BY PLANT</h1>
+<p class="lede" id="lede">Total spend + top 3 components</p>
+<div class="card">
+  <h2>Last four weeks</h2>
+  <p class="note" id="last4Note"></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Plant</th>
+        <th id="hW0">W1</th><th id="hW1">W2</th><th id="hW2">W3</th><th id="hW3">W4</th>
+      </tr>
+    </thead>
+    <tbody id="last4Body"></tbody>
+  </table>
+  <p class="note" id="last4Tops"></p>
+</div>
+<div class="card">
+  <h2>Change this period</h2>
+  <p class="body" id="wowCopy" style="font-size:0.82rem;line-height:1.4"></p>
+  <p class="body" id="momCopy" style="font-size:0.82rem;line-height:1.4;margin-top:8px"></p>
+</div>
+
+<div class="card">
+  <h2>1. Week over week — total spend</h2>
+  <div class="chartbox"><canvas id="chartWeekSpend"></canvas></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Week (Mon)</th><th>Ent $</th><th>WoW</th>
+        <th>51</th><th>WoW</th><th>53</th><th>WoW</th>
+        <th>57</th><th>WoW</th><th>76</th><th>WoW</th>
+      </tr>
+    </thead>
+    <tbody id="weekBody"></tbody>
+  </table>
+  <p class="note" id="weekNote"></p>
+</div>
+
+<div class="card">
+  <h2>2. Week over week — WCPU</h2>
+  <p class="note">WCPU = period spend ÷ unique serials that took a claim in that week. Units shown under each rate.</p>
+  <div class="chartbox"><canvas id="chartWeekWcpu"></canvas></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Week (Mon)</th><th>Ent WCPU</th><th>WoW</th><th>n</th>
+        <th>51</th><th>WoW</th><th>n</th>
+        <th>53</th><th>WoW</th><th>n</th>
+        <th>57</th><th>WoW</th><th>n</th>
+        <th>76</th><th>WoW</th><th>n</th>
+      </tr>
+    </thead>
+    <tbody id="weekWcpu"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>3. Latest week — top 3 components / issues</h2>
+  <p class="note" id="weekTopLabel"></p>
+  <div class="chartbox"><canvas id="chartWeekComp"></canvas></div>
+  <div class="grid" id="weekTops"></div>
+</div>
+
+<div class="card">
+  <h2>4. Month over month — total spend</h2>
+  <div class="chartbox"><canvas id="chartMonthSpend"></canvas></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th><th>Ent $</th><th>MoM</th>
+        <th>51</th><th>MoM</th><th>53</th><th>MoM</th>
+        <th>57</th><th>MoM</th><th>76</th><th>MoM</th>
+      </tr>
+    </thead>
+    <tbody id="monthBody"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>5. Month over month — WCPU</h2>
+  <p class="note">WCPU = month spend ÷ unique serials that took a claim in that month.</p>
+  <div class="chartbox"><canvas id="chartMonthWcpu"></canvas></div>
+  <table>
+    <thead>
+      <tr>
+        <th>Month</th><th>Ent WCPU</th><th>MoM</th><th>n</th>
+        <th>51</th><th>MoM</th><th>n</th>
+        <th>53</th><th>MoM</th><th>n</th>
+        <th>57</th><th>MoM</th><th>n</th>
+        <th>76</th><th>MoM</th><th>n</th>
+      </tr>
+    </thead>
+    <tbody id="monthWcpu"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>6. Latest month — top 3 components / issues</h2>
+  <p class="note" id="monthTopLabel"></p>
+  <div class="chartbox"><canvas id="chartMonthComp"></canvas></div>
+  <div class="grid" id="monthTops"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+requireOps();
+(function(){
+  var PLANTS = ["51","53","57","76"];
+  var hits = [];
+  var activity = [];
+  var weeks = [];
+  var generated = "";
+  var charts = {};
+  var COLORS = { ENT:"#1b4f72", "51":"#148f77", "53":"#922b21", "57":"#b7950b", "76":"#6c3483" };
+
+  function el(id){ return document.getElementById(id); }
+  function money(n){
+    n = Number(n)||0;
+    var sign = n<0?"-":"";
+    n = Math.abs(n);
+    return sign + "$" + Math.round(n).toLocaleString();
+  }
+  function yearOf(h){ return String(h.year||"").replace(/\.0$/,"").trim(); }
+  function pad(n){ return (n<10?"0":"")+n; }
+
+  function parseOffline(s){
+    if (!s) return null;
+    if (Object.prototype.toString.call(s) === "[object Date]") return isNaN(s) ? null : s;
+    var t = String(s).trim();
+    if (!t) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+      var p = t.slice(0,10).split("-");
+      return new Date(Date.UTC(Number(p[0]), Number(p[1])-1, Number(p[2])));
+    }
+    var n = Number(t);
+    if (n > 20000 && n < 80000) {
+      return new Date(Math.round((n - 25569) * 86400 * 1000));
+    }
+    var d = new Date(t);
+    return isNaN(d) ? null : d;
+  }
+
+  function easternYmd(dt){
+    try {
+      var parts = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", year:"numeric", month:"2-digit", day:"2-digit" }).formatToParts(dt);
+      var o = {};
+      parts.forEach(function(p){ o[p.type]=p.value; });
+      return o.year + "-" + o.month + "-" + o.day;
+    } catch (e) {
+      return dt.toISOString().slice(0,10);
+    }
+  }
+  function ymdToUtc(ymd){
+    var p = ymd.split("-");
+    return new Date(Date.UTC(Number(p[0]), Number(p[1])-1, Number(p[2])));
+  }
+  function addDays(ymd, n){
+    var d = ymdToUtc(ymd);
+    d.setUTCDate(d.getUTCDate()+n);
+    return d.toISOString().slice(0,10);
+  }
+  function mondayOf(ymd){
+    var d = ymdToUtc(ymd);
+    var dow = d.getUTCDay();
+    var back = dow === 0 ? 6 : dow - 1;
+    return addDays(ymd, -back);
+  }
+  function monthOf(ymd){ return ymd.slice(0,7); }
+  function fmtWeek(mon){
+    var sun = addDays(mon, 6);
+    return mon.slice(5) + " → " + sun.slice(5);
+  }
+
+  function deltaHtml(cur, prev){
+    if (prev == null || prev === 0) {
+      if (!cur) return '<span class="flat">—</span>';
+      return '<span class="up">new</span>';
+    }
+    var d = (cur - prev) / prev;
+    var cls = d > 0.02 ? "up" : (d < -0.02 ? "dn" : "flat");
+    var sign = d > 0 ? "+" : "";
+    return '<span class="'+cls+'">'+sign+(d*100).toFixed(0)+'%</span>';
+  }
+
+  function activityRows(){
+    var y = el("yearSel").value;
+    var pol = el("incPolicy").checked;
+    var rows = [];
+    (activity || []).forEach(function(pack){
+      if (!pack || pack.kind === "baseline" || pack.kind === "basis-change") return;
+      var ymd = String(pack.weekEnding || "").slice(0,10);
+      if (!ymd) return;
+      if ((Number(pack.addedN)||0) <= 0 && (Number(pack.addedCost)||0) === 0) return;
+      (pack.added || []).forEach(function(h){
+        if (!pol && h.policy) return;
+        if (y && y !== "ALL" && yearOf(h) !== y) return;
+        if (PLANTS.indexOf(String(h.plant)) < 0) return;
+        rows.push({ h:h, ymd:ymd, week: mondayOf(ymd), month: monthOf(ymd), pack:pack });
+      });
+    });
+    return rows;
+  }
+
+  function packKeys(kind, n, rows){
+    var set = {};
+    rows.forEach(function(r){
+      var k = kind === "week" ? r.week : r.month;
+      if (k) set[k] = 1;
+    });
+    var keys = Object.keys(set).sort();
+    return keys.slice(-n);
+  }
+
+  function spendGrid(datedList, keyFn, keys){
+    var bag = {};
+    keys.forEach(function(k){
+      bag[k] = {
+        ENT:0, "51":0,"53":0,"57":0,"76":0, n:0,
+        uENT:{}, u51:{}, u53:{}, u57:{}, u76:{}
+      };
+    });
+    datedList.forEach(function(row){
+      var k = keyFn(row);
+      if (!bag[k]) return;
+      var c = Number(row.h.cost)||0;
+      var plant = String(row.h.plant||"");
+      var unit = String(row.h.unit||"");
+      bag[k].ENT += c;
+      bag[k].n++;
+      if (bag[k][plant] != null) bag[k][plant] += c;
+      if (unit) {
+        bag[k].uENT[plant+"|"+unit] = 1;
+        if (bag[k]["u"+plant]) bag[k]["u"+plant][unit] = 1;
+      }
+    });
+    keys.forEach(function(k){
+      var r = bag[k];
+      r.nENT = Object.keys(r.uENT).length;
+      PLANTS.forEach(function(p){ r["n"+p] = Object.keys(r["u"+p]||{}).length; });
+    });
+    return bag;
+  }
+  function wcpu(cost, n){ return n ? cost/n : 0; }
+
+  function top3(datedList, pred){
+    var byP = { ENT:{} };
+    PLANTS.forEach(function(p){ byP[p] = {}; });
+    datedList.forEach(function(row){
+      if (!pred(row)) return;
+      var name = String(row.h.desc||"").trim() || "(blank)";
+      var c = Number(row.h.cost)||0;
+      byP.ENT[name] = (byP.ENT[name]||0) + c;
+      if (byP[row.h.plant]) byP[row.h.plant][name] = (byP[row.h.plant][name]||0) + c;
+    });
+    function rank(obj){
+      return Object.keys(obj).sort(function(a,b){ return obj[b]-obj[a]; }).slice(0,3)
+        .map(function(name){ return { name:name, cost:obj[name] }; });
+    }
+    var out = { ENT: rank(byP.ENT) };
+    PLANTS.forEach(function(p){ out[p] = rank(byP[p]); });
+    return out;
+  }
+
+  function topsHtml(cur, prev, maxCost){
+    var blocks = [["ENT","Enterprise"]].concat(PLANTS.map(function(p){ return [p,"Plant "+p]; }));
+    return blocks.map(function(pair){
+      var k = pair[0], lab = pair[1];
+      var rows = cur[k] || [];
+      var prevMap = {};
+      (prev[k]||[]).forEach(function(r){ prevMap[r.name]=r.cost; });
+      var html = "<div><h3>"+lab+"</h3><table><thead><tr><th>#</th><th>Component / issue</th><th>This</th><th>Prior</th><th>Δ</th></tr></thead><tbody>";
+      if (!rows.length) html += '<tr><td colspan="5">None</td></tr>';
+      rows.forEach(function(r,i){
+        var p = prevMap[r.name] || 0;
+        html += "<tr><td class=\"c\">"+(i+1)+"</td><td>"+r.name+
+          '<div class="barwrap"><div class="bar" style="width:'+(maxCost? Math.min(100, r.cost/maxCost*100):0)+'%"></div></div></td>'+
+          '<td class="n">'+money(r.cost)+'</td><td class="n">'+money(p)+'</td><td class="c">'+deltaHtml(r.cost,p)+"</td></tr>";
+      });
+      html += "</tbody></table></div>";
+      return html;
+    }).join("");
+  }
+
+  function renderPeriodTable(tbody, keys, bag, labelFn){
+    tbody.innerHTML = "";
+    keys.forEach(function(k, idx){
+      var row = bag[k];
+      var prev = idx ? bag[keys[idx-1]] : null;
+      var tr = document.createElement("tr");
+      if (idx === keys.length-1) tr.className = "now";
+      var cells = "<td>"+labelFn(k)+"</td><td class=\"n\">"+money(row.ENT)+"</td><td class=\"c\">"+deltaHtml(row.ENT, prev&&prev.ENT)+"</td>";
+      PLANTS.forEach(function(p){
+        cells += '<td class="n">'+money(row[p])+'</td><td class="c">'+deltaHtml(row[p], prev&&prev[p])+"</td>";
+      });
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    });
+  }
+  function renderWcpuTable(tbody, keys, bag, labelFn){
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    keys.forEach(function(k, idx){
+      var row = bag[k];
+      var prev = idx ? bag[keys[idx-1]] : null;
+      var curE = wcpu(row.ENT, row.nENT);
+      var prevE = prev ? wcpu(prev.ENT, prev.nENT) : null;
+      var tr = document.createElement("tr");
+      if (idx === keys.length-1) tr.className = "now";
+      var cells = "<td>"+labelFn(k)+"</td><td class=\"n\">"+money(curE)+"</td><td class=\"c\">"+deltaHtml(curE, prevE)+"</td><td class=\"c\">"+(row.nENT||0)+"</td>";
+      PLANTS.forEach(function(p){
+        var cur = wcpu(row[p], row["n"+p]);
+        var prv = prev ? wcpu(prev[p], prev["n"+p]) : null;
+        cells += '<td class="n">'+money(cur)+'</td><td class="c">'+deltaHtml(cur, prv)+'</td><td class="c">'+(row["n"+p]||0)+"</td>";
+      });
+      tr.innerHTML = cells;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderLast4(){
+    var four = (weeks || []).slice().sort(function(a,b){
+      return String(a.weekEnding||"").localeCompare(String(b.weekEnding||""));
+    }).slice(-4);
+    while (four.length < 4) four.push(null);
+    four.forEach(function(w,i){
+      var h = el("hW"+i);
+      if (h) h.textContent = w ? (w.label || w.weekEnding) : "—";
+    });
+    var body = el("last4Body");
+    if (!body) return;
+    var rows = PLANTS.map(function(p){
+      var cells = four.map(function(w){
+        if (!w || !w.cost) return '<td class="n">—</td>';
+        var t = w.top && w.top[p];
+        var extra = t ? ("<br><span class=\"flat\">"+t.name+" "+money(t.cost)+"</span>") : "";
+        return '<td class="n">'+money(w.cost[p]||0)+extra+"</td>";
+      }).join("");
+      return "<tr><td>Plant "+p+"</td>"+cells+"</tr>";
+    }).join("");
+    var tot = four.map(function(w){
+      return w && w.cost ? '<td class="n">'+money(w.cost.ENT||0)+"</td>" : '<td class="n">—</td>';
+    }).join("");
+    body.innerHTML = rows + '<tr class="tot"><td>Enterprise</td>'+tot+"</tr>";
+    var note = four.filter(Boolean).map(function(w){
+      return (w.label||w.weekEnding)+" = "+(w.source==="top10"?"top-10 extract":"new claims on the YTD drop");
+    }).join(" · ");
+    if (el("last4Tops")) el("last4Tops").textContent = note || "Window empty.";
+  }
+
+  function render(){
+    renderLast4();
+    var rows = activityRows();
+    var packs = (activity || []).filter(function(p){ return p && p.kind !== "baseline" && p.kind !== "basis-change"; });
+    el("lede").textContent = packs.length
+      ? (rows.length.toLocaleString() + " new claims across " + packs.length + " weekly packs" + (generated ? (" · live " + generated) : ""))
+      : ("No weekly activity packs yet. Current live set is the baseline. Save next week’s YTD with a week-ending date to start WoW.");
+
+    var wN = Number(el("weekN").value)||12;
+    var mN = Number(el("monthN").value)||12;
+    var weeks = packKeys("week", wN, rows);
+    var months = packKeys("month", mN, rows);
+    var wBag = spendGrid(rows, function(r){ return r.week; }, weeks);
+    var mBag = spendGrid(rows, function(r){ return r.month; }, months);
+    wBag.__keys = weeks;
+    mBag.__keys = months;
+    renderPeriodTable(el("weekBody"), weeks, wBag, fmtWeek);
+    renderWcpuTable(el("weekWcpu"), weeks, wBag, fmtWeek);
+    renderPeriodTable(el("monthBody"), months, mBag, function(k){ return k; });
+    renderWcpuTable(el("monthWcpu"), months, mBag, function(k){ return k; });
+    drawTrend("chartWeekSpend", weeks.map(fmtWeek), wBag, "spend");
+    drawTrend("chartWeekWcpu", weeks.map(fmtWeek), wBag, "wcpu");
+    drawTrend("chartMonthSpend", months, mBag, "spend");
+    drawTrend("chartMonthWcpu", months, mBag, "wcpu");
+
+    var thisW = weeks[weeks.length-1], lastW = weeks[weeks.length-2];
+    var thisM = months[months.length-1], lastM = months[months.length-2];
+    el("weekTopLabel").textContent = thisW ? ("Week of " + thisW + " (Mon) vs prior week " + (lastW||"—") + ".") : "";
+    el("monthTopLabel").textContent = thisM ? (thisM + " vs prior month " + (lastM||"—") + ".") : "";
+    el("weekNote").textContent = "";
+
+    var wCur = top3(rows, function(r){ return r.week === thisW; });
+    var wPrev = top3(rows, function(r){ return r.week === lastW; });
+    var mCur = top3(rows, function(r){ return r.month === thisM; });
+    var mPrev = top3(rows, function(r){ return r.month === lastM; });
+    var wMax = 1, mMax = 1;
+    (wCur.ENT||[]).forEach(function(r){ if (r.cost>wMax) wMax=r.cost; });
+    (mCur.ENT||[]).forEach(function(r){ if (r.cost>mMax) mMax=r.cost; });
+    el("weekTops").innerHTML = topsHtml(wCur, wPrev, wMax);
+    el("monthTops").innerHTML = topsHtml(mCur, mPrev, mMax);
+
+    function periodLine(label, curKey, prevKey, bag, isPartial){
+      var cur = bag[curKey] || { ENT:0, nENT:0 };
+      var prev = bag[prevKey] || { ENT:0, nENT:0 };
+      var parts = PLANTS.map(function(p){
+        var cs = cur[p]||0, ps = prev[p]||0, d = cs-ps;
+        var cw = wcpu(cs, cur["n"+p]), pw = wcpu(ps, prev["n"+p]);
+        return "Plant "+p+" — spend "+money(cs)+" vs "+money(ps)+" ("+(d>=0?"+":"")+money(d)+"). WCPU "+money(cw)+" vs "+money(pw)+" on "+(cur["n"+p]||0)+" vs "+(prev["n"+p]||0)+" units.";
+      });
+      var dE = (cur.ENT||0)-(prev.ENT||0);
+      var head = label + (isPartial ? " (partial current period). " : ". ") +
+        "Enterprise spend "+money(cur.ENT)+" vs "+money(prev.ENT)+" ("+(dE>=0?"+":"")+money(dE)+"). WCPU "+
+        money(wcpu(cur.ENT, cur.nENT))+" vs "+money(wcpu(prev.ENT, prev.nENT))+" on "+(cur.nENT||0)+" vs "+(prev.nENT||0)+" units.";
+      return head + " " + parts.join(" ");
+    }
+    function mixLine(curTops, prevTops){
+      var names = (curTops.ENT||[]).map(function(r){ return r.name; });
+      var prevNames = (prevTops.ENT||[]).map(function(r){ return r.name; });
+      var bits = (curTops.ENT||[]).map(function(r){
+        var prior = 0;
+        (prevTops.ENT||[]).forEach(function(x){ if (x.name===r.name) prior = x.cost; });
+        return r.name+" "+money(r.cost)+" vs "+money(prior);
+      });
+      var same = names.join("|") === prevNames.join("|");
+      return bits.length ? ("Top 3: "+bits.join(" · ")+(same ? ". Mix unchanged." : ".")) : "Top 3: none.";
+    }
+    if (!packs.length) {
+      el("wowCopy").textContent = "No week-over-week yet.";
+      el("momCopy").textContent = "No month-over-month yet.";
+    } else {
+      el("wowCopy").textContent = periodLine("This pack vs last pack", thisW, lastW, wBag, false) + " " + mixLine(wCur, wPrev);
+      el("momCopy").textContent = periodLine("This month vs last month", thisM, lastM, mBag, false) + " " + mixLine(mCur, mPrev);
+    }
+
+    function componentSeries(datedList, keyFn, keys, names){
+      var bag = {};
+      keys.forEach(function(k){
+        bag[k] = {};
+        names.forEach(function(n){ bag[k][n] = 0; });
+      });
+      datedList.forEach(function(row){
+        var k = keyFn(row);
+        if (!bag[k]) return;
+        var name = String(row.h.desc||"").trim() || "(blank)";
+        if (bag[k][name] == null) return;
+        bag[k][name] += Number(row.h.cost)||0;
+      });
+      return bag;
+    }
+    var weekNames = (wCur.ENT||[]).map(function(r){ return r.name; });
+    var monthNames = (mCur.ENT||[]).map(function(r){ return r.name; });
+    var wComp = componentSeries(rows, function(r){ return r.week; }, weeks, weekNames);
+    var mComp = componentSeries(rows, function(r){ return r.month; }, months, monthNames);
+    wComp.__keys = weeks; mComp.__keys = months;
+    drawComp("chartWeekComp", weeks.map(fmtWeek), wComp, weekNames);
+    drawComp("chartMonthComp", months, mComp, monthNames);
+  }
+
+  function drawComp(canvasId, labels, bag, names){
+    var canvas = el(canvasId);
+    if (!canvas || typeof Chart === "undefined" || !names.length) return;
+    var seq = bag.__keys || Object.keys(bag);
+    var palette = ["#1b4f72","#922b21","#148f77","#7d3c98","#b9770e"];
+    var datasets = names.map(function(n, i){
+      return {
+        label: n,
+        data: seq.map(function(k){ return (bag[k] && bag[k][n]) || 0; }),
+        borderColor: palette[i%palette.length],
+        backgroundColor: palette[i%palette.length],
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.2,
+        fill: false
+      };
+    });
+    if (charts[canvasId]) charts[canvasId].destroy();
+    charts[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: { legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } } },
+        scales: {
+          y: { beginAtZero: true, ticks: { callback: function(v){ return "$"+(v>=1000?(Math.round(v/1000)+"k"):Math.round(v)); } } },
+          x: { ticks: { maxRotation: 45, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  function drawTrend(canvasId, labels, bag, mode){
+    var canvas = el(canvasId);
+    if (!canvas || typeof Chart === "undefined") return;
+    var keys = ["ENT","51","53","57","76"];
+    var names = { ENT:"Enterprise", "51":"Plant 51", "53":"Plant 53", "57":"Plant 57", "76":"Plant 76" };
+    var periodKeys = mode === "wcpu" || mode === "spend" ? Object.keys(bag) : [];
+    // labels align to the ordered period list used to build bag insertion order — use labels length
+    var ordered = [];
+    // bag is keyed by week-mon or YYYY-MM; labels are display. Reconstruct from bag key order as inserted.
+    // Callers pass labels already mapped 1:1 with the keys array they used. Pull values in that same sequence via a side list on bag.__keys if present.
+    var seq = bag.__keys || Object.keys(bag);
+    if (seq.length !== labels.length) seq = seq.slice(-labels.length);
+    var datasets = keys.map(function(p){
+      return {
+        label: names[p],
+        data: seq.map(function(k){
+          var row = bag[k];
+          if (!row) return 0;
+          return mode === "wcpu" ? wcpu(row[p], p==="ENT" ? row.nENT : row["n"+p]) : (row[p]||0);
+        }),
+        borderColor: COLORS[p],
+        backgroundColor: COLORS[p],
+        borderWidth: p === "ENT" ? 3 : 2,
+        pointRadius: 3,
+        pointHoverRadius: 5,
+        tension: 0.2,
+        fill: false
+      };
+    });
+    if (charts[canvasId]) { charts[canvasId].destroy(); }
+    charts[canvasId] = new Chart(canvas.getContext("2d"), {
+      type: "line",
+      data: { labels: labels, datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } },
+          tooltip: {
+            callbacks: {
+              label: function(ctx){
+                var v = ctx.parsed.y || 0;
+                return " " + ctx.dataset.label + ": " + money(v);
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: {
+              callback: function(v){ return mode === "wcpu" ? "$"+Math.round(v) : "$"+(v>=1000?(Math.round(v/1000)+"k"):Math.round(v)); }
+            }
+          },
+          x: { ticks: { maxRotation: 45, minRotation: 0, font: { size: 10 } } }
+        }
+      }
+    });
+  }
+
+  function fillYears(){
+    var ys = {};
+    hits.forEach(function(h){ var y=yearOf(h); if (y) ys[y]=1; });
+    var keys = Object.keys(ys).sort();
+    el("yearSel").innerHTML = '<option value="ALL" selected>All model years</option>' +
+      keys.map(function(y){ return '<option value="'+y+'">MY '+y+"</option>"; }).join("");
+  }
+
+  function showBanner(msg, retry){
+    var b = document.getElementById("banner"); b.style.display = "block"; b.textContent = msg;
+    if (retry) { var x = document.createElement("button"); x.type = "button"; x.textContent = "Retry"; x.onclick = retry; b.appendChild(x); }
+  }
+  function hideBanner(){ var b = document.getElementById("banner"); if (b) b.style.display = "none"; }
+  function setStamp(d){
+    var s = document.getElementById("setStamp"); if (!s || !d || !d.ingestId) return;
+    s.textContent = "Set " + d.ingestId + (d.migrated ? " (migrated baseline)" : "") + " · uploaded " + (d.ingestedAt || "time unknown") + " · rows kept: all (" + (d.rowsKept == null ? "?" : d.rowsKept) + " claim lines summed) · basis " + (d.basis || "?") + " · " + (d.priorLabel || "");
+  }
+  function apply(data, src){
+    hits = (data && data.hits) ? data.hits : [];
+    activity = (data && data.activity) ? data.activity : [];
+    weeks = (data && (data.last4 || data.weeks)) ? (data.last4 || data.weeks) : [];
+    generated = (data && data.generated) || "";
+    var packs = activity.filter(function(p){ return p && p.kind !== "baseline" && p.kind !== "basis-change"; }).length;
+    setStamp(data);
+    el("status").textContent = "Loaded " + hits.length + " hits (" + src + ") · " + packs + " activity packs.";
+    fillYears();
+    render();
+  }
+
+  ["yearSel","weekN","monthN","incPolicy"].forEach(function(id){
+    el(id).onchange = render;
+  });
+  el("btnPrint").onclick = function(){ window.print(); };
+
+  function loadLive(){
+    fetch("/.netlify/functions/warranty").then(function(r){
+      return r.text().then(function(raw){
+        var data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch (pe) { throw new Error("unreadable reply (" + r.status + ")"); }
+        if (!r.ok) throw new Error(r.status === 401 ? "Ops PIN needed or wrong (401)" : (data.error || ("status " + r.status)));
+        return data;
+      });
+    }).then(function(data){
+      hideBanner();
+      apply(data, (data && data.hits && data.hits.length) ? "live" : "weeks");
+    }).catch(function(e){
+      el("status").textContent = "Failed to load hits — " + e.message;
+      showBanner("Could not read the live warranty set: " + e.message + ". Nothing on this page is current.", loadLive);
+    });
+  }
+  loadLive();
+})();
+</script>
+</body>
+</html>

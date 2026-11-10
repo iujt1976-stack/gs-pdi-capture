@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GS PDI — Post-PDI Finding</title>
+<script src="photo-send.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #111; padding: 14px; }
+h1 { font-size: 1.2rem; text-align: center; margin-bottom: 4px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.75rem; color: #666; margin-bottom: 14px; }
+.card { background: #fff; border-radius: 10px; padding: 14px; border: 1px solid #ddd; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 10px; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; color: #fff; background: #8e44ad; cursor: pointer; }
+.status { text-align: center; font-size: 0.8rem; color: #666; margin-top: 10px; }
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>Post-PDI Finding</h1>
+<div class="card">
+  <div class="row">
+    <div><label>Date Found</label><input type="date" id="dateFound"></div>
+    <div><label>Unit #</label><input type="text" id="unit" inputmode="numeric" placeholder="Unit #"></div>
+  </div>
+  <label>Source</label>
+  <select id="source">
+    <option value="dealer">Dealer</option>
+    <option value="warranty">Warranty</option>
+    <option value="customer">Customer</option>
+    <option value="postship">Post-ship inspection</option>
+  </select>
+  <label>Severity</label>
+  <select id="severity">
+    <option value="1">1 Safe</option>
+    <option value="2">2 Dry</option>
+    <option value="3">3 Function</option>
+    <option value="4">4 Aesthetics</option>
+  </select>
+  <label>Description</label>
+  <textarea id="desc" rows="3" placeholder="What was found after PDI"></textarea>
+  <label>Linked PDI Defect ID (optional)</label>
+  <input type="text" id="linked" placeholder="d_...">
+  <label id="photoLabel">Photos (optional)</label>
+  <p id="photoChip" class="status" style="text-align:left;margin:0 0 6px"></p>
+  <button type="button" class="btn" id="btnPhoto" style="background:#34495e;margin-bottom:8px">Add photo</button>
+  <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none">
+  <button type="button" class="btn" id="btnSubmit">Save Finding</button>
+  <p class="status" id="status"></p>
+</div>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var photos = [];
+  var PHOTOS_ON = !!(window.GS_PHOTOS && window.GS_PHOTOS.ENABLED);   // 9a1
+  var guard = (window.gsPhoto && gsPhoto.guard) ? gsPhoto.guard({
+    list: function(){ return photos.filter(function(p){ return p.data; }).map(function(p){ return { error: p.error }; }); },
+    retry: function(){ flushPhotos((document.getElementById("unit").value||"").replace(/\D/g,"")); }
+  }) : null;
+  function chip(){
+    if (guard) guard.paint();
+    var n = document.getElementById("photoChip");
+    if (!n) return;
+    var sent = photos.filter(function(p){ return p.key && !p.data; }).length;
+    var wait = photos.filter(function(p){ return p.data; }).length;
+    n.textContent = (sent || wait) ? ("Photos · " + sent + " uploaded · " + wait + " on phone") : "";
+  }
+  async function flushPhotos(unit){
+    if (!PHOTOS_ON) return;
+    if (!window.gsPhoto || !/^\d+$/.test(unit)) { chip(); return; }
+    for (var i = 0; i < photos.length; i++) {
+      var ph = photos[i];
+      if (!ph.data || ph.status === "uploading") continue;
+      ph.status = "uploading";
+      try {
+        ph.key = await gsPhoto.upload({ stage:"pdi", unit:unit, lane:"postpdi", defectIndex:0, photoIndex:i, photoData:ph.data });
+        ph.status = "sent"; delete ph.data;
+      } catch (e) { ph.status = "local"; ph.error = (e && e.message) || "failed"; }
+    }
+    chip();
+  }
+  document.getElementById("dateFound").valueAsDate = new Date();
+  document.getElementById("btnPhoto").onclick = function(){ document.getElementById("photoInput").click(); };
+  document.getElementById("photoInput").onchange = async function(){
+    var f = this.files && this.files[0]; this.value = "";
+    if (!f || !window.gsPhoto) return;
+    if (photos.length >= 4) { alert("Max 4 photos"); return; }
+    var packed = await gsPhoto.compress(f);
+    photos.push({ data: packed.data, thumb: packed.thumb, status: "local" });
+    chip();
+    flushPhotos((document.getElementById("unit").value||"").replace(/\D/g,""));
+  };
+  if (!PHOTOS_ON) ["photoLabel", "photoChip", "btnPhoto", "photoInput"].forEach(function(id){ var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); });
+  document.getElementById("btnSubmit").onclick = async function(){
+    var unit = (document.getElementById("unit").value||"").trim();
+    if (!/^\d+$/.test(unit)) { alert("Unit # must be numeric"); return; }
+    await flushPhotos(unit);
+    if (guard && !guard.confirmSubmit()) { document.getElementById("status").textContent = "Submit cancelled — photos still sending"; return; }
+    var payload = {
+      type: "postpdi",
+      unit: unit,
+      dateFound: document.getElementById("dateFound").value,
+      source: document.getElementById("source").value,
+      severity: parseInt(document.getElementById("severity").value, 10),
+      desc: document.getElementById("desc").value.trim(),
+      linkedPdiDefectId: document.getElementById("linked").value.trim() || null,
+      photos: !PHOTOS_ON ? [] : photos.filter(function(p){ return p && p.key; }).map(function(p, i){ return { index: i, key: p.key }; })
+    };
+    if (!payload.desc) { alert("Description required"); return; }
+    document.getElementById("status").textContent = "Saving...";
+    try {
+      var res = await fetch(API + "/submit-meta", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || res.status);
+      document.getElementById("status").textContent = "Saved post-PDI finding";
+      document.getElementById("unit").value = "";
+      document.getElementById("desc").value = "";
+    } catch (e) {
+      document.getElementById("status").textContent = "Failed: " + e.message;
+    }
+  };
+})();
+</script>
+</body>
+</html>

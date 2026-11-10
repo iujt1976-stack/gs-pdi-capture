@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GS PDI Traveler Form</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 12px; font-size: 10px; }
+.home { text-align: center; margin: 0 0 10px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.no-print { max-width: 800px; margin: 0 auto 16px; background: #fff; border-radius: 8px; padding: 12px; border: 1px solid #ddd; }
+.no-print label { font-weight: 700; font-size: 0.75rem; display: block; margin-bottom: 2px; }
+.no-print input, .no-print select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 8px; font-size: 1rem; }
+.no-print .row { display: flex; gap: 8px; }
+.no-print .row > * { flex: 1; }
+.btn { padding: 10px 14px; border: none; border-radius: 6px; font-weight: 700; color: #fff; cursor: pointer; margin-right: 6px; margin-top: 4px; }
+.btn-go { background: #2c3e50; }
+.btn-print { background: #8e44ad; }
+.status { font-size: 0.8rem; color: #666; margin-top: 6px; }
+.sheet { max-width: 8.5in; margin: 0 auto; background: #fff; padding: 0.25in 0.35in; border: 1px solid #ccc; }
+.print-wrap { width: 100%; border-collapse: collapse; }
+.print-wrap > thead { display: table-header-group; }
+.print-wrap > tbody { display: table-row-group; }
+.print-wrap td { padding: 0; vertical-align: top; }
+.sheet-header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #000; padding-bottom: 6px; margin-bottom: 8px; gap: 10px; }
+.sheet-header h1 { font-size: 16px; letter-spacing: 0.4px; line-height: 1.1; }
+.sit-line { font-size: 9px; line-height: 1.25; color: #222; margin: 2px 0 4px; overflow-wrap: anywhere; word-break: break-word; page-break-inside: avoid; break-inside: avoid; }
+.sheet-kicker { font-size: 9px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; margin-bottom: 2px; }
+.meta-table { border-collapse: collapse; font-size: 11px; }
+.meta-table td { border: 1px solid #000; padding: 3px 6px; min-width: 52px; }
+.meta-table .lab { font-weight: 700; background: #eee; font-size: 8px; letter-spacing: 0.3px; }
+.meta-table .unit { font-size: 14px; font-weight: 700; }
+.section { margin-top: 10px; }
+.section-title { font-weight: 700; font-size: 11px; text-transform: uppercase; background: #111; color: #fff; padding: 3px 6px; display: flex; justify-content: space-between; align-items: baseline; }
+.section-title .insp { font-weight: 400; text-transform: none; font-size: 10px; color: #fff; }
+.col-heads { display: grid; grid-template-columns: 54px 1.1fr 1.4fr; gap: 8px; font-size: 8px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; color: #333; padding: 3px 2px 1px; border-bottom: 1px solid #000; }
+.col-heads span:last-child { text-align: right; }
+.line { display: grid; grid-template-columns: 54px 1.1fr 1.4fr; gap: 8px; align-items: start; border-bottom: 1px solid #ccc; padding: 3px 2px; }
+.line.fail { background: #f4f4f4; }
+.line .marks { display: flex; gap: 3px; padding-top: 1px; }
+.line .box { width: 14px; height: 14px; border: 1px solid #000; text-align: center; font-size: 10px; line-height: 12px; font-weight: 700; }
+.line .box.marked { background: #111; color: #fff; font-weight: 900; }
+.line .name { font-size: 11px; line-height: 1.25; }
+.line.fail .name { font-weight: 700; }
+.line .inline-note { font-size: 10px; line-height: 1.3; text-align: right; }
+.tag { font-weight: 700; text-transform: uppercase; font-size: 8px; letter-spacing: 0.3px; margin-right: 4px; }
+.fail-head { display: grid; grid-template-columns: 22px 1.1fr 1.5fr; gap: 8px; font-size: 8px; font-weight: 700; letter-spacing: 0.3px; text-transform: uppercase; padding: 3px 2px 1px; border-bottom: 1px solid #000; }
+.fail-head span:last-child { text-align: right; }
+.fail-row { display: grid; grid-template-columns: 22px 1.1fr 1.5fr; gap: 8px; align-items: start; border-bottom: 1px solid #000; padding: 4px 2px; }
+.fail-row .num { font-weight: 700; font-size: 12px; }
+.fail-row .what { font-size: 12px; font-weight: 700; line-height: 1.25; }
+.fail-row .note { font-size: 11px; line-height: 1.35; text-align: right; }
+.fail-empty { font-size: 13px; font-weight: 700; margin-top: 12px; }
+.notes { margin-top: 6px; border: 1px solid #000; min-height: 28px; padding: 3px 5px; }
+.notes-title { font-weight: 700; margin-bottom: 2px; font-size: 10px; }
+.defect-line { font-size: 9px; margin-bottom: 1px; }
+.extra-block { margin-top: 12px; border: 1px solid #000; }
+.extra-block .notes-title { font-size: 11px; text-transform: uppercase; background: #111; color: #fff; padding: 3px 6px; margin: 0; }
+.extra-line { font-size: 11px; padding: 4px 6px; border-top: 1px solid #ccc; line-height: 1.3; }
+.extra-line .tag { font-weight: 700; }
+.hard-flag { background: #c0392b; color: #fff; font-weight: 700; padding: 3px 6px; text-align: center; margin-bottom: 4px; display: none; font-size: 10px; }
+.hard-flag.on { display: block; }
+@media print {
+  @page { size: letter portrait; margin: 0.35in 0.4in; }
+  html, body { background: #fff; padding: 0; margin: 0; height: auto; }
+  .no-print { display: none !important; }
+  .sheet { border: none; padding: 0; max-width: none; width: 100%; }
+  .section { page-break-inside: avoid; }
+  .notes { page-break-inside: avoid; }
+  .line .box.marked {
+    background: transparent !important;
+    color: #000 !important;
+    font-weight: 900;
+    font-size: 13px;
+    line-height: 11px;
+    -webkit-text-stroke: 0.6px #000;
+  }
+}
+</style>
+</head>
+<body>
+<div class="no-print">
+  <p class="home"><a href="index.html">← Main</a></p>
+  <div class="row">
+    <div><label>Unit #</label><input type="text" id="unitInput" inputmode="numeric" placeholder="Unit number"></div>
+    <div><label>Force sheet type (optional)</label>
+      <select id="forceType"><option value="">Auto from data</option><option value="towable">Towable</option><option value="motorized">Motorized</option></select>
+    </div>
+  </div>
+  <div class="row">
+    <div><label>Print</label>
+      <select id="sheetMode">
+        <option value="fails">Fail-only — this sheet leaves the bay</option>
+        <option value="full">Full sheet</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="btn btn-go" id="btnLoad">Load Unit</button>
+  <button type="button" class="btn btn-print" id="btnPrint">Print fail sheet</button>
+  <p class="status" id="status"></p>
+</div>
+<div id="sheetHost"></div>
+<script src="gs-lanes.js"></script>
+<script src="lane-data.js"></script>
+<script src="floor-boot.js"></script>
+<script src="build.js"></script>
+<script src="lane-history.js"></script>
+<script>
+(function(){
+  "use strict";
+  var API="/.netlify/functions";
+  var FORMS={
+    towable:{title:"TOWABLE AUDIT SHEET",sections:[
+      {name:"L1 ELECTRICAL",lane:"1",items:[
+        {key:"recepts_gfis_usbs",label:"Recepts/GFIs/USBs"},{key:"continuity_test",label:"Continuity Test"},
+        {key:"ac_dc_panel",label:"AC/DC Panel/Breakers/Fuses"},{key:"converter_recept_check",label:"Converter to Recept Check"},
+        {key:"monitor_panel_converter_water_pump",label:"Monitor/Converter/Pump"},{key:"brake_amp_test",label:"Brake Test 10 amp"},
+        {key:"battery_hookup_disconnect",label:"Battery Hookup/Disconnect/Strap"},{key:"inverter",label:"Inverter"},
+        {key:"tv_antenna_booster",label:"TV/Antenna/Booster"}
+      ]},
+      {name:"L1 WATER",lane:"1",items:[
+        {key:"black_grey_fresh_tanks",label:"Black/Grey/Fresh Tanks"},{key:"bypass_valve",label:"Bypass Valve"},
+        {key:"city_fill_backflow",label:"City Fill/Backflow"},{key:"faucets_pressurize",label:"Faucets/Pressurize"},
+        {key:"hot_cold_orientation",label:"Hot/Cold Orientation"},{key:"drainage_pipes",label:"Drains/P-Traps"},
+        {key:"low_point_tank_drains",label:"Low Point/Tank Drains/Term Cap"},{key:"outside_shower",label:"Outside Shower"},
+        {key:"water_heater",label:"Water Heater (110 OFF)"}
+      ]},
+      {name:"L1 CLIMATE / APPLIANCES / MOTION / LP",lane:"1",items:[
+        {key:"ac_air_vents",label:"A/C & Air Vents"},{key:"thermostat",label:"Thermostat"},
+        {key:"refrigerator_microwave",label:"Refrigerator/Microwave"},{key:"fireplace_function",label:"Fireplace Function"},
+        {key:"range_hood_fan",label:"Range Hood/Fantastic Fan"},{key:"awning_function",label:"Awning Function"},
+        {key:"slideout_function_sys",label:"Slide Function/Switches"},{key:"jacks_leveling_function",label:"Jacks/Leveling"},
+        {key:"lp_drop_test",label:"LP Drop Test/Soap"},{key:"lp_burnoff",label:"LP Burn-Off"},{key:"detectors",label:"Smoke/LP/CO Detectors"}
+      ]},
+      {name:"L2 RUNNING GEAR / UNDERBELLY",lane:"2",items:[
+        {key:"hitch_chains_cables_battery_disconnect",label:"Hitch chains/cables/Battery Disconnect"},
+        {key:"lugs_axles_springs",label:"Lugs/Axles/Springs/Brake Wires"},{key:"tire_pressure_spare",label:"Tire Pressure/Spare"},
+        {key:"stab_hitch_jacks",label:"Stab/Hitch Jacks"},{key:"underbelly",label:"Underbelly"},
+        {key:"varmint_foam_loom",label:"Varmint/Foam/Loom"},{key:"lp_lines_secured",label:"LP Lines Secured"},
+        {key:"plumbing_slope_tank_leaks",label:"Plumbing Slope/Tank Leaks"},{key:"wheel_well",label:"Wheel Well"}
+      ]},
+      {name:"L2 SLIDE UNDERSIDE / ROOF",lane:"2",items:[
+        {key:"slideout_roof_underneath_floor",label:"Slide Floor/Cups/Seals"},
+        {key:"rubber_roof_decking_self_level_seal",label:"Membrane/Decking/Self Level"},
+        {key:"roof_penetrations",label:"Rails/Vents/Antenna/Ladder"},{key:"vents_skylights_roof",label:"Vents/Skylights/AC"},
+        {key:"cap_transition",label:"Cap Transition"},{key:"vin_tags_rvia_qai_sticker",label:"Vin/RVIA/QAI"}
+      ]},
+      {name:"L3 EXTERIORS",lane:"3",items:[
+        {key:"metal_glass_diamond_plate",label:"Metal/Glass/Diamond Plate"},{key:"exterior_seal_graphics",label:"Seal/Anti-Wick/Graphics"},
+        {key:"screw_gutter_rails",label:"Screw & Gutter Rails"},{key:"windows_compartment_doors",label:"Windows & Compartment Doors"},
+        {key:"entry_screen_door_entry_steps",label:"Entry/Screen/Steps"},{key:"passthrough_power_cord_jack_handle",label:"Passthrough/Cord/Jack Handle"},
+        {key:"slideout_t_rails_alignment",label:"Slide Rails/Sweeps/Bulb Seal"},{key:"awning",label:"Awning Rail/Travel"},
+        {key:"marker_tail_turn_signal_lights",label:"Marker/Tail/Turn"},{key:"power_inlet_city_fresh_fill",label:"Power Inlet/City/Fresh Fill"},
+        {key:"air_test_water_lines",label:"Air Test/Water Lines"}
+      ]},
+      {name:"L4 INTERIORS",lane:"4",items:[
+        {key:"lino_floor_decking",label:"Lino/Floor/Squeaks"},{key:"ceiling_wall_panels_trim",label:"Ceiling/Wall/Trim"},
+        {key:"cabinet_doors_panels_trim_stiles",label:"Cabinets/Trim/Stiles"},{key:"drawers",label:"Drawers"},
+        {key:"countertops",label:"Countertops/Extensions"},{key:"window_valances",label:"Valances/Shades"},
+        {key:"tub_shower_sinks_faucets",label:"Tub/Shower/Toilet/Sinks"},{key:"bed_bath_doors",label:"Bed/Bath Doors/Struts"},
+        {key:"dinette_table_booths",label:"Dinette/Code"},{key:"beds_bunks_under_furniture",label:"Beds/Bunks/Under"},
+        {key:"sofa_chairs_ladders",label:"Sofa/Chairs/Ladders"},{key:"interior_lights",label:"Interior Lights"},
+        {key:"range_hood_stove_fireplace",label:"Range Hood/Stove/Fireplace"},{key:"furnace_heat_vents",label:"Furnace/Heat Vents"},
+        {key:"gas_pressure_light_off_test",label:"Gas Pressure/Light Off"},{key:"fire_extinguisher",label:"Fire Extinguisher 10BC"},
+        {key:"egress_windows",label:"Egress Windows Code"}
+      ]}
+    ]},
+    motorized:{title:"MOTORIZED AUDIT SHEET",sections:[
+      {name:"L1 SYSTEMS",lane:"1",items:[
+        {key:"recepts_gfi_usb",label:"Recepts/GFI/USB"},{key:"continuity_test",label:"Continuity Test"},
+        {key:"ac_dc_panel",label:"AC/DC Panel"},{key:"monitor_panel_converter_water_pump",label:"Monitor/Converter/Pump"},
+        {key:"battery_hookup_disconnect",label:"Battery Hookup/Disconnect"},{key:"inverter",label:"Inverter"},
+        {key:"water_heater",label:"Water Heater"},{key:"black_grey_fresh_tanks",label:"Tanks"},
+        {key:"bypass_valve",label:"Bypass"},{key:"city_fill_backflow",label:"City Fill/Backflow"},
+        {key:"drainage_pipes",label:"Drains"},{key:"outside_shower",label:"Outside Shower"},
+        {key:"ac_vents",label:"A/C & Vents"},{key:"thermostat",label:"Thermostat"},
+        {key:"refer_microwave_stove_range_hood",label:"Refer/Microwave/Stove/Hood"},
+        {key:"fireplace_function",label:"Fireplace"},{key:"awning_function",label:"Awning Function"},
+        {key:"slideout_function_sys",label:"Slide Function"},{key:"jacks_leveling_function",label:"Jacks/Leveling"},
+        {key:"generator",label:"Generator"},{key:"lp_drop_test",label:"LP Drop Test"},{key:"detectors",label:"Detectors"}
+      ]},
+      {name:"L2 ROOF / UNDERBELLY",lane:"2",items:[
+        {key:"jacks",label:"Jacks"},{key:"tire_pressure_spare",label:"Tire Pressure/Spare"},
+        {key:"underbelly",label:"Underbelly"},{key:"varmint_foam_loom",label:"Varmint/Foam/Loom"},
+        {key:"lp_lines_secured",label:"LP Lines"},{key:"slideout_roof_floor",label:"Slide Roof/Floor/Seals"},
+        {key:"rubber_glass_roof_decking_self_level",label:"Roof/Decking/Self Level"},
+        {key:"roof_penetrations",label:"Penetrations"},{key:"vents_skylights_antenna_solar",label:"Vents/Skylights/Antenna/Solar"},
+        {key:"cap_transition",label:"Cap Transition"},{key:"vin_tags",label:"Vin Tags"}
+      ]},
+      {name:"L3 EXTERIORS",lane:"3",items:[
+        {key:"fiberglass",label:"Fiberglass/Cap/Sidewall/Rear"},{key:"exterior_seal",label:"Exterior Seal"},
+        {key:"screw_gutter_rails",label:"Screw/Gutter Rails"},{key:"graphics",label:"Graphics"},
+        {key:"windows",label:"Windows"},{key:"compartments",label:"Compartments"},
+        {key:"power_cords",label:"Power Cords"},{key:"slideout_function",label:"Slide Sweeps/Bulb/Travel"},
+        {key:"awning",label:"Awning"},{key:"power_inlet_city_fresh_fill",label:"Power Inlet/City/Fresh Fill"}
+      ]},
+      {name:"L4 INTERIORS",lane:"4",items:[
+        {key:"lino_floor_decking",label:"Lino/Floor"},{key:"ceiling_wall_panels_trim",label:"Ceiling/Wall/Trim"},
+        {key:"cabinet_doors_panels_trim_stiles",label:"Cabinets"},{key:"drawers",label:"Drawers"},
+        {key:"countertops",label:"Countertops/Extensions"},{key:"window_valances",label:"Valances/Shades"},
+        {key:"tub_shower_sink_faucets",label:"Tub/Shower/Toilet/Sink"},{key:"entry_bed_bath_doors",label:"Doors/Struts"},
+        {key:"dinette_table_booth",label:"Dinette/Code"},{key:"beds_bunks_under_furniture",label:"Beds/Bunks/Under"},
+        {key:"furniture",label:"Furniture"},{key:"interior_lights",label:"Interior Lights"},
+        {key:"fire_extinguisher",label:"Fire Extinguisher 10BC"},{key:"egress_windows",label:"Egress Windows Code"}
+      ]}
+    ]}
+  };
+
+
+  function formsFromLaneData(flagOpts, data){
+    if (!window.GS_LANE_API) return { towable:{title:"TOWABLE AUDIT SHEET",sections:[]}, motorized:{title:"MOTORIZED AUDIT SHEET",sections:[]} };
+    function secs(kind){
+      var sections=[];
+      (window.gsLanes ? gsLanes.NEW : ["R","S","E","I","U"]).forEach(function(lane){
+        var cur=null;
+        // r8a: a Rain lane saved before the v3 sheet prints the sheet it was saved under (v2 = the previous live Rain sheet); every other lane,
+        // and a Rain lane with no record, prints the current sheet exactly as before.
+        var rrec = data && data.lanes && data.lanes[lane], rver;
+        if (lane === "R" && rrec && !rrec.mergedInto && window.GS_LANE_API.verOf) rver = window.GS_LANE_API.verOf(rrec) >= 3 ? 3 : 2;
+        window.GS_LANE_API.pack(lane, kind, flagOpts || {}, rver).forEach(function(row){
+          if(row.header){
+            cur={name:(window.gsLanes?gsLanes.name(lane):lane)+" — "+row.header, lane:lane, items:[]};
+            sections.push(cur);
+          } else if(row.key && cur){
+            cur.items.push({key:row.key, label:row.label});
+          }
+        });
+      });
+      return sections;
+    }
+    return {
+      towable:{title:"TOWABLE AUDIT SHEET", sections:secs("towable")},
+      motorized:{title:"MOTORIZED AUDIT SHEET", sections:secs("motorized")}
+    };
+  }
+  function unitIsNew(data){
+    var keys=Object.keys((data&&data.lanes)||{});
+    return window.gsLanes ? gsLanes.hasNew(keys) : keys.some(function(k){return "RSEIU".indexOf(k)>=0;});
+  }
+  function slotWalk(data){
+    if(unitIsNew(data)) return (window.gsLanes?gsLanes.ALL:["1","2","3","4","R","S","E","I","U"]);
+    return ["1","2","3","4"];
+  }
+
+  var current=null;
+  function el(id){return document.getElementById(id);}
+  function esc(s){return String(s==null?"":s).replace(/&/g,"&").replace(/</g,"<").replace(/>/g,">");}
+  function setStatus(m){el("status").textContent=m||"";}
+  // r6a: last lane in slot order wins, EXCEPT that the lane that owns a key in the current pack wins when it marked
+  // it (a moved check -- awning, interior lights -- marked on Systems beats an older Exterior/Interior mark).
+  var _markFrom={};
+  function collectChecks(data){
+    var map={},own={},from={},ownFrom={},A=window.GS_LANE_API;
+    var t=detectType(data),fo={toyHauler:!!data.toyHauler,thWall:!!data.thWall};
+    slotWalk(data).forEach(function(l){var lane=data.lanes[l];if(lane&&lane.checks)Object.keys(lane.checks).forEach(function(k){
+      map[k]=lane.checks[k];from[k]=String(l);
+      if(A&&lane.checks[k]){var c=A.canon(k);if(A.ownerOf(c,t,fo)===String(l)){own[c]=lane.checks[k];ownFrom[c]=String(l);}}
+    });});
+    Object.keys(own).forEach(function(c){map[c]=own[c];from[c]=ownFrom[c];});
+    _markFrom=from;   // r6c: which lane each shown mark was actually saved on
+    return map;}
+  function collectNa(data){var map={};slotWalk(data).forEach(function(l){var lane=data.lanes[l];if(lane&&lane.naReasons)Object.keys(lane.naReasons).forEach(function(k){map[k]=lane.naReasons[k];});});return map;}
+  // One alias table -- lane-data.js's own, inverted to canonical->[aliases]
+  // by GS_LANE_API.aliasesOf(). This used to be a local, hand-maintained
+  // copy with a duplicate-object-key bug (several keys repeated with
+  // different alias lists, so the first listing silently lost to the
+  // second); that bug disappears by construction now that there's nothing
+  // local left to duplicate.
+  var KEY_ALIAS=(window.GS_LANE_API && window.GS_LANE_API.aliasesOf()) || {};
+  function checkVal(checks,key){if(!checks)return "";if(checks[key])return checks[key];var al=KEY_ALIAS[key]||[];for(var i=0;i<al.length;i++)if(checks[al[i]])return checks[al[i]];return "";}
+  function laneLabel(l){return (window.gsLanes&&gsLanes.name)?gsLanes.name(l):("L"+l);}
+  function collectDefects(data){
+    var list=[];
+    slotWalk(data).forEach(function(l){
+      var lane=data.lanes[l];
+      if(!lane||!lane.defects) return;
+      lane.defects.forEach(function(d){
+        list.push({
+          lane:l,
+          severity:d.severity,
+          reasonCode:d.reasonCode||"",
+          desc:d.desc||"",
+          origin:d.origin||"",
+          checkKey:d.checkKey||d.key||"",
+          pass:d.pass||"",
+          assist:!!(d.assist||lane.role==="assist"),
+          superseded:d.superseded||null,by:d.by||"",at:d.at||""
+        });
+      });
+    });
+    return list;
+  }
+  function keyMatchesItem(d,item){
+    if(!d) return false;
+    if(d.checkKey){
+      if(d.checkKey===item.key) return true;
+      var al=KEY_ALIAS[item.key]||[];
+      if(al.indexOf(d.checkKey)>=0) return true;
+      var back=KEY_ALIAS[d.checkKey]||[];
+      if(back.indexOf(item.key)>=0) return true;
+    }
+    var desc=(d.desc||"").toLowerCase();
+    var lab=(item.label||"").toLowerCase();
+    if(!desc||!lab) return false;
+    return desc.indexOf(lab.slice(0,12))>=0 || lab.indexOf(desc.slice(0,12))>=0 || desc===lab;
+  }
+  function detectType(data){var f=el("forceType").value;if(f)return f;for(var l in data.lanes)if(data.lanes[l].unitType)return data.lanes[l].unitType;return "towable";}
+  function inspectorForLane(data,lane){var l=data.lanes[lane];return (l&&l.inspector)?l.inspector:"";}
+  function sheetMode(){ return (el("sheetMode") && el("sheetMode").value) || "fails"; }
+  function paintPrintLabel(){
+    var b = el("btnPrint");
+    if (!b) return;
+    b.textContent = sheetMode() === "full" ? "Print full sheet" : "Print fail sheet";
+  }
+  // r6a: a defect belongs to the section's lane, or -- for a check that moved lanes -- to the lane the check used to
+  // live on (an old Exterior fail on awning shows on the Systems row). Everything else matches exactly as before.
+  var _curData=null;
+  function oldLaneOf(key){
+    var A=window.GS_LANE_API;if(!A||!_curData)return "";
+    var t=detectType(_curData),fo={toyHauler:!!_curData.toyHauler,thWall:!!_curData.thWall};
+    var was=A.ownerOf(key,t,fo,1),now=A.ownerOf(key,t,fo);
+    return was&&was!==now?was:"";
+  }
+  // r6c: a moved check (awning, interior lights...) on a unit saved before r6a was marked on its OLD lane, but the sheet now
+  // lists it under the new lane and that lane's inspector. Say where it was really marked and by whom. Prints nothing when
+  // the mark was saved on the section's own lane (every one-person lane, every record saved on the current checklists).
+  function markedElsewhere(data,sec,item){
+    if(!oldLaneOf(item.key))return "";
+    var l=_markFrom[item.key];
+    if(l==null||String(l)===String(sec.lane))return "";
+    var who=inspectorForLane(data,l);
+    if(who&&who===inspectorForLane(data,sec.lane))return "";   // same person on both lanes: the name printed is already right
+    return "marked in "+((window.gsLanes&&gsLanes.short)?gsLanes.short(l):laneLabel(l))+(who?" by "+who:"");
+  }
+  function defKeyIs(d,item){return !!(d.checkKey&&(d.checkKey===item.key||(KEY_ALIAS[item.key]||[]).indexOf(d.checkKey)>=0));}
+  // The section's own lane first (Systems wins), then -- only for a moved check -- the lane it used to live on.
+  function pickDefect(defects,sec,item){
+    var i,d,ol=oldLaneOf(item.key);
+    for(i=0;i<defects.length;i++){d=defects[i];if(!d._used&&!d.superseded&&String(d.lane)===String(sec.lane)&&defKeyIs(d,item))return d;}
+    if(ol)for(i=0;i<defects.length;i++){d=defects[i];if(!d._used&&!d.superseded&&String(d.lane)===ol&&defKeyIs(d,item))return d;}
+    return null;
+  }
+  // A moved check that the owning lane has since marked PASS / N/A is no longer a fail: its old-lane defect is retired
+  // so it is not listed as a stray extra.
+  function retireSuperseded(data,checks,defects){
+    var A=window.GS_LANE_API;if(!A)return;
+    var t=detectType(data),fo={toyHauler:!!data.toyHauler,thWall:!!data.thWall};
+    defects.forEach(function(d){
+      if(d._used||!d.checkKey)return;
+      var c=A.canon(d.checkKey),ol=oldLaneOf(c);
+      if(!ol||String(d.lane)!==ol)return;
+      var own=data.lanes[A.ownerOf(c,t,fo)];
+      if(own&&own.checks&&checkVal(own.checks,c)&&checkVal(checks,c)!=="fail")d._used=true;
+    });
+  }
+  // Same moved check failed on two lanes counts once: the second defect is consumed, not listed as an extra fail.
+  function retireMovedDupes(defects,used,item){
+    var ol=oldLaneOf(item.key);if(!ol)return;
+    defects.forEach(function(x){
+      if(x._used||x===used||String(x.lane)===String(used.lane))return;
+      if(String(x.lane)!==ol&&String(x.lane)!==String(used.lane))return;
+      var ck=x.checkKey;if(ck&&(ck===item.key||(KEY_ALIAS[item.key]||[]).indexOf(ck)>=0))x._used=true;
+    });
+  }
+  // r6b: a check that did not exist before this release (the two ladder receiver seals) is not printed, blank, on a lane that
+  // was saved before it existed -- that lane was judged without it. A moved check (awning, interior lights) still prints, as in r6a.
+  function notYetOnLane(data,sec,item){
+    var A=window.GS_LANE_API,lane=data.lanes&&data.lanes[sec.lane];
+    if(!A||!lane||!A.versioned(String(sec.lane))||A.verOf(lane)>=2)return false;
+    if(lane.checks&&checkVal(lane.checks,item.key))return false;
+    var t=detectType(data),fo={toyHauler:!!data.toyHauler,thWall:!!data.thWall};
+    return !A.ownerOf(item.key,t,fo,1);
+  }
+  // r6d: who/when history on an attributed lane. Cleared fails stay on the full sheet as one quiet line; a fail that someone
+  // marked N/A over stays an open fail and says so. Records without attrV have no such data and show nothing new.
+  function histDate(at){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(at||""));return m?(Number(m[2])+"/"+Number(m[3])):"";}
+  function historyNote(data,sec,item){
+    var A=window.GS_LANE_API,key=A&&A.canon?A.canon(item.key):item.key,bits=[];
+    slotWalk(data).forEach(function(l){
+      var lane=data.lanes[l];if(!lane||lane.attrV!==1)return;
+      // "Marked by NAME m/d" only when the person who made this mark is not the lane's own inspector (a one-person lane prints exactly as before)
+      var mk=lane.marksBy&&lane.marksBy[key];
+      if(mk&&mk.by&&mk.by!==lane.inspector)bits.push("Marked by "+mk.by+" "+histDate(mk.at));
+      (lane.defects||[]).forEach(function(d){
+        if(d.superseded&&d.checkKey&&(A&&A.canon?A.canon(d.checkKey):d.checkKey)===key)
+          bits.push("FAIL by "+(d.by||"?")+" "+histDate(d.at)+", cleared PASS by "+(d.superseded.by||"?")+" "+histDate(d.superseded.at));
+      });
+      (lane.history||[]).forEach(function(h){
+        if(h.naOverFail&&h.check===key)bits.push("N/A over fail by "+(h.by||"?")+" "+histDate(h.at)+" (fail stays open)");
+      });
+    });
+    return bits.join(" · ");
+  }
+
+  // r8a: the water test answer of a Rain lane, one line per sitting that gave one (an admin correction replaces the answer of its sitting).
+  // Reads only rainRunV / rainRunLog / rainRunMissing; a lane without rainRunV returns nothing, so older lanes print exactly as before.
+  var RR_WH_TXT = { roof:"Roof", slide_roof:"Slide roof", ceiling:"Ceiling", wall:"Wall", floor:"Floor", window_compartment:"Window / compartment", other_exterior_components:"Other exterior components", other:"Other" };
+  var RR_RES_TXT = { no_leak:"No leak", leaked:"Leaked", not_tested:"Not tested" };
+  function rainLines(lane){
+    if (!lane || lane.rainRunV !== 1) return [];
+    var log = Array.isArray(lane.rainRunLog) ? lane.rainRunLog : [], by = {}, order = [];
+    log.forEach(function(e, i){ var k = e.sess || ("i" + i); if (!by[k]) order.push(k); by[k] = e; });
+    var out = order.map(function(k){
+      var e = by[k], m = /^\d{4}-(\d{2})-(\d{2})/.exec(String(e.day || ""));
+      var wh = (e.result === "leaked" && (e.where || []).length) ? " — " + e.where.map(function(w){ return RR_WH_TXT[w] || w; }).join(", ") : "";
+      return "Water test: " + (RR_RES_TXT[e.result] || e.result) + wh + (e.note ? " — " + e.note : "") + (e.by ? " · " + e.by : "") + (m ? " " + Number(m[1]) + "/" + Number(m[2]) : "") + (e.kind === "admin_edit" ? " · corrected by admin" : "");
+    });
+    if (!out.length) out.push("Water test result missing");
+    return out;
+  }
+  var _hist = {}, _histShown = {};
+  // r7a: one compact line per lane that has more than one sitting ("3 sittings: Alice 10/14, Bob 10/15, Alice 10/15"). Read only.
+  var _rrShown = {};
+  function rainBlock(data){
+    var lane = data && data.lanes && data.lanes.R;
+    var t = rainLines(lane);
+    if (!t.length || _rrShown.R) return "";
+    _rrShown.R = true;
+    return '<div class="sit-line rr-line" data-rain-run="1">' + t.map(esc).join("<br>") + '</div>';
+  }
+  function histLine(lane){
+    if (_histShown[lane] || !_hist[lane] || !window.GSHistory) return "";
+    var t = GSHistory.line(_hist[lane]);
+    if (!t) return "";
+    _histShown[lane] = true;
+    return '<div class="sit-line" data-lane-sittings="' + esc(lane) + '">' + esc(t) + '</div>';
+  }
+  function renderSheet(data){
+    _histShown = {}; _rrShown = {};
+    _curData=data;
+    var flagOpts={toyHauler:!!data.toyHauler,thWall:!!data.thWall};
+    var type=detectType(data),form=(unitIsNew(data)?formsFromLaneData(flagOpts,data):FORMS)[type]||(unitIsNew(data)?formsFromLaneData(flagOpts,data):FORMS).towable,checks=collectChecks(data),naMap=collectNa(data),defects=collectDefects(data);retireSuperseded(data,checks,defects);
+    var hard=data.hardStops&&data.hardStops.length>0,meta={date:"",model:""};
+    slotWalk(data).forEach(function(l){var lane=data.lanes[l];if(!lane)return;if(lane.date&&!meta.date)meta.date=lane.date;if(lane.model&&!meta.model)meta.model=lane.model;if(lane.plant&&!meta.plant)meta.plant=lane.plant;});
+    var html='<div class="sheet"><table class="print-wrap"><thead><tr><td>';
+    /* hard-stop tabled */
+    html+='<div class="sheet-header"><div><div class="sheet-kicker">'+(sheetMode()==="fails"?"Repair sheet":"Full checklist")+'</div><h1>'+form.title+'</h1></div><table class="meta-table"><tr>';
+    html+='<td class="lab">DATE</td><td>'+esc(meta.date||"—")+'</td><td class="lab">UNIT</td><td class="unit">'+esc(data.unit)+'</td><td class="lab">MODEL</td><td>'+esc(meta.model||"—")+'</td><td class="lab">PLANT</td><td>'+esc(meta.plant||"—")+'</td></tr></table></div>';
+    html+='</td></tr></thead><tbody><tr><td>';
+    if (sheetMode() === "fails") {
+      html = html.replace(form.title, "FAIL SHEET");
+      html = html.replace("Full checklist", "Leaves the bay");
+      var failCount = 0;
+      var sectionsHtml = "";
+      form.sections.forEach(function(sec){
+        var rows = [];
+        sec.items.forEach(function(item){
+          if (checkVal(checks, item.key) !== "fail") return;
+          var note = "";
+          var sitting = "";
+          var d = pickDefect(defects, sec, item);
+          if (d) {
+            note = (d.desc || "").trim();
+            if (d.pass && Number(d.pass) > 1) sitting = "Pass " + d.pass;
+            if (d.assist) sitting = (sitting ? sitting + " · " : "") + "Assist";
+            d._used = true;
+            retireMovedDupes(defects, d, item);
+          }
+          failCount++;
+          var movedTxt = markedElsewhere(data, sec, item);
+          rows.push('<div class="fail-row"><div class="num">' + failCount + '</div><div class="what">' + esc(item.label) + '</div><div class="note">' + esc(note || "No note written") + (sitting ? " · " + esc(sitting) : "") + (movedTxt ? " · " + esc(movedTxt) : "") + '</div></div>');
+        });
+        if (!rows.length) return;
+        var insp = inspectorForLane(data, sec.lane);
+        sectionsHtml += '<div class="section"><div class="section-title"><span>' + esc(sec.name) + '</span>';
+        sectionsHtml += '<span class="insp">' + (insp ? esc(insp) : "No inspector") + '</span>';
+        sectionsHtml += '</div>' + histLine(sec.lane) + (sec.lane === "R" ? rainBlock(data) : "") + '<div class="fail-head"><span></span><span>Point</span><span>Note</span></div>' + rows.join("") + '</div>';
+      });
+      var leftoverFails = defects.filter(function(d){ return !d._used && !d.superseded && (d.desc || d.checkKey); });
+      var extraHtml = "";
+      if (leftoverFails.length) {
+        extraHtml += '<div class="extra-block"><div class="notes-title">Not on the checklist</div>';
+        leftoverFails.forEach(function(d){
+          failCount++;
+          var bit = (d.desc || d.checkKey || "No note written");
+          var sitting = "";
+          if (d.pass && Number(d.pass) > 1) sitting = "Pass " + d.pass;
+          if (d.assist) sitting = (sitting ? sitting + " · " : "") + "Assist";
+          extraHtml += '<div class="extra-line"><span class="tag">' + esc(laneLabel(d.lane)) + '</span> ' + failCount + '. ' + esc(bit) + (sitting ? " · " + esc(sitting) : "") + '</div>';
+        });
+        extraHtml += '</div>';
+      }
+      html = html.replace("Leaves the bay", failCount ? (failCount + (failCount === 1 ? " fail" : " fails") + " · leaves the bay") : "No fails · leaves the bay");
+      html += (_rrShown.R ? "" : rainBlock(data));   // r8a: an answer on a Rain lane with no failed point still prints
+      html += sectionsHtml;
+      if (!failCount) html += '<div class="fail-empty">No fails on file.</div>';
+      html += extraHtml;
+      html += '</td></tr></tbody></table></div>';
+      el("sheetHost").innerHTML = html;
+      return;
+    }
+    form.sections.forEach(function(sec){
+      var insp=inspectorForLane(data,sec.lane);
+      html+='<div class="section"><div class="section-title"><span>'+esc(sec.name)+'</span>';
+      html+='<span class="insp">'+(insp?esc(insp):"No inspector")+'</span>';
+      html+='</div>'+histLine(sec.lane)+(sec.lane==="R"?rainBlock(data):"")+'<div class="col-heads"><span>P / F / NA</span><span>Point</span><span>Note</span></div>';
+      sec.items.forEach(function(item){
+        if(notYetOnLane(data,sec,item)) return;
+        var val=checkVal(checks,item.key),passMark=val==="pass"?"X":"",failMark=val==="fail"?"X":"",naMark=val==="na"?"X":"";
+        var note="";
+        if(val==="na") note = naMap[item.key] || "N/A";
+        if(val==="fail"){
+          function fmtNote(d){
+            var t=(d.desc||"").trim();
+            if(d.pass && Number(d.pass)>1) t += " [pass "+d.pass+"]";
+            return t;
+          }
+          var d=pickDefect(defects, sec, item);
+          if(d){ note=fmtNote(d); d._used=true; retireMovedDupes(defects, d, item); }
+        }
+        var noteHtml = "";
+        var movedTxt = val ? markedElsewhere(data, sec, item) : "";
+        if (val === "fail") noteHtml = '<div class="inline-note"><span class="tag">Note</span>' + esc(note || "No note written") + (movedTxt ? ' · ' + esc(movedTxt) : '') + '</div>';
+        else if (val === "na" && note) noteHtml = '<div class="inline-note"><span class="tag">N/A</span>' + esc(note) + (movedTxt ? ' · ' + esc(movedTxt) : '') + '</div>';
+        else if (movedTxt) noteHtml = '<div class="inline-note"><span class="tag">Marked</span>' + esc(movedTxt) + '</div>';
+        var histTxt = historyNote(data, sec, item);
+        if (histTxt) noteHtml += '<div class="inline-note"><span class="tag">History</span>' + esc(histTxt) + '</div>';
+        html+='<div class="line'+(val==="fail"?" fail":"")+'"><div class="marks"><div class="box'+(passMark?" marked":"")+'">'+passMark+'</div><div class="box'+(failMark?" marked":"")+'">'+failMark+'</div><div class="box'+(naMark?" marked":"")+'">'+naMark+'</div></div><div class="name">'+esc(item.label)+'</div>'+(noteHtml||'<div class="inline-note"></div>')+'</div>';
+      });
+      html+='</div>';
+    });
+    var seenKeys={};
+    form.sections.forEach(function(sec){
+      (sec.items||[]).forEach(function(item){
+        seenKeys[item.key]=true;
+        (KEY_ALIAS[item.key]||[]).forEach(function(a){ seenKeys[a]=true; });
+      });
+    });
+    var extraMarks=[];
+    slotWalk(data).forEach(function(l){
+      var lane=data.lanes[l];
+      if(!lane||!lane.checks) return;
+      Object.keys(lane.checks).forEach(function(k){
+        if(!lane.checks[k] || seenKeys[k]) return;
+        extraMarks.push({lane:l, key:k, val:lane.checks[k]});
+      });
+    });
+    var leftover=defects.filter(function(d){ return !d._used && !d.superseded && (d.desc||d.checkKey); });
+    var passBits=[];
+    slotWalk(data).forEach(function(l){
+      var lane=data.lanes[l];
+      if(!lane) return;
+      var n=Number(lane.passCount)||1;
+      if(n>1) passBits.push(laneLabel(l)+" ×"+n);
+    });
+    if(passBits.length || extraMarks.length || leftover.length){
+      html+='<div class="extra-block">';
+      html+='<div class="notes-title">Added after first pass</div>';
+      if(passBits.length) html+='<div class="extra-line"><span class="tag">Sittings</span> '+esc(passBits.join(" · "))+'</div>';
+      extraMarks.forEach(function(m){
+        html+='<div class="extra-line"><span class="tag">'+esc(laneLabel(m.lane))+'</span> '+esc(String(m.key).replace(/_/g," "))+' — '+esc(String(m.val).toUpperCase())+'</div>';
+      });
+      leftover.forEach(function(d){
+        var bit=(d.desc||d.checkKey||"No note written");
+        if(d.pass && Number(d.pass)>1) bit += " · pass "+d.pass;
+        html+='<div class="extra-line"><span class="tag">'+esc(laneLabel(d.lane)+(d.assist?" assist":""))+'</span> '+esc(bit)+'</div>';
+      });
+      html+='</div>';
+    }
+    html+='</td></tr></tbody></table></div>';
+    el("sheetHost").innerHTML=html;
+  }
+  // ---- load / print guard (r3d1) ----------------------------------------
+  // `current` is only ever the unit whose sheet is ON SCREEN right now. Every
+  // load clears it (and the sheet) first, a sequence counter stops a slow earlier
+  // load from overwriting a later one, and Print always works from the Unit # box.
+  var BASE_TITLE=document.title;
+  var loadSeq=0;
+  var loadedUnit="";
+  var loadedStatus="";
+  function boxUnit(){return (el("unitInput").value||"").trim();}
+  function setDocTitle(){
+    document.title=loadedUnit?("Traveler "+loadedUnit+(sheetMode()==="full"?" full sheet":" fail sheet")):BASE_TITLE;
+  }
+  function clearSheet(){
+    current=null;loadedUnit="";
+    el("sheetHost").innerHTML="";
+    el("sheetHost").style.opacity="";
+    setDocTitle();
+  }
+  function noLanes(data){
+    var lanes=(data&&data.lanes)||{};
+    return Object.keys(lanes).length===0 && !((data&&data.present)||[]).length;
+  }
+  async function loadUnit(){
+    var mySeq=++loadSeq;
+    clearSheet();
+    var unit=boxUnit();
+    if(!/^\d+$/.test(unit)){setStatus("");alert("Unit # must be numeric.");return false;}
+    setStatus("Loading...");
+    try{
+      var res=await fetch(API+"/get-unit?unit="+encodeURIComponent(unit));
+      var raw=await res.text();
+      var data={};
+      try{ data=raw?JSON.parse(raw):{}; }catch(e){ throw new Error("Server "+res.status+" empty"); }
+      if(mySeq!==loadSeq)return false;
+      if(!res.ok)throw new Error(data.error||("Server "+res.status));
+      if(noLanes(data)){setStatus("No PDI record for unit "+unit+". Check the number.");return false;}
+      _hist = (window.GSHistory && !noLanes(data)) ? await Promise.race([GSHistory.fetchCompact(unit, API), new Promise(function(r){ setTimeout(function(){ r({}); }, 4000); })]) : {};
+      if(mySeq!==loadSeq)return false;
+      current=data;loadedUnit=unit;renderSheet(data);setDocTitle();
+      var need = (window.gsLanes && data.lanes) ? (gsLanes.hasNew(Object.keys(data.lanes)) ? (gsLanes.REQUIRE_U ? 5 : 4) : 4) : 4;
+      loadedStatus="Loaded unit "+unit+" — "+(data.present||[]).length+"/"+need+" lanes in";
+      setStatus(loadedStatus);
+      return true;
+    }catch(err){
+      if(mySeq!==loadSeq)return false;
+      setStatus("Load failed: "+(err.message||err));clearSheet();return false;
+    }
+  }
+  async function printSheet(){
+    var unit=boxUnit();
+    if(!unit){alert("Enter a unit number first.");return;}
+    if(!current||loadedUnit!==unit){
+      var ok=await loadUnit();
+      if(!ok)return;
+    }
+    // print only the sheet that is on screen, and only if it is the unit in the box
+    if(!current||loadedUnit!==boxUnit())return;
+    setDocTitle();
+    window.print();
+  }
+  el("btnLoad").onclick=loadUnit;
+  el("sheetMode").onchange=function(){ paintPrintLabel(); if (current) renderSheet(current); setDocTitle(); };
+  paintPrintLabel();
+  el("btnPrint").onclick=printSheet;
+  el("unitInput").addEventListener("keydown",function(e){if(e.key==="Enter")loadUnit();});
+  el("unitInput").addEventListener("input",function(){
+    if(!current)return;
+    if(boxUnit()!==loadedUnit){
+      el("sheetHost").style.opacity="0.35";
+      setStatus("Unit changed. Press Load Unit (Print will load it for you).");
+    }else{
+      el("sheetHost").style.opacity="";
+      setStatus(loadedStatus);
+    }
+  });
+  var params=new URLSearchParams(window.location.search);
+  if(params.get("unit")){el("unitInput").value=params.get("unit");loadUnit();}
+})();
+</script>
+<script>requireFloor();</script>
+</body>
+</html>

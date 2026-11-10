@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Find defect</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; padding-bottom: 48px; }
+h1 { font-size: 1.25rem; text-align: center; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+input, select { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 140px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; cursor: pointer; background: #2c3e50; }
+.pill { display: inline-block; background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin: 0 4px 8px 0; border: none; cursor: pointer; }
+.pill.dim { background: #95a5a6; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
+th { background: #1f4e79; color: #fff; }
+a { color: #1a5276; }
+</style>
+</head>
+<body>
+<p class="home"><a href="ops.html">← Main</a></p>
+<h1>FIND DEFECT</h1>
+<div class="card">
+  <label>Point or words in the note</label>
+  <input type="text" id="q" placeholder="paneling · leak · outlet">
+  <div class="row">
+    <div><label>From</label><input type="date" id="start"></div>
+    <div><label>To</label><input type="date" id="end"></div>
+  </div>
+  <div id="plants"></div>
+  <button type="button" class="btn" id="go">Search</button>
+  <p class="status" id="status">Last 7 days · all plants · point + detail.</p>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>Date</th><th>Plant</th><th>Unit</th><th>Lane</th><th>Point</th><th>Detail</th></tr></thead>
+    <tbody id="body"><tr><td colspan="6">Search to list units.</td></tr></tbody>
+  </table>
+</div>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var plant = "ALL";
+  function el(id){ return document.getElementById(id); }
+  function ymd(d){ return d.toISOString().slice(0,10); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]; }); }
+  var end = new Date();
+  var start = new Date(); start.setDate(start.getDate()-6);
+  el("end").value = ymd(end);
+  el("start").value = ymd(start);
+  function drawPills(){
+    el("plants").innerHTML = ["ALL","51","53","57","76"].map(function(p){
+      return '<button type="button" class="pill'+(p===plant?"":" dim")+'" data-p="'+p+'">'+p+'</button>';
+    }).join("");
+    Array.prototype.forEach.call(el("plants").querySelectorAll("button"), function(b){
+      b.onclick = function(){ plant = b.getAttribute("data-p"); drawPills(); };
+    });
+  }
+  drawPills();
+  async function search(){
+    var q = (el("q").value||"").trim();
+    if (q.length < 2) { alert("Type at least 2 characters."); return; }
+    el("status").textContent = "Searching…";
+    try {
+      var url = API+"/search-defects?q="+encodeURIComponent(q)+"&start="+el("start").value+"&end="+el("end").value+"&plant="+encodeURIComponent(plant);
+      var res = await fetch(url);
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) throw new Error(data.error||res.status);
+      el("status").textContent = data.count+" hits · "+data.unitsScanned+" units scanned"+(data.truncated?" · capped":"");
+      var body = el("body");
+      if (!data.hits.length) { body.innerHTML = '<tr><td colspan="6">No matches.</td></tr>'; return; }
+      body.innerHTML = data.hits.map(function(h){
+        return "<tr><td>"+esc(h.date)+"</td><td>"+esc(h.plant)+"</td><td><a href='timeline.html?unit="+esc(h.unit)+"'>"+esc(h.unit)+"</a></td><td>L"+esc(h.lane)+"</td><td>"+esc(h.point)+"</td><td>"+esc(h.desc)+"</td></tr>";
+      }).join("");
+    } catch(e){ el("status").textContent = "Failed: "+e.message; }
+  }
+  el("go").onclick = search;
+  el("q").addEventListener("keydown", function(ev){ if (ev.key==="Enter") search(); });
+  var qs = new URLSearchParams(location.search);
+  if (qs.get("q")) el("q").value = qs.get("q");
+  if (qs.get("start")) el("start").value = qs.get("start");
+  if (qs.get("end")) el("end").value = qs.get("end");
+  if (qs.get("plant")) { plant = qs.get("plant"); drawPills(); }
+  if (qs.get("q")) search();
+})();
+</script>
+</body>
+</html>

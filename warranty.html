@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Warranty vs Point</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; padding-bottom: 40px; }
+h1 { font-size: 1.25rem; text-align: center; letter-spacing: 1px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+h3 { font-size: 0.78rem; margin: 8px 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
+th { background: #1f4e79; color: #fff; }
+td.n { text-align: center; font-weight: 700; }
+.ok { color: #1e7a3a; font-weight: 700; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 160px; }
+.pill { display: inline-block; background: #1f4e79; color: #fff; font-size: 0.75rem; font-weight: 700; padding: 6px 10px; border-radius: 6px; margin: 0 4px 8px 0; border: none; cursor: pointer; }
+.pill.dim { background: #5d6d7e; }
+.note { font-size: 0.75rem; color: #666; margin-top: 6px; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.banner { background:#fdecea; border:2px solid #c0392b; color:#7b1d12; border-radius:8px; padding:12px; margin-bottom:12px; font-size:0.85rem; font-weight:700 }
+.banner button { margin-left:8px; font:inherit; padding:4px 10px; border-radius:6px; border:1px solid #7b1d12; background:#fff; cursor:pointer }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; max-width: none; }
+  th { background: #ddd !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+  @page { margin: 0.5in; size: letter; }
+}
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>WARRANTY vs PDI POINT</h1>
+
+<div class="card no-print">
+  <label class="no-print" style="margin-top:0">Drop latest plant YTD (.xlsx)</label>
+  <input type="file" id="xlsxFiles" accept=".xlsx,.xls" multiple>
+  <label class="no-print" style="margin-left:10px">Week ending</label>
+  <input type="date" id="weekEnding" class="no-print" style="font:inherit;padding:4px 6px;border:1px solid #bbb;border-radius:6px">
+  <button type="button" class="pill" id="btnAll">All plants</button>
+  <button type="button" class="pill dim" id="btn51">51</button>
+  <button type="button" class="pill dim" id="btn53">53</button>
+  <button type="button" class="pill dim" id="btn57">57 Etna</button>
+  <button type="button" class="pill dim" id="btn76">76</button>
+  <button type="button" class="pill dim" id="btnPrint" style="background:#8e44ad">Print</button>
+  <button type="button" class="pill dim" id="btnSaveW" style="background:#196f3d">Save live set</button>
+  <a class="pill dim" href="cohort.html" style="background:#c0392b;text-decoration:none">Cohort / escape →</a>
+  <label class="no-print" style="margin-left:10px">Model year</label>
+  <select id="yearSel" class="no-print" style="font:inherit;padding:4px 6px;border:1px solid #bbb;border-radius:6px"><option value="2026" selected>MY2026</option><option value="2027">MY2027</option><option value="all">All years</option></select>
+  <p class="status" id="status">Loading YTD dump…</p>
+</div>
+<div id="banner" class="banner" style="display:none" role="alert"></div>
+<div class="card" id="stampCard" style="display:none"><h2>This set</h2><div id="stamp" class="note" style="line-height:1.5;color:#222"></div><button type="button" class="pill" id="btnRepair" style="display:none;background:#b9770e;margin-top:8px">Repair saved copies</button></div>
+
+<div id="report" style="display:none">
+  <div class="card">
+    <h2 id="sumTitle">Plant summary</h2>
+    <table>
+      <thead><tr><th>Plant</th><th>Hits</th><th>Units</th><th>Claims</th><th>Cost</th></tr></thead>
+      <tbody id="sumBody"></tbody>
+    </table>
+    <p class="note" id="sumNote"></p>
+    <p class="note">Every figure on this page is all claim lines summed (nothing collapsed or dropped). Units = distinct plant + serial. <b>WCPU</b> (warranty cost per unit) = dollars ÷ units that have a claim, not units built.</p>
+  </div>
+
+  <div class="card">
+    <h2>Top inspection points</h2>
+    <p class="sub" id="rangeLabel" style="text-align:left;margin:0 0 8px"></p>
+    <h3>OVERALL</h3>
+    <table>
+      <thead><tr><th>#</th><th>PDI Point</th><th>Hits</th><th>Units</th><th>Cost</th></tr></thead>
+      <tbody id="topOverall"></tbody>
+    </table>
+    <div class="row" id="plantTops"></div>
+  </div>
+
+  <div class="card">
+    <h2>By lane</h2>
+    <table>
+      <thead><tr><th>Lane</th><th>Hits</th><th>Units</th><th>Cost</th></tr></thead>
+      <tbody id="laneBody"></tbody>
+    </table>
+  </div>
+
+  <div class="card" id="escapeCard">
+    <h2>Escape vs live PDI</h2>
+    <p class="note">Moved. Escape scoring now uses the approved warranty-to-checklist crosswalk and lives on the <a href="cohort.html">Cohort page</a>. The old fuzzy text match that was here is gone.</p>
+  </div>
+
+  <div class="card" id="unmapCard" style="display:none">
+    <h2>Unmapped codes</h2>
+    <table>
+      <thead><tr><th>Code</th><th>Description</th><th>Hits</th></tr></thead>
+      <tbody id="unmapBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script>
+requireOps();
+(function(){
+  var PLANTS = ["51","53","57","76"];
+  var NAMES = { "51":"51", "53":"53", "57":"57 Etna Green", "76":"76" };
+  var hits = [];
+  var filterPlant = "";
+  var uploadedFiles = [];
+  var liveOK = false;
+  var saving = false;   // W1b: one save at a time; the button is disabled while a POST is in flight
+  var lastSavedId = "";
+  var settleTries = 0;
+  var SAVED_KEY = "gsWarrantyLastSaved", SAVED_WINDOW_MS = 30 * 60 * 1000;
+  function rememberSaved(id){ try { if (id) localStorage.setItem(SAVED_KEY, JSON.stringify({ id: id, at: Date.now() })); } catch (e) {} }
+  function recentSavedId(){ try { var j = JSON.parse(localStorage.getItem(SAVED_KEY) || "null"); if (j && j.id && Date.now() - j.at < SAVED_WINDOW_MS) return String(j.id); } catch (e) {} return ""; }
+  var keepStatus = false;
+  var cwVersion = null;
+  var lastGet = null;
+  var meta = {};
+  var codeMap = {};
+  fetch("warranty-map.json").then(function(r){return r.json();}).then(function(m){ codeMap = m || {}; }).catch(function(){});
+
+  function xlsDate(v){
+    if (v == null || v === "") return "";
+    if (Object.prototype.toString.call(v) === "[object Date]") return v.toISOString().slice(0,10);
+    if (typeof v === "number") {
+      var d = new Date(Math.round((v - 25569) * 86400 * 1000));
+      return isNaN(d) ? "" : d.toISOString().slice(0,10);
+    }
+    return String(v).slice(0,10);
+  }
+  function mergeRows(rows){
+    // An upload is a full YTD for each plant it contains: those plants are REPLACED by the upload, every row kept (no collapsing).
+    var inUp = {};
+    rows.forEach(function(h){ inUp[h.plant] = 1; });
+    var kept = hits.filter(function(h){ return !inUp[h.plant]; });
+    hits = kept.concat(rows);
+    meta.collapsed = hits.length;
+    meta.rawRows = hits.length;
+    return rows.length;
+  }
+  function numOrNull(v){ if (v === "" || v == null) return null; var n = Number(v); return isNaN(n) ? null : n; }
+  function parseSheet(wb){
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var data = XLSX.utils.sheet_to_json(ws, { defval: "" });
+    var out = [];
+    data.forEach(function(r){
+      var code = String(r.Code || r.code || "").trim();
+      if (!code) return;
+      if (/\.0$/.test(code)) code = code.replace(/\.0$/, "");
+      var unitRaw = String(r.Unit || r.unit || "").trim();
+      var plant = "", unit = unitRaw;
+      if (unitRaw.indexOf("-") >= 0) {
+        var parts = unitRaw.split("-");
+        plant = parts[0].trim();
+        unit = parts.slice(1).join("-").trim();
+      }
+      var mapped = codeMap[code] || { point: "UNMAPPED", lane: "?" };
+      var problem = String(r.Problem || r.problem || "").trim();
+      out.push({
+        plant: plant,
+        unit: unit,
+        claim: String(r.Claim || r.claim || "").trim(),
+        code: code,
+        desc: String(r.Description || r.description || "").trim(),
+        point: mapped.point,
+        lane: mapped.lane,
+        problem: problem,
+        cost: parseFloat(r.Cost || r.cost || 0) || 0,
+        lines: 1,
+        offline: xlsDate(r.Offline || r.offline),
+        year: String(r.Year || r.year || "").replace(/\.0$/, ""),
+        model: String(r.Model || r.model || "").trim(),
+        fix: String(r.Fix || r.fix || r.Action || "").trim(),
+        policy: /policy/i.test(problem),
+        rank: numOrNull(r["#"]),
+        codeSub: numOrNull(r["Code $s"])
+      });
+    });
+    return out;
+  }
+  el("xlsxFiles").addEventListener("change", function(ev){
+    var files = ev.target.files;
+    if (!files || !files.length) return;
+    if (typeof XLSX === "undefined") { alert("Spreadsheet parser failed to load. Check network and retry."); return; }
+    el("status").textContent = "Reading " + files.length + " file(s)…";
+    var pending = files.length, perFile = [], failed = [];
+    uploadedFiles = Array.prototype.map.call(files, function(f){ return f.name; });
+    Array.prototype.forEach.call(files, function(file, idx){
+      var reader = new FileReader();
+      reader.onerror = function(){ failed.push(file.name + " (could not be read)"); done(); };
+      reader.onload = function(e){
+        try {
+          var wb = XLSX.read(e.target.result, { type: "array", cellDates: true });
+          perFile[idx] = parseSheet(wb);
+          if (!perFile[idx].length) failed.push(file.name + " (no claim rows found)");
+        } catch (err) {
+          failed.push(file.name + " (" + err.message + ")");
+        }
+        done();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+    function done(){
+      pending--;
+      if (pending) return;
+      if (failed.length) {
+        // One bad file must never turn into a quietly partial save.
+        el("status").textContent = "Not saved: " + failed.length + " file(s) failed.";
+        showBanner("NOT SAVED: could not read " + failed.join("; ") + ". Nothing was changed. Fix or remove the file and upload again.");
+        return;
+      }
+      // Rows go in file-SELECTION order, never in whatever order the browser finished reading them, so the same files always make the same upload.
+      var all = [].concat.apply([], perFile);
+      var n = mergeRows(all);
+      el("status").textContent = "Read " + all.length + " rows from " + uploadedFiles.length + " file(s). Working set " + hits.length + " rows. Saving…";
+      saveWarranty();
+      render();
+    }
+  });
+
+
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+  function money(n){ return "$" + Math.round(n).toLocaleString(); }
+  function money2(n){ n = Number(n); return isFinite(n) ? "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "n/a"; }   // exact dollars and cents (block-check exceptions)
+  function moneyExact(n){ n = Number(n); return isFinite(n) ? (n % 1 === 0 ? "$" + n.toLocaleString("en-US") : money2(n)) : "n/a"; }
+
+  function yearSel(){ return el("yearSel") ? el("yearSel").value : "2026"; }
+  function yearOf(h){ var y = String(h.year == null ? "" : h.year).trim().replace(/\.0$/, ""); return /^\d{4}$/.test(y) ? y : "other"; }
+  function showBanner(msg, retry){
+    var b = el("banner"); b.style.display = "block"; b.textContent = msg;
+    if (retry) { var x = document.createElement("button"); x.type = "button"; x.textContent = "Retry"; x.onclick = retry; b.appendChild(x); }
+  }
+  function hideBanner(){ el("banner").style.display = "none"; }
+  function active(){
+    return hits.filter(function(h){
+      if (h.policy) return false;
+      if (filterPlant && h.plant !== filterPlant) return false;
+      if (yearSel() !== "all" && yearOf(h) !== yearSel()) return false;
+      return true;
+    });
+  }
+
+  function topN(list, keyFn, n){
+    var bag = {};
+    list.forEach(function(h){
+      var k = keyFn(h);
+      if (!bag[k]) bag[k] = { key:k, hits:0, cost:0, units:{} };
+      bag[k].hits++;
+      bag[k].cost += h.cost||0;
+      bag[k].units[h.plant + "|" + h.unit] = 1;
+    });
+    return Object.keys(bag).map(function(k){
+      var b = bag[k];
+      return { key:b.key, hits:b.hits, cost:b.cost, units:Object.keys(b.units).length };
+    }).sort(function(a,b){ return b.hits - a.hits || b.cost - a.cost; }).slice(0, n);
+  }
+
+  function paintPills(){
+    ["All","51","53","57","76"].forEach(function(name){
+      var b = el("btn"+name);
+      if (!b) return;
+      var on = (name==="All" && !filterPlant) || (name===filterPlant);
+      b.className = "pill" + (on ? "" : " dim");
+    });
+  }
+
+  function renderTop(tbody, rows){
+    tbody.innerHTML = "";
+    if (!rows.length){ tbody.innerHTML = '<tr><td colspan="5">None</td></tr>'; return; }
+    rows.forEach(function(r,i){
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td class="n">'+(i+1)+"</td><td>"+esc(r.key)+'</td><td class="n">'+r.hits+'</td><td class="n">'+r.units+'</td><td class="n">'+money(r.cost)+"</td>";
+      tbody.appendChild(tr);
+    });
+  }
+
+  function render(){
+    var list = active();
+    el("report").style.display = "block";
+    paintPills();
+    el("rangeLabel").textContent = filterPlant
+      ? ("Plant " + (NAMES[filterPlant]||filterPlant) + " — all claim lines summed")
+      : "All plants — all claim lines summed";
+
+    var byP = {};
+    PLANTS.forEach(function(p){ byP[p] = { hits:0, cost:0, units:{}, claims:{} }; });
+    list.forEach(function(h){
+      var p = h.plant;
+      if (!byP[p]) byP[p] = { hits:0, cost:0, units:{}, claims:{} };
+      byP[p].hits++;
+      byP[p].cost += h.cost||0;
+      byP[p].units[h.unit]=1;
+      byP[p].claims[h.claim]=1;
+    });
+    var sb = el("sumBody"); sb.innerHTML = "";
+    var keys = filterPlant ? [filterPlant] : PLANTS;
+    keys.forEach(function(p){
+      var s = byP[p] || { hits:0, cost:0, units:{}, claims:{} };
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>Plant "+esc(NAMES[p]||p)+'</td><td class="n">'+s.hits+'</td><td class="n">'+Object.keys(s.units).length+'</td><td class="n">'+Object.keys(s.claims).length+'</td><td class="n">'+money(s.cost)+"</td>";
+      sb.appendChild(tr);
+    });
+    el("sumNote").textContent = "Rows in set: " + (meta.rawRows||"?") + " · Claim lines on this page: " + list.length + " · every row kept · policy rows left out of ranks.";
+
+    renderTop(el("topOverall"), topN(list, function(h){ return h.point || "UNMAPPED"; }, 10));
+
+    var wrap = el("plantTops");
+    wrap.innerHTML = "";
+    var show = filterPlant ? [filterPlant] : PLANTS;
+    show.forEach(function(p){
+      var subset = list.filter(function(h){ return h.plant===p; });
+      var div = document.createElement("div");
+      var rows = topN(subset, function(h){ return h.point || "UNMAPPED"; }, 8);
+      var html = "<h3>PLANT "+esc(NAMES[p]||p)+"</h3><table><thead><tr><th>#</th><th>Point</th><th>N</th><th>$</th></tr></thead><tbody>";
+      if (!rows.length) html += '<tr><td colspan="4">None</td></tr>';
+      rows.forEach(function(r,i){
+        html += '<tr><td class="n">'+(i+1)+"</td><td>"+esc(r.key)+'</td><td class="n">'+r.hits+'</td><td class="n">'+money(r.cost)+"</td></tr>";
+      });
+      html += "</tbody></table>";
+      div.innerHTML = html;
+      wrap.appendChild(div);
+    });
+
+    var lanes = topN(list, function(h){ return h.lane || "?"; }, 10);
+    var lb = el("laneBody"); lb.innerHTML = "";
+    lanes.forEach(function(r){
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+esc(r.key)+'</td><td class="n">'+r.hits+'</td><td class="n">'+r.units+'</td><td class="n">'+money(r.cost)+"</td>";
+      lb.appendChild(tr);
+    });
+
+    var um = list.filter(function(h){ return h.point==="UNMAPPED"; });
+    if (um.length){
+      el("unmapCard").style.display = "block";
+      var ub = el("unmapBody"); ub.innerHTML = "";
+      topN(um, function(h){ return h.code+"|"+h.desc; }, 20).forEach(function(r){
+        var parts = r.key.split("|");
+        var tr = document.createElement("tr");
+        tr.innerHTML = "<td>"+esc(parts[0])+"</td><td>"+esc(parts[1]||"")+'</td><td class="n">'+r.hits+"</td>";
+        ub.appendChild(tr);
+      });
+    } else el("unmapCard").style.display = "none";
+  }
+
+  function applyPack(data, src){
+    meta = data || {};
+    hits = data && data.hits ? data.hits : [];
+    if (!keepStatus) el("status").textContent = "Loaded " + hits.length + " claim lines (" + src + ").";
+    keepStatus = false;
+    render();
+  }
+  function stampHTML(d){
+    var bc = d.blockCheck || {}; var ex = bc.exceptions || [];
+    var parts = [];
+    if (d.settling) parts.push('<b id="settlingLine" style="color:#9a5b00">Settling.</b> ' + (d.listLag ? "Your upload is saved; the store's list has not caught up yet. " : d.baselineMissing ? "Your upload is saved; its baseline is not readable yet, so history and weekly numbers may be behind. " : "Your upload is saved; some saved copies are still catching up. ") + "Do not upload again. Reload in a minute; if it still says behind, press Repair.");
+    parts = parts.concat([
+      "<b>Ingest</b> " + esc(d.ingestId || "—") + (d.migrated ? " (migrated baseline)" : ""),
+      "<b>Uploaded</b> " + esc(d.ingestedAt || "unknown") + " · week ending " + esc(d.weekEnding || ""),
+      "<b>Rows kept: all</b> — " + (d.rowsKept == null ? "?" : d.rowsKept) + " lines, basis " + esc(d.basis || "?") + (d.collapsedDropped ? " · dropped " + (d.collapsedDropped.rows || 0) + " rows" : ""),
+      (d.copies > 1 ? "<b>Copies</b> this upload was saved " + d.copies + " times in a row (double click or retry); it counts once and is never its own prior (x" + d.copies + ")<br>" : "") +
+      "<b>Exact-copy rows</b> (audit only, still counted): " + (d.exactCopyRows ? d.exactCopyRows.rows + " rows / " + money(d.exactCopyRows.dollars) : "n/a"),
+      "<b>Block check</b>: " + (bc.available ? (bc.tied + " of " + bc.blocks + " code blocks tie to the report subtotal · " + ex.length + " exception" + (ex.length === 1 ? "" : "s")) : "not available for this set (no block columns)"),
+      "<b>Files</b> " + esc((d.files || []).join(", ") || "—"),
+      "<b>Build</b> " + esc(d.build || "—") + " · page " + esc(window.GS_BUILD || "") + " · <b>crosswalk</b> v" + esc(cwVersion == null ? "?" : cwVersion)
+    ]);
+    if (d.compare && d.compare[yearSel()]) { var c = d.compare[yearSel()]; parts.push("<b>Compare</b> " + esc(c.priorLabel || "") + (c.basisChange ? " — basis change, no delta shown" : (c.delta ? " — Δ " + money(c.delta.spend) + ", " + c.delta.units + " units" : ""))); }
+    ex.forEach(function(e){ parts.push("&nbsp;&nbsp;exception: plant " + esc(e.plant) + " #" + esc(e.rank) + " code " + esc(e.code) + " — rows " + money2(e.rowSum) + " vs subtotal " + moneyExact(e.subtotal)); });
+    return parts.join("<br>");
+  }
+  function paintStamp(d){
+    el("stampCard").style.display = "block"; el("stamp").innerHTML = stampHTML(d);
+    el("btnRepair").style.display = (d.derivedStale || d.indexStale) ? "inline-block" : "none";
+    if (d.derivedStale || d.indexStale) showBanner("Saved copies are behind the newest upload. The numbers below come from the newest upload itself. Use Repair to bring the copies in line.");
+  }
+  function setSaveBusy(b){ var btn = el("btnSaveW"); if (!btn) return; btn.disabled = !!b; btn.textContent = b ? "Saving…" : "Save live set"; btn.style.opacity = b ? "0.6" : ""; }
+  async function saveWarranty(){
+    if (saving) return;
+    if (!liveOK) { showBanner("Save blocked: the live read failed, so this page does not know what is on file. Reload the live set first.", loadLive); return; }
+    saving = true; setSaveBusy(true);
+    try {
+      var res = await fetch("/.netlify/functions/warranty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          hits: hits,
+          rawRows: hits.length,
+          weekEnding: (el("weekEnding") && el("weekEnding").value) || "",
+          files: uploadedFiles,
+          build: window.GS_BUILD || ""
+        })
+      });
+      var raw = await res.text(); var data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch (pe) { throw new Error("server sent something unreadable (" + res.status + ")"); }
+      if (!res.ok) { var ex = new Error(data.error || res.status); ex.data = data; throw ex; }
+      hideBanner();
+      if (data.settling && data.collapsed == null) {
+        lastSavedId = data.ingestId || ""; rememberSaved(lastSavedId);
+        el("status").textContent = "SAVED, but the new numbers are still settling. " + (data.message || "Do not upload again; reload in about a minute.");
+        loadLive(true, lastSavedId);
+        return;
+      }
+      var act = (data.kind === "basis-change")
+        ? ("First all-rows set (" + (data.weekEnding||"") + "). The prior was a collapsed set, so this is a basis change, not weekly activity.")
+        : (data.kind === "baseline")
+        ? ("Baseline pack " + (data.weekEnding||"") + " · full YTD, not weekly activity.")
+        : ("Claim activity " + (data.weekEnding||"") + " · +" + (data.addedN||0) + " claims · $" + Math.round(data.addedCost||0).toLocaleString() + " · " + (data.addedUnits||0) + " units.");
+      var extra = data.skippedZero ? " $0 week ignored — last four weeks unchanged." : (data.last4 ? (" Last four: " + data.last4.join(", ") + ".") : "");
+      el("status").textContent = (data.retry ? "Same upload already saved a moment ago (retry) — nothing duplicated. " : "Saved " + data.collapsed + " lines. ") + act + extra + (data.visible === false ? " " + (data.message || "Saved, but not visible to reads yet; do not upload again.") : "");
+      lastSavedId = data.ingestId || ""; rememberSaved(lastSavedId);
+      loadLive(true, lastSavedId);
+    } catch (e) {
+      var d = e.data || {};
+      el("status").textContent = "Save failed: " + e.message;
+      showBanner("NOT SAVED: " + e.message + (d.recorded ? " — the upload was recorded but some saved copies are behind; press Repair." : ""), function(){ saveWarranty(); });
+      if (d.recorded) { el("btnRepair").style.display = "inline-block"; }
+    } finally { saving = false; setSaveBusy(false); }
+  }
+  async function loadLive(quiet, afterId){
+    if (!afterId) afterId = recentSavedId();    // W1d: a reload shortly after a save still asks for "at least that ingest" (the list can hide it for a minute)
+    try {
+      // W1b: right after a save the record list can lag, so ask for "at least this ingest" and wait a few seconds if it is not readable yet
+      var res = null, raw = "", tries = 0;
+      for (;;) {
+        res = await fetch("/.netlify/functions/warranty" + (afterId ? "?after=" + encodeURIComponent(afterId) : ""));
+        raw = await res.text();
+        if (res.status === 503 && tries < 4) { tries++; await new Promise(function(r){ setTimeout(r, 2000); }); continue; }
+        break;
+      }
+      var data = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch (pe) { throw new Error("unreadable reply (" + res.status + ")"); }
+      if (res.status === 503 && data.settling) {
+        // W1d: saved but not readable yet. Not an error: say so, keep Save blocked (no second upload), and look again by itself.
+        liveOK = false;
+        el("stampCard").style.display = "block";
+        el("stamp").innerHTML = '<b id="settlingLine" style="color:#9a5b00">Settling.</b> Your upload is saved' + (data.ingestId ? ' (ingest ' + esc(data.ingestId) + ')' : '') + ', but the store has not made it readable yet. Do not upload again. This page checks again every 15 seconds.';
+        el("status").textContent = "Settling — saved, waiting for the store to catch up.";
+        if (settleTries++ < 12) setTimeout(function(){ loadLive(quiet, afterId); }, 15000);
+        return;
+      }
+      if (!res.ok) throw new Error(res.status === 401 ? "Ops PIN needed or wrong (401)" : (data.error || ("status " + res.status)));
+      liveOK = true; lastGet = data;
+      if (data.hits && data.hits.length) { hideBanner(); keepStatus = quiet === true; applyPack(data, "live"); paintStamp(data); }
+      else { el("status").textContent = "No live warranty set yet — upload a pack."; }
+    } catch (e) {
+      liveOK = false;
+      el("status").textContent = "Failed to load warranty data — " + e.message;
+      showBanner("Could not read the live warranty set: " + e.message + ". Nothing below is current. Saving is blocked until this loads.", function(){ loadLive(); });
+    }
+  }
+  fetch("warranty-crosswalk.json").then(function(r){ return r.json(); }).then(function(j){ cwVersion = j.version; if (lastGet) paintStamp(lastGet); }).catch(function(){});
+  loadLive();
+  el("btnRepair").onclick = async function(){
+    try {
+      var r = await fetch("/.netlify/functions/warranty-ingests?repair=1" + (lastSavedId || recentSavedId() ? "&after=" + encodeURIComponent(lastSavedId || recentSavedId()) : ""), { method: "POST" });
+      var d = await r.json(); if (d.settling) { el("status").textContent = "Repair: still settling (the store has not caught up). Try again in a minute."; return; } if (!r.ok || !d.ok) throw new Error(d.error || "repair reported a failed step");
+      el("status").textContent = "Repair done."; loadLive(true);
+    } catch (e) { showBanner("Repair failed: " + e.message, function(){ el("btnRepair").onclick(); }); }
+  };
+  el("yearSel").onchange = function(){ render(); if (lastGet) paintStamp(lastGet); };
+
+  el("btnAll").onclick = function(){ filterPlant=""; render(); };
+  el("btn51").onclick = function(){ filterPlant="51"; render(); };
+  el("btn53").onclick = function(){ filterPlant="53"; render(); };
+  el("btn57").onclick = function(){ filterPlant="57"; render(); };
+  el("btn76").onclick = function(){ filterPlant="76"; render(); };
+  el("btnPrint").onclick = function(){ window.print(); };
+  if (el("btnSaveW")) el("btnSaveW").onclick = function(){ saveWarranty(); };
+  (function setDefaultWeekEnding(){
+    var inp = el("weekEnding");
+    if (!inp) return;
+    var now = new Date();
+    var parts = new Intl.DateTimeFormat("en-US", { timeZone:"America/New_York", year:"numeric", month:"2-digit", day:"2-digit", weekday:"short" }).formatToParts(now);
+    var o = {};
+    parts.forEach(function(p){ o[p.type]=p.value; });
+    var ymd = o.year + "-" + o.month + "-" + o.day;
+    var d = new Date(ymd + "T12:00:00");
+    var back = d.getDay(); // 0 Sun
+    if (back === 0) back = 7;
+    d.setDate(d.getDate() - back); // last Saturday
+    inp.value = d.toISOString().slice(0,10);
+  })();
+
+})();
+</script>
+</body>
+</html>

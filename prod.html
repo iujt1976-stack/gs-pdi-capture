@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>GS Production Capture</title>
+<script src="floor-boot.js"></script>
+<script src="build.js"></script>
+<script src="inspector-code.js"></script>
+<script src="unit-rules.js"></script>
+<script src="photo-send.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #111; padding: 12px; padding-bottom: 140px; }
+h1 { font-size: 1.2rem; text-align: center; margin-bottom: 10px; }
+.home { text-align: center; margin: 0 0 10px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.75rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border-radius: 10px; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+input, select, textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 10px; }
+.row { display: flex; gap: 8px; }
+.row > * { flex: 1; }
+.sec { font-size: 0.8rem; font-weight: 700; color: #fff; padding: 6px 10px; border-radius: 4px; margin: 10px 0 6px; background: #1a5276; }
+.item { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.9rem; }
+.item span { flex: 1; }
+.pf { display: flex; gap: 4px; flex-shrink: 0; }
+.pf button { border: 1px solid #ccc; background: #f8f8f8; border-radius: 4px; padding: 4px 8px; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+.pf button.on-pass { background: #27ae60; color: #fff; border-color: #27ae60; }
+.pf button.on-fail { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+.pf button.on-na { background: #95a5a6; color: #fff; border-color: #95a5a6; }
+.defect { background: #fff5f5; border: 1px solid #f5c6cb; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+.defect textarea { min-height: 60px; }
+.photo-row { display: flex; align-items: center; gap: 10px; margin: 8px 0; flex-wrap: wrap; }
+.photo-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; border: 1px solid #ccc; }
+.photo-btn { background: #3498db; color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-weight: 600; }
+.lead { display: flex; align-items: center; gap: 10px; padding: 10px; background: #eaf2f8; border-radius: 8px; margin-bottom: 10px; font-weight: 700; }
+.lead input { width: auto; margin: 0; }
+.actions { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; padding: 12px; box-shadow: 0 -2px 12px rgba(0,0,0,.12); display: flex; gap: 8px; z-index: 50; flex-wrap: wrap; }
+.btn { flex: 1; min-width: 110px; padding: 14px; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 700; color: #fff; cursor: pointer; }
+.btn-save { background: #7f8c8d; }
+.btn-go { background: #27ae60; }
+.btn-go:disabled { opacity: 0.55; cursor: wait; }
+.btn-add { width: 100%; padding: 14px; background: #2c3e50; color: #fff; border: none; border-radius: 8px; font-weight: 700; margin-top: 8px; }
+.status { text-align: center; font-size: 0.8rem; color: #666; margin-top: 6px; }
+.hidden { display: none; }
+.draft-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<p class="home"><a href="index.html">← Main</a></p>
+<h1>PRODUCTION CAPTURE</h1>
+<p id="photoChip" class="status"></p>
+
+<div class="card">
+  <div class="row">
+    <div>
+      <label>Plant</label>
+      <select id="plantSelect">
+        <option value="">— Select Plant —</option>
+        <option value="51">51</option>
+        <option value="53">53</option>
+        <option value="57">57 Etna Green</option>
+        <option value="76">76</option>
+      </select>
+    </div>
+    <div>
+      <label>Unit #</label>
+      <input type="text" id="unitNumber" inputmode="numeric" placeholder="Serial only">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Model</label>
+      <input type="text" id="modelNumber">
+    </div>
+    <div>
+      <label>Date</label>
+      <input type="date" id="pdiDate">
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label>Inspector</label>
+      <select id="inspectorSelect"></select>
+    </div>
+    <div>
+      <label>Station</label>
+      <select id="stationSelect">
+        <option value="">— Select Station —</option>
+        <option value="floors">Floors</option>
+        <option value="shelling">Shelling</option>
+        <option value="electrical">Electrical</option>
+        <option value="metal">Metal</option>
+        <option value="prefinal">Pre-final</option>
+        <option value="final">Final</option>
+      </select>
+      <div id="laneClock" class="sub" style="text-align:left;margin:6px 0 0;color:#1f4e79;font-weight:700"></div>
+      <div id="clockWarn" class="sub" style="text-align:left;color:#c0392b;font-weight:700;display:none">Clock at 45m — stop or submit.</div>
+      <button type="button" class="photo-btn" id="btnStopClock" style="display:none;margin-top:6px">Stop clock</button>
+      <button type="button" class="photo-btn" id="btnResumeClock" style="display:none;margin-top:6px">Resume clock</button>
+    </div>
+  </div>
+</div>
+
+<div id="stationBox" class="card hidden"></div>
+
+<div class="card">
+  <h3 style="margin-bottom:8px">Defects</h3>
+  <div id="defects"></div>
+  <button type="button" class="btn-add" id="btnAdd">+ Add defect</button>
+</div>
+
+<div class="card" id="draftsCard" style="display:none">
+  <h3>Drafts on this phone</h3>
+  <div id="draftPanel"></div>
+</div>
+
+<div class="actions">
+  <button type="button" class="btn btn-save" id="btnSave">Save draft</button>
+  <button type="button" class="btn btn-save" id="btnReset" style="background:#c0392b">Reset</button>
+  <button type="button" class="btn btn-go" id="btnSubmit">Submit station</button>
+</div>
+<div id="queueBadge" class="status" style="display:none;color:#8e44ad;font-weight:700;cursor:pointer;white-space:pre-line"></div>
+<div id="queueActions" style="display:none;gap:8px;margin:8px 0">
+  <button type="button" class="btn btn-save" id="btnRetryQueue">Retry queue</button>
+  <button type="button" class="btn btn-save" id="btnDropPhotos" style="background:#7f8c8d">Drop leftover photos</button>
+</div>
+<p class="status" id="status"></p>
+
+<script>
+(function(){
+  var API = "/.netlify/functions";
+  var DRAFT_KEY = "gs-prod-drafts-v1";
+  var PHOTOS_ON = !!(window.GS_PHOTOS && window.GS_PHOTOS.ENABLED);   // 9a1
+  if (!PHOTOS_ON) { ["photoChip", "btnDropPhotos"].forEach(function(id){ var n = document.getElementById(id); if (n && n.parentNode) n.parentNode.removeChild(n); }); }
+  var checks = {};
+  var defects = [];
+  var startedAt = null;
+  var clockStoppedAt = null;
+  var warned45 = false;
+  var clockTimer = null;
+  var lastStation = "";
+
+  var STATIONS = {
+    floors: [
+      { key:"frame_painted", label:"Frame painted" },
+      { key:"floor_bolted", label:"Floor bolted properly" },
+      { key:"lp_manifold", label:"LP manifold installation" },
+      { key:"carpet_lino", label:"Carpet and linoleum" },
+      { key:"door_jams", label:"Door jams" },
+      { key:"generator_prep", label:"Generator preparation" },
+      { key:"entrance_step", label:"Entrance step installation" },
+      { key:"floor_protection", label:"Floor protection" },
+      { key:"seal_side_rails", label:"Seal on side wall rails" },
+      { key:"formica_panels", label:"Formica panels" },
+      { key:"seal_method", label:"Installation method of seals" }
+    ],
+    shelling: [
+      { key:"sidewalls_8oc", label:"Sidewalls secured 8\" on center" },
+      { key:"roof_8oc", label:"Roof secured 8\" on center" },
+      { key:"openings_square", label:"Side wall openings square" },
+      { key:"cabs_flush_sw", label:"Cabinets flush with sidewalls" },
+      { key:"wh_aligned", label:"Water heater aligned with wall opening" },
+      { key:"furnace_aligned", label:"Furnace aligned with wall opening" },
+      { key:"unit_square", label:"Overall unit square" },
+      { key:"sidewall_panels", label:"Sidewall panels" },
+      { key:"roof_material", label:"Roof material" },
+      { key:"roof_rubber", label:"Roof rubber" },
+      { key:"cab_roof_gaps", label:"Gaps between cabinets and roof" },
+      { key:"oh_cabinets", label:"O/H cabinet installation" },
+      { key:"stiles", label:"Stile installation and appearance" },
+      { key:"gimp", label:"Gimp installation" },
+      { key:"bead_molding", label:"Bead molding" },
+      { key:"underbelly", label:"Underbelly secure / protection" },
+      { key:"wheel_wells", label:"Wheel wells" }
+    ],
+    electrical: [
+      { key:"underside_wires", label:"Underside of unit — loose wires" },
+      { key:"terminals_lugs", label:"Terminals and ground lugs" },
+      { key:"converter_wires", label:"Converter wires secured" },
+      { key:"converter_install", label:"Converter installation" },
+      { key:"wires_sealed_floor", label:"Wires sealed at floor" },
+      { key:"comp_lights", label:"Compartment light installation" },
+      { key:"sep_loom", label:"12V & 120/240V separation and loom secured" },
+      { key:"grommets_steel", label:"Plastic grommets at steel" },
+      { key:"grommets_wood", label:"Steel grommets at wood frame" },
+      { key:"oh_wire_sep", label:"12V & 120/240V wire separation in O/H" },
+      { key:"lights_straight", label:"Interior lights straight" },
+      { key:"panel_pad", label:"Panel and pad installation" }
+    ],
+    metal: [
+      { key:"clearance_tail", label:"Clearance and tail lights" },
+      { key:"comp_belt_looms", label:"Compartments / belt / risers / looms / grommet / seal" },
+      { key:"loose_bolts", label:"Loose bolts" },
+      { key:"recept_latch", label:"Receptacles and latch" },
+      { key:"power_cord_latch", label:"Power cord and latch" },
+      { key:"grommet_seal", label:"Grommet seal" },
+      { key:"water_grade", label:"Grade of water lines" },
+      { key:"comp_drains", label:"Compartment drains" },
+      { key:"trunk_silicone", label:"Trunk door silicone sealant / seams" },
+      { key:"belt_rail", label:"Belt rail — straightness" },
+      { key:"putty_molding", label:"Putty seal behind molding" },
+      { key:"front_cap", label:"Front cap installation" },
+      { key:"exterior_damage", label:"Exterior for damage" },
+      { key:"window_seals", label:"Window seals" },
+      { key:"roof_seal", label:"Roof seal and for damage" },
+      { key:"entry_door", label:"Entrance door installation" }
+    ],
+    prefinal: [
+      { key:"stool", label:"Installation of stool" },
+      { key:"water_lines", label:"Water line installation and seal" },
+      { key:"psi100", label:"100-lb PSIG water line test" },
+      { key:"lp3", label:"3-lb LP gas test" },
+      { key:"wh_install", label:"Installation of water heater" },
+      { key:"furnace_install", label:"Installation of furnace" },
+      { key:"psi30", label:"30-lb PSIG water line test" },
+      { key:"dwv_flood", label:"DWV flood level test" },
+      { key:"copper", label:"Copper tubing" },
+      { key:"unit_level_cabs", label:"Unit level prior to setting cabinets" },
+      { key:"cabinet_install", label:"Cabinet installation" },
+      { key:"cab_end_panels", label:"Cabinet end panels" },
+      { key:"countertops", label:"Counter tops" },
+      { key:"faucets", label:"Kitchen and bath faucets" },
+      { key:"heat_duct", label:"Heat duct installation" },
+      { key:"appliance_set", label:"Appliance installation" },
+      { key:"refer_seal", label:"Refrigerator compartment seal" },
+      { key:"range_hood", label:"Range hood" }
+    ],
+    final: [
+      { key:"paint_body", label:"Paint / body / foam — nicks, dents, bulges" },
+      { key:"ext_finish", label:"Exterior finish and labels" },
+      { key:"no_runs", label:"No runs in paint / no overspray" },
+      { key:"roof_seal_final", label:"Roof seal" },
+      { key:"underbelly_wires", label:"Underbelly — wires clear of exhaust, holes sealed" },
+      { key:"hitch_welds", label:"Hitch welds / hitch bolts to spec" },
+      { key:"lp_loomed", label:"Copper LP lines loomed, no kinks" },
+      { key:"tailpipe", label:"Tailpipe secured" },
+      { key:"fire_ext", label:"Fire extinguisher installation" },
+      { key:"screens_doors", label:"Screen and entry doors" },
+      { key:"labels_ext", label:"Exterior labels and decals" },
+      { key:"labels_int", label:"Interior labels and decals" },
+      { key:"windows_final", label:"Windows sealed / operate" },
+      { key:"compartments_final", label:"Compartments seal, clean, operate" },
+      { key:"unit_clean", label:"Unit is clean" }
+    ]
+  };
+
+  function el(id){ return document.getElementById(id); }
+  function setStatus(s){ el("status").textContent = s || ""; }
+  function paintNow(){
+    return new Promise(function(ok){
+      requestAnimationFrame(function(){ requestAnimationFrame(ok); });
+    });
+  }
+
+  function paintInspectors(pref){
+    var sel = el("inspectorSelect");
+    if (!sel) return;
+    var names = (window._roster||[]).filter(function(n,i,a){ return n && /\s/.test(n) && a.indexOf(n)===i; });
+    sel.innerHTML = "";
+    var opt0 = document.createElement("option");
+    opt0.value = ""; opt0.textContent = "— Select full name —";
+    sel.appendChild(opt0);
+    names.forEach(function(n){
+      var o = document.createElement("option"); o.value = n; o.textContent = n; sel.appendChild(o);
+    });
+    sel.value = (pref && names.indexOf(pref) >= 0) ? pref : "";
+  }
+  function inspectorName(){
+    return (el("inspectorSelect").value || "").trim();
+  }
+  fetch("/.netlify/functions/settings").then(function(r){return r.text();}).then(function(raw){ try { window._roster = (JSON.parse(raw||"{}").inspectors)||[]; } catch(e){ window._roster=[]; } paintInspectors(); }).catch(function(){ window._roster=[]; paintInspectors(); });
+  el("inspectorSelect").onchange = function(){};
+
+  function clockNow(){ return clockStoppedAt ? new Date(clockStoppedAt).getTime() : Date.now(); }
+  function markStart(){
+    if (!startedAt) {
+      startedAt = new Date().toISOString();
+      clockStoppedAt = null; warned45 = false;
+      paintClock();
+      if (clockTimer) clearInterval(clockTimer);
+      clockTimer = setInterval(paintClock, 1000);
+    }
+  }
+  function paintClock(){
+    var n = el("laneClock");
+    if (!n) return;
+    if (!startedAt) { n.textContent = ""; return; }
+    var s = new Date(startedAt);
+    var sec = Math.max(0, Math.round((clockNow()-s.getTime())/1000));
+    var m = Math.floor(sec/60);
+    n.textContent = "Station time  " + String(s.getHours()).padStart(2,"0") + ":" + String(s.getMinutes()).padStart(2,"0") + "  ·  " + m + "m " + String(sec%60).padStart(2,"0") + "s" + (clockStoppedAt ? "  · STOPPED" : "");
+    var w = el("clockWarn");
+    if (w) w.style.display = (!clockStoppedAt && m >= 45) ? "block" : "none";
+    if (!clockStoppedAt && m >= 45 && !warned45) { warned45 = true; setStatus("Clock at 45m — stop or submit."); }
+    if (el("btnStopClock")) el("btnStopClock").style.display = startedAt && !clockStoppedAt ? "inline-block" : "none";
+    if (el("btnResumeClock")) el("btnResumeClock").style.display = clockStoppedAt ? "inline-block" : "none";
+  }
+
+  function renderStation(){
+    var key = el("stationSelect").value;
+    var box = el("stationBox");
+    box.innerHTML = "";
+    if (!key || !STATIONS[key]) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    var lead = document.createElement("div");
+    lead.className = "lead";
+    lead.innerHTML = '<input type="checkbox" id="leadSigned"><span>Lead signed (FMVT33)</span>';
+    box.appendChild(lead);
+    var sec = document.createElement("div");
+    sec.className = "sec";
+    sec.textContent = el("stationSelect").options[el("stationSelect").selectedIndex].text;
+    box.appendChild(sec);
+    STATIONS[key].forEach(function(item){
+      var row = document.createElement("div");
+      row.className = "item";
+      var sp = document.createElement("span");
+      sp.textContent = item.label;
+      var pf = document.createElement("div");
+      pf.className = "pf";
+      ["pass","fail","na"].forEach(function(val){
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = val.toUpperCase();
+        if (checks[item.key] === val) btn.classList.add("on-"+val);
+        btn.onclick = function(){
+          checks[item.key] = val;
+          pf.querySelectorAll("button").forEach(function(b){ b.className = ""; });
+          btn.classList.add("on-"+val);
+          markStart();
+          if (val === "fail") addDefect(item.label, item.key);
+          saveDraft();
+        };
+        pf.appendChild(btn);
+      });
+      row.appendChild(sp); row.appendChild(pf); box.appendChild(row);
+    });
+  }
+
+  function addDefect(point, checkKey){
+    markStart();
+    defects.push({ id: "d_"+Date.now(), point: point||"", checkKey: checkKey||"", desc:"", severity: 3, photos:[] });
+    renderDefects();
+  }
+  function renderDefects(){
+    var box = el("defects");
+    box.innerHTML = "";
+    defects.forEach(function(d, i){
+      var div = document.createElement("div");
+      div.className = "defect";
+      div.innerHTML = "<label>Point</label>";
+      var pt = document.createElement("input");
+      pt.value = d.point || "";
+      pt.oninput = function(){ d.point = pt.value; saveDraft(); };
+      div.appendChild(pt);
+      var ta = document.createElement("textarea");
+      ta.placeholder = "What's wrong";
+      ta.value = d.desc || "";
+      ta.oninput = function(){ d.desc = ta.value; saveDraft(); };
+      div.appendChild(ta);
+      var sev = document.createElement("select");
+      [1,2,3,4,5].forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent="Sev "+n; if(d.severity===n) o.selected=true; sev.appendChild(o); });
+      sev.onchange = function(){ d.severity = parseInt(sev.value,10); saveDraft(); };
+      div.appendChild(sev);
+      if (!Array.isArray(d.photos)) d.photos = d.photoData ? [{data:d.photoData}] : [];
+      var pr = document.createElement("div");
+      pr.className = "photo-row";
+      (PHOTOS_ON ? (d.photos||[]) : []).forEach(function(ph, pi){
+        if (!ph) return;
+        var src = ph.thumb || ph.data;
+        if (src) {
+          var img = document.createElement("img"); img.className="photo-thumb"; img.src=src;
+          pr.appendChild(img);
+        }
+        var clr = document.createElement("button"); clr.type="button"; clr.textContent="X";
+        clr.onclick = function(){ d.photos.splice(pi,1); renderDefects(); saveDraft(); };
+        pr.appendChild(clr);
+      });
+      if (PHOTOS_ON && (d.photos||[]).length < 4) {
+        var pb = document.createElement("button");
+        pb.type="button"; pb.className="photo-btn";
+        pb.textContent = d.photos.length ? "Add photo ("+d.photos.length+"/4)" : "Photo";
+        var file = document.createElement("input");
+        file.type="file"; file.accept="image/*"; file.capture="environment"; file.style.display="none";
+        pb.onclick = function(){ file.click(); };
+        file.onchange = function(){
+          var f = file.files && file.files[0]; if(!f) return;
+          var r = new FileReader();
+          r.onload = function(){
+            var img = new Image();
+            img.onload = function(){
+              var maxW = 800;
+              var scale = Math.min(1, maxW / img.width);
+              var canvas = document.createElement("canvas");
+              canvas.width = Math.round(img.width * scale);
+              canvas.height = Math.round(img.height * scale);
+              canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+              d.photos = d.photos || [];
+              d.photos.push({data: canvas.toDataURL("image/jpeg", 0.5), status:"local", key:""});
+              renderDefects(); saveDraft();
+              flushProdPhotos();
+            };
+            img.src = r.result;
+          };
+          r.readAsDataURL(f);
+        };
+        pr.appendChild(pb); pr.appendChild(file);
+      }
+      div.appendChild(pr);
+      var del = document.createElement("button");
+      del.type="button"; del.textContent="Remove"; del.style.marginTop="6px";
+      del.onclick = function(){ defects.splice(i,1); renderDefects(); saveDraft(); };
+      div.appendChild(del);
+      box.appendChild(div);
+    });
+  }
+
+  function payload(){
+    var unit = (el("unitNumber").value||"").trim();
+    if (window.gsUnit) {
+      var cu = gsUnit.checkUnit(unit, el("plantSelect").value);
+      if (!cu.ok) return { error: cu.error };
+      unit = cu.unit;
+      el("unitNumber").value = unit;
+      if (cu.plant) el("plantSelect").value = cu.plant;
+      gsUnit.syncPlantLock(el("plantSelect"), cu);
+    } else if (!/^\d+$/.test(unit)) return { error: "Unit # must be numeric." };
+    var plant = (el("plantSelect").value||"").trim();
+    if (!plant) return { error: "Plant is required." };
+    var inspector = inspectorName();
+    var station = el("stationSelect").value;
+    if (!inspector) return { error: "Inspector is required." };
+    if (!/\s/.test(inspector)) return { error: "Full name required — first name only is not allowed." };
+    if ((window._roster||[]).length && window._roster.indexOf(inspector) < 0) return { error: "Pick a full name from the roster." };
+    if (!station) return { error: "Station is required." };
+    var lead = !!(el("leadSigned") && el("leadSigned").checked);
+    if (!lead) return { error: "Lead signed is required." };
+    var end = clockStoppedAt || new Date().toISOString();
+    var start = startedAt || end;
+    return {
+      stage: "prod",
+      unit: unit,
+      model: (el("modelNumber").value||"").trim(),
+      date: el("pdiDate").value,
+      plant: plant,
+      inspector: inspector,
+      station: station,
+      leadSigned: true,
+      timestamp: end,
+      startedAt: start,
+      endedAt: end,
+      durationSec: Math.max(0, Math.round((Date.parse(end)-Date.parse(start))/1000)), clockStopped: !!clockStoppedAt,
+      checks: Object.assign({}, checks),
+      defects: defects.map(function(d){
+        return { id:d.id, checkKey:d.checkKey||"", point:d.point||"", desc:d.desc||"", severity:d.severity||3,
+          photos: !PHOTOS_ON ? [] : (d.photos||[]).filter(function(ph){ return ph && ph.key; }).map(function(ph,pi){ return {index:pi, key:ph.key}; }) };
+      }),
+      photosDeferred: PHOTOS_ON
+    };
+  }
+  function collectPhotos(){
+    var out=[];
+    defects.forEach(function(d,di){
+      (d.photos||[]).forEach(function(ph,pi){ if(ph&&ph.data) out.push({defectIndex:di,photoIndex:pi,photoData:ph.data}); });
+    });
+    return out;
+  }
+  var prodGuard = (window.gsPhoto && gsPhoto.guard) ? gsPhoto.guard({
+    list: function(){ var o = collectPhotos().map(function(x){ var ph = (defects[x.defectIndex]||{}).photos; ph = ph && ph[x.photoIndex]; return { error: ph && ph.error }; }); offlineQueue.forEach(function(j){ (j.photos||[]).forEach(function(){ o.push({}); }); }); return o; },
+    retry: function(){ flushProdPhotos(); if (offlineQueue.length) retryQueue(); }
+  }) : null;
+  var prodPhotoBusy = false;
+  async function flushProdPhotos(){
+    if (!PHOTOS_ON) return;
+    var unit = (el("unitNumber").value||"").replace(/\D/g,"");
+    var station = el("stationSelect").value;
+    var chip = el("photoChip");
+    var wait = collectPhotos().length;
+    var sent = 0;
+    defects.forEach(function(d){ (d.photos||[]).forEach(function(ph){ if (ph && ph.key && !ph.data) sent++; }); });
+    if (chip) chip.textContent = (sent || wait) ? ("Photos · " + sent + " uploaded · " + wait + " on phone") : "";
+    if (!/^\d+$/.test(unit) || !station || !window.gsPhoto) return;
+    if (prodPhotoBusy) return;
+    prodPhotoBusy = true;
+    try {
+      for (var di=0; di<defects.length; di++) {
+        var list = defects[di].photos || [];
+        for (var pi=0; pi<list.length; pi++) {
+          var ph = list[pi];
+          if (!ph || !ph.data || ph.status === "uploading") continue;
+          ph.status = "uploading";
+          try {
+            ph.key = await gsPhoto.upload({ stage:"prod", unit:unit, station:station, defectIndex:di, photoIndex:pi, photoData:ph.data });
+            ph.status = "sent";
+            delete ph.data;
+            saveDraft();
+            setStatus("Photo uploaded");
+          } catch(e) {
+            ph.status = "local"; ph.error = (e && e.message) || "failed";
+            setStatus("Photo still on phone — " + (e.message||"will retry"));
+          }
+        }
+      }
+      renderDefects();
+    } finally { prodPhotoBusy = false; if (prodGuard) prodGuard.paint(); }
+  }
+  function fetchTimeout(url, opts, ms){
+    var ctrl = new AbortController();
+    var t = setTimeout(function(){ ctrl.abort(); }, ms||8000);
+    return fetch(url, Object.assign({}, opts, {signal:ctrl.signal})).then(function(r){ clearTimeout(t); return r; }, function(e){ clearTimeout(t); throw e; });
+  }
+  var offlineQueue=[];
+  function loadQueue(){ try{ offlineQueue=JSON.parse(localStorage.getItem("gs_prod_queue")||"[]"); }catch(e){ offlineQueue=[]; } paintQueue(); }
+  function scrubStoredPhotos(){
+    try {
+      offlineQueue.forEach(function(j){
+        (j.photos||[]).forEach(function(ph){ if(ph){ delete ph.photoData; delete ph.data; delete ph.thumb; } });
+      });
+      saveQueue();
+      var list=[]; try{ list=JSON.parse(localStorage.getItem(DRAFT_KEY)||"[]"); }catch(e){}
+      list.forEach(function(d){
+        if (!d || !Array.isArray(d.defects)) return;
+        d.defects.forEach(function(def){
+          delete def.photoData;
+          if (Array.isArray(def.photos)) {
+            def.photos = def.photos.map(function(ph,pi){ return { index:pi, key:(ph&&ph.key)||"" }; });
+          }
+        });
+      });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(list));
+    } catch(e){}
+  }
+  function saveQueue(){ localStorage.setItem("gs_prod_queue", JSON.stringify(offlineQueue)); paintQueue(); }
+  function queueLabel(item){
+    var rec = item && item.record ? item.record : item || {};
+    var unit = item.unit || rec.unit || "?";
+    var station = item.station || rec.station || "?";
+    var pics = (PHOTOS_ON && item.photos && item.photos.length) ? " · "+item.photos.length+" photo"+(item.photos.length===1?"":"s")+" waiting" : "";
+    return "Unit "+unit+" · "+station+pics;
+  }
+  function queuePhotoCount(){
+    if (!PHOTOS_ON) return 0;
+    var n=0; offlineQueue.forEach(function(j){ n+=(j.photos||[]).length; }); return n;
+  }
+  function paintQueue(){
+    var b=el("queueBadge"); if(!b) return;
+    var actions=el("queueActions");
+    if(!offlineQueue.length){
+      b.style.display="none";
+      if(actions) actions.style.display="none";
+      return;
+    }
+    b.style.display="block";
+    if(actions) actions.style.display="flex";
+    var pics=queuePhotoCount();
+    var lines=["Waiting on this phone"];
+    offlineQueue.forEach(function(item){ lines.push(queueLabel(item)); });
+    if(pics) lines.push(pics+" photo"+(pics===1?"":"s")+" still on this device — Retry or Drop");
+    b.textContent=lines.join("\n");
+  }
+  function dropLeftoverPhotos(){
+    if (!PHOTOS_ON) return;
+    var n=queuePhotoCount();
+    if(!n){ setStatus("No leftover photos on this phone"); return; }
+    if(!confirm("Drop "+n+" leftover photo"+(n===1?"":"s")+" on this phone?\n\nStation records already on the server stay. Pictures on this device are discarded.")) return;
+    offlineQueue.forEach(function(j){ j.photos=[]; });
+    saveQueue();
+    setStatus("Dropped "+n+" photo"+(n===1?"":"s")+" on this phone — records stay");
+    retryQueue();
+  }
+
+
+  function saveDraft(){
+    var unit = (el("unitNumber").value||"").trim();
+    var station = el("stationSelect").value;
+    if (!unit && !station) return;
+    var rec = {
+      id: "dr_"+Date.now(), savedAt: new Date().toISOString(),
+      unitNumber: el("unitNumber").value, modelNumber: el("modelNumber").value,
+      date: el("pdiDate").value, plant: el("plantSelect").value,
+      inspector: inspectorName(), station: station, startedAt: startedAt,
+      leadSigned: !!(el("leadSigned") && el("leadSigned").checked),
+      checks: checks, defects: (defects||[]).map(function(d){
+        var c = Object.assign({}, d);
+        delete c.photoData;
+        if (Array.isArray(c.photos)) {
+          c.photos = c.photos.map(function(ph, pi){
+            return { index: pi, key: (ph && ph.key) || "", status: (ph && ph.key) ? "sent" : "gone" };
+          });
+        }
+        return c;
+      })
+    };
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem(DRAFT_KEY)||"[]"); } catch(e){}
+    list = list.filter(function(d){ return !(String(d.unitNumber)===String(rec.unitNumber) && d.station===rec.station); });
+    list.unshift(rec);
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(list.slice(0,20)));
+    renderDrafts();
+    setStatus("Draft saved");
+  }
+  function renderDrafts(){
+    var list = [];
+    try { list = JSON.parse(localStorage.getItem(DRAFT_KEY)||"[]"); } catch(e){}
+    var card = el("draftsCard"); var panel = el("draftPanel");
+    if (!list.length) { card.style.display="none"; return; }
+    card.style.display="block"; panel.innerHTML="";
+    list.forEach(function(d){
+      var row = document.createElement("div"); row.className="draft-row";
+      row.innerHTML = "<div>Unit "+(d.unitNumber||"?")+" · "+(d.station||"?")+" · "+(d.inspector||"")+"</div>";
+      var open = document.createElement("button"); open.type="button"; open.textContent="Open";
+      open.onclick = function(){ applyDraft(d); };
+      var del = document.createElement("button"); del.type="button"; del.textContent="Delete";
+      del.onclick = function(){
+        var all = JSON.parse(localStorage.getItem(DRAFT_KEY)||"[]").filter(function(x){ return x.id!==d.id; });
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(all)); renderDrafts();
+      };
+      var right = document.createElement("div"); right.appendChild(open); right.appendChild(del);
+      row.appendChild(right); panel.appendChild(row);
+    });
+  }
+  function applyDraft(d){
+    el("unitNumber").value = d.unitNumber||"";
+    el("modelNumber").value = d.modelNumber||"";
+    if (d.date) el("pdiDate").value = d.date;
+    if (d.plant) el("plantSelect").value = d.plant;
+    paintInspectors(d.inspector||"");
+    if (d.station) el("stationSelect").value = d.station;
+    checks = d.checks||{}; defects = d.defects||[];
+    if (d.startedAt && new Date(d.startedAt).toDateString() === new Date().toDateString()) startedAt = d.startedAt;
+    else if (d.startedAt) startedAt = new Date().toISOString();
+    else startedAt = null;
+    renderStation();
+    if (el("leadSigned")) el("leadSigned").checked = !!d.leadSigned;
+    renderDefects(); paintClock();
+    if (startedAt) { if (clockTimer) clearInterval(clockTimer); clockTimer = setInterval(paintClock,1000); }
+    setStatus("Draft loaded");
+  }
+  function resetForm(silent){
+    if (!silent && !confirm("Clear the form?")) return;
+    el("unitNumber").value=""; el("modelNumber").value="";
+    el("pdiDate").valueAsDate = new Date();
+    el("plantSelect").value=""; el("stationSelect").value="";
+    checks={}; defects=[]; startedAt=null;
+    if (clockTimer) { clearInterval(clockTimer); clockTimer=null; }
+    renderStation(); renderDefects(); paintClock(); paintInspectors();
+    if (!silent) setStatus("Form reset");
+  }
+
+  async function flushJob(job){
+    var res = await fetchTimeout(API+"/submit-prod", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(job.record) }, 8000);
+    var data = {};
+    try { data = await res.json(); } catch(e){}
+    if (!res.ok) throw new Error(data.error||res.status);
+    job.timestamp = data.timestamp || job.record.timestamp;
+    var left=[];
+    if (!PHOTOS_ON && (job.photos||[]).length) {
+      // 9a1: photos are off. A queued job from before still sends its RECORD; its pictures are not uploaded and not thrown away: they are parked.
+      try { var parked = JSON.parse(localStorage.getItem("gs_prod_photos_parked") || "[]"); parked.push({ idempKey: job.idempKey, unit: job.unit, station: job.station, photos: job.photos }); localStorage.setItem("gs_prod_photos_parked", JSON.stringify(parked)); } catch (eP) { try { console.warn("[prod] could not park queued photos", eP); } catch (e2) {} }
+    }
+    for (var i=0; PHOTOS_ON && i<(job.photos||[]).length;i++){
+      try {
+        var ph=job.photos[i];
+        var r2 = await fetchTimeout(API+"/submit-photo", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({
+          stage:"prod", idempKey:job.idempKey, unit:job.unit, station:job.station, timestamp:job.timestamp,
+          defectIndex:ph.defectIndex, photoIndex:ph.photoIndex, photoData:ph.photoData
+        }) }, 20000);
+        if (r2.status===400 || r2.status===404) continue;
+        if (!r2.ok) throw new Error("photo");
+      } catch(e){ left.push(job.photos[i]); }
+    }
+    if (PHOTOS_ON) {
+    job.photos=left;
+    if (left.length) throw new Error(left.length+" photos still queued");
+    }
+    return data;
+  }
+  async function retryQueue(){
+    if (!offlineQueue.length) return;
+    setStatus("Retrying "+offlineQueue.length+" queued…");
+    var left=[];
+    for (var i=0;i<offlineQueue.length;i++){
+      try { await flushJob(offlineQueue[i]); }
+      catch(e){ left.push(offlineQueue[i]); }
+    }
+    offlineQueue=left; saveQueue();
+    setStatus(left.length ? left.length+" still pending" : "All queued submits sent");
+  }
+  async function submit(){
+    var p = payload();
+    if (p.error) { alert(p.error); return; }
+    p.idempKey = "prod-"+p.unit+"-"+p.station+"-"+String(p.startedAt||p.timestamp).replace(/[^0-9A-Za-z]/g,"").slice(0,18)+"-"+Date.now();
+    var job = { idempKey:p.idempKey, unit:p.unit, station:p.station, timestamp:p.timestamp, record:p, photos: PHOTOS_ON ? collectPhotos() : [] };
+    await flushProdPhotos();
+    if (prodGuard && !prodGuard.confirmSubmit()) { setStatus("Submit cancelled — photos still sending"); return; }
+    setStatus("Submitting station…");
+    var btn = el("btnSubmit");
+    if (btn) { btn.disabled = true; btn.dataset.prev = btn.textContent; btn.textContent = "Submitting…"; }
+    await paintNow();
+    try {
+      await flushJob(job);
+      job.photos = [];
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem(DRAFT_KEY)||"[]"); } catch(e){}
+      list = list.filter(function(d){ return !(String(d.unitNumber)===String(p.unit) && d.station===p.station); });
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(list));
+      setStatus("Accepted — "+p.station+" on "+p.unit);
+      resetForm(true);
+      paintInspectors();
+      renderDrafts();
+    } catch(e){
+      offlineQueue.push(job); saveQueue();
+      setStatus("Queued on this phone — "+offlineQueue.length+" waiting ("+e.message+")");
+      resetForm(true);
+    } finally {
+      if (btn) { btn.disabled = false; if (btn.dataset.prev) btn.textContent = btn.dataset.prev; }
+    }
+  }
+
+  el("stationSelect").onchange = function(){
+    if (lastStation && this.value && this.value !== lastStation) {
+      startedAt=null; if (clockTimer){ clearInterval(clockTimer); clockTimer=null; } checks={}; defects=[];
+    }
+    lastStation = this.value;
+    renderStation(); paintClock(); renderDefects();
+  };
+  el("btnAdd").onclick = function(){ addDefect("", ""); };
+  el("btnSave").onclick = saveDraft;
+  el("btnReset").onclick = function(){ resetForm(false); };
+  if (el("btnStopClock")) el("btnStopClock").onclick = function(){ if(!startedAt) return; clockStoppedAt = new Date().toISOString(); paintClock(); setStatus("Clock stopped"); };
+  if (el("btnResumeClock")) el("btnResumeClock").onclick = function(){ clockStoppedAt = null; paintClock(); setStatus("Clock resumed"); };
+  el("btnSubmit").onclick = submit;
+  el("pdiDate").valueAsDate = new Date();
+  paintInspectors();
+  renderDrafts();
+  loadQueue();
+  scrubStoredPhotos();
+  async function pollPunchOut(){
+    if (document.hidden) return;
+    if (!startedAt || clockStoppedAt) return;
+    var name = inspectorName();
+    var date = el("pdiDate") && el("pdiDate").value;
+    if (!name || !date) return;
+    try {
+      var res = await fetch(API+"/clock-stop?date="+encodeURIComponent(date)+"&inspector="+encodeURIComponent(name));
+      var data = await res.json();
+      if (!data || !data.stop || !data.out) return;
+      var freeze = new Date(date+"T"+data.out+":00");
+      if (isNaN(freeze.getTime()) || freeze.getTime() <= new Date(startedAt).getTime()) return;
+      clockStoppedAt = freeze.toISOString();
+      paintClock();
+      setStatus("Clock stopped at punch-out "+data.out);
+    } catch(e){}
+  }
+  setInterval(function(){
+    if (document.hidden) return;
+    if(offlineQueue.length) retryQueue();
+    pollPunchOut();
+  }, 30000);
+  window.addEventListener("online", function(){ if(offlineQueue.length) retryQueue(); });
+  document.addEventListener("visibilitychange", function(){
+    if (!document.hidden && offlineQueue.length) retryQueue();
+  });
+  el("queueBadge").onclick = retryQueue;
+  if (el("btnRetryQueue")) el("btnRetryQueue").onclick = retryQueue;
+  if (el("btnDropPhotos")) el("btnDropPhotos").onclick = dropLeftoverPhotos;
+})();
+</script>
+<script>requireFloor();</script>
+</body>
+</html>

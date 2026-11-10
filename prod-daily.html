@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS Production Daily Log</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; }
+h1 { font-size: 1.25rem; text-align: center; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.sub { text-align: center; font-size: 0.8rem; color: #666; margin-bottom: 12px; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+h3 { font-size: 0.78rem; margin: 8px 0 4px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th, td { border: 1px solid #333; padding: 4px 6px; }
+th { background: #1a5276; color: #fff; }
+td.n { text-align: center; font-weight: 700; }
+.ok { color: #1e7a3a; font-weight: 700; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; }
+input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-bottom: 8px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; background: #1a5276; cursor: pointer; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 160px; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.pill { display: inline-block; background: #1a5276; color: #fff; font-size: 0.7rem; font-weight: 700; padding: 3px 6px; border-radius: 4px; margin: 0 2px 2px 0; }
+.pill.miss { background: #95a5a6; }
+@media print { .no-print { display: none !important; } }
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>PRODUCTION DAILY LOG</h1>
+<div class="card no-print">
+  <label>Anchor date</label>
+  <input type="date" id="date">
+  <div style="margin:6px 0 8px">
+    <button type="button" class="pill" id="perDay">Day</button>
+    <button type="button" class="pill miss" id="perWeek">Week</button>
+    <button type="button" class="pill miss" id="perMonth">Month</button>
+    <button type="button" class="pill miss" id="perYear">Year</button>
+  </div>
+  <button type="button" class="btn" id="btnLoad">Load</button>
+  <button type="button" class="btn" id="btnPrint" style="background:#8e44ad">Print / PDF</button>
+  <p class="status" id="status"></p>
+</div>
+<div id="report" style="display:none">
+  <div class="card">
+    <h2 id="title">Production Daily</h2>
+    <table>
+      <thead><tr><th>Plant</th><th>Units</th><th>Complete (6 stations)</th></tr></thead>
+      <tbody id="plantBody"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>Units</h2>
+    <div class="row">
+      <div><h3>PLANT 51</h3><div id="u51"></div></div>
+      <div><h3>PLANT 53</h3><div id="u53"></div></div>
+      <div><h3>PLANT 57</h3><div id="u57"></div></div>
+      <div><h3>PLANT 76</h3><div id="u76"></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Top points today</h2>
+    <table>
+      <thead><tr><th>#</th><th>Point</th><th>N</th></tr></thead>
+      <tbody id="topBody"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var PLANTS = ["51","53","57","76"];
+  var logPeriod = "day";
+  var NAMES = { floors:"Floors", shelling:"Shelling", electrical:"Elec", metal:"Metal", prefinal:"Pre-final", final:"Final" };
+  function el(id){ return document.getElementById(id); }
+  el("date").valueAsDate = new Date();
+  function line(u){
+    var pills = ["floors","shelling","electrical","metal","prefinal","final"].map(function(s){
+      return '<span class="pill'+(u.present.indexOf(s)>=0?"":" miss")+'">'+NAMES[s]+"</span>";
+    }).join(" ");
+    var st = u.complete ? '<span class="ok">COMPLETE</span>' : "OPEN";
+    return '<div style="margin-bottom:8px"><strong>'+u.unit+"</strong> — "+st+"<br>"+pills+
+      ' · <a href="timeline.html?unit='+u.unit+'">Sum</a></div>';
+  }
+  el("btnLoad").onclick = async function(){
+    var date = el("date").value;
+    el("status").textContent = "Loading…";
+    try {
+      var res = await fetch(API+"/daily-prod?date="+encodeURIComponent(date)+"&period="+encodeURIComponent(logPeriod));
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error||res.status);
+      el("report").style.display = "block";
+      var s = data.summary || {};
+      el("title").textContent = (s.period||"day").toUpperCase() + " PRODUCTION — " + (s.rangeStart||date) + (s.rangeEnd && s.rangeEnd!==s.rangeStart ? " → "+s.rangeEnd : "");
+      var byP = {}; PLANTS.forEach(function(p){ byP[p]={n:0,c:0,list:[]}; });
+      (data.units||[]).forEach(function(u){
+        var p = u.plant; if (!byP[p]) byP[p]={n:0,c:0,list:[]};
+        byP[p].n++; if (u.complete) byP[p].c++; byP[p].list.push(u);
+      });
+      var pb = el("plantBody"); pb.innerHTML="";
+      PLANTS.forEach(function(p){
+        var s = byP[p];
+        pb.innerHTML += "<tr><td>Plant "+p+'</td><td class="n">'+s.n+'</td><td class="n">'+s.c+"</td></tr>";
+        el("u"+p).innerHTML = s.list.length ? s.list.map(line).join("") : "<div>None</div>";
+      });
+      var tb = el("topBody"); tb.innerHTML="";
+      var tops = (data.topDefects && data.topDefects.day && data.topDefects.day.overall) || [];
+      if (!tops.length) tb.innerHTML = '<tr><td colspan="3">None</td></tr>';
+      tops.forEach(function(r,i){ tb.innerHTML += '<tr><td class="n">'+(i+1)+"</td><td>"+r.point+'</td><td class="n">'+r.count+"</td></tr>"; });
+      el("status").textContent = (s.uniqueUnits||s.count||0) + " units" + (s.truncated ? " · detail capped" : "");
+    } catch(e){ el("status").textContent = "Failed: "+e.message; }
+  };
+  function paintPer(){
+    ["Day","Week","Month","Year"].forEach(function(n){
+      var b = el("per"+n); if (!b) return;
+      b.className = "pill" + (logPeriod===n.toLowerCase() ? "" : " miss");
+    });
+  }
+  ["Day","Week","Month","Year"].forEach(function(n){
+    var b = el("per"+n); if (!b) return;
+    b.onclick = function(){ logPeriod = n.toLowerCase(); paintPer(); };
+  });
+  paintPer();
+  el("btnPrint").onclick = function(){ window.print(); };
+})();
+</script>
+</body>
+</html>

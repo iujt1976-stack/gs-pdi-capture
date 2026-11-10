@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — MY WCPU Report</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Calibri, Arial, Helvetica, sans-serif; background: #eef2f5; color: #1c2833; padding: 16px; max-width: 1100px; margin: 0 auto; }
+.mast { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 10px; }
+.mast h1 { font-size: 1.28rem; color: #1b4f72; letter-spacing: 0.3px; line-height: 1.15; }
+.lede { color: #148f77; font-size: 0.86rem; margin: 2px 0 0; }
+.period { text-align: right; font-size: 0.72rem; color: #1c2833; line-height: 1.35; min-width: 220px; }
+.period b { display: block; font-size: 0.78rem; }
+.card { background: #fff; border: 1px solid #c5d0da; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+h2 { font-size: 0.82rem; color: #1b4f72; text-transform: uppercase; letter-spacing: 0.35px; border-bottom: 2px solid #1b4f72; padding-bottom: 4px; margin: 4px 0 8px; }
+h3 { font-size: 0.8rem; color: #1b4f72; margin: 0 0 6px; }
+p.body { font-size: 0.8rem; line-height: 1.38; margin-bottom: 8px; }
+.kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 12px; }
+.kpi { background: #fff; border: 1px solid #d5dde3; border-top: 4px solid #5dade2; border-radius: 4px; padding: 8px 6px; text-align: center; }
+.kpi.bad { border-top-color: #e74c3c; }
+.kpi.good { border-top-color: #27ae60; }
+.kpi.warm { border-top-color: #f4d03f; }
+.kpi.meta { border-top-color: #7f8c8d; }
+.kpi .k { font-size: 0.58rem; font-weight: 800; color: #7f8c8d; letter-spacing: 0.35px; text-transform: uppercase; }
+.kpi .v { font-size: 1.18rem; font-weight: 800; color: #1b4f72; margin: 4px 0 2px; }
+.kpi .s { font-size: 0.68rem; color: #566573; }
+.dive { border: 1px solid #d5dde3; border-left: 5px solid #1b4f72; background: #f8fbfd; padding: 10px 12px; margin-bottom: 10px; }
+.dive.p53 { border-left-color: #c0392b; background: #fdf2f2; }
+.dive.p51 { border-left-color: #1b4f72; }
+.dive.p76 { border-left-color: #7d3c98; background: #f9f5fb; }
+.dive.p57 { border-left-color: #148f77; background: #f2fbf8; }
+.dive ul { margin: 0; padding-left: 16px; font-size: 0.78rem; line-height: 1.4; }
+.docfoot { display: flex; justify-content: space-between; font-size: 0.65rem; color: #7f8c8d; margin-top: 8px; letter-spacing: 0.2px; }
+table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+th, td { border: 1px solid #bfc9d4; padding: 3px 5px; }
+th { background: #1b4f72; color: #fff; font-weight: 700; text-align: center; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+td.c { text-align: center; }
+.hot { background: #fadbd8; color: #922b21; font-weight: 700; }
+.okv { background: #d5f5e3; color: #196f3d; font-weight: 700; }
+.warn { background: #fcf3cf; color: #7d6608; font-weight: 700; }
+.tot { background: #d4e6f1; font-weight: 800; }
+.note { font-size: 0.72rem; color: #566573; margin-top: 6px; }
+.plantGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0 14px; }
+.plantCard { background: #fff; border: 1px solid #c5d0da; border-left: 6px solid #1b4f72; border-radius: 6px; padding: 10px 12px; }
+.plantCard.p53 { border-left-color: #c0392b; }
+.plantCard.p76 { border-left-color: #7d3c98; }
+.plantCard.p57 { border-left-color: #148f77; }
+.plantCard h3 { font-size: 0.95rem; margin: 0 0 4px; }
+.plantCard .big { font-size: 1.35rem; font-weight: 800; color: #1b4f72; }
+.plantCard .sub { font-size: 0.78rem; color: #566573; margin-bottom: 6px; }
+.plantCard li { font-size: 0.8rem; line-height: 1.35; }
+ul.plain { margin: 0; padding-left: 18px; font-size: 0.84rem; line-height: 1.45; }
+.sheet { background: #fff; border: 1px solid #c5d0da; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
+.sheet h1 { font-size: 1.2rem; color: #1b4f72; margin: 0 0 4px; }
+.sheet .kpis { margin: 10px 0; }
+.fight { background: #f8fbfd; border-left: 5px solid #1b4f72; padding: 8px 10px; margin: 8px 0; font-size: 0.84rem; }
+.fight.p53 { border-left-color: #c0392b; background: #fdf2f2; }
+.fight.p76 { border-left-color: #7d3c98; background: #f9f5fb; }
+.fight.p57 { border-left-color: #148f77; background: #f2fbf8; }
+.up { color: #922b21; font-weight: 700; }
+.dn { color: #196f3d; font-weight: 700; }
+.flat { color: #7d6608; }
+.trendLine { font-size: 0.8rem; line-height: 1.4; margin: 0 0 6px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+label { font-size: 0.78rem; font-weight: 700; }
+select, button, input[type=checkbox] { font: inherit; }
+select { padding: 6px 8px; border-radius: 6px; border: 1px solid #bbb; }
+.pill { border: none; background: #1f4e79; color: #fff; font-weight: 800; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+.pill.dim { background: #5d6d7e; }
+.status { font-size: 0.78rem; color: #666; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; max-width: none; padding: 0; }
+  .card { border: none; padding: 0 0 8px; }
+  .page2, .page3 { break-before: page; }
+  .kpis, .dive, table, .plantCard, .sheet { break-inside: avoid; }
+  .sheet + .sheet { break-before: page; }
+  #packHandout .page2 { break-before: page; }
+  th, .hot, .okv, .warn, .tot, .kpi, .dive, .plantCard, .fight { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { margin: 0.45in 0.5in 0.55in; size: letter; }
+}
+@media (max-width: 800px) {
+  .kpis { grid-template-columns: 1fr 1fr; }
+}
+
+.banner{background:#fdecea;border:2px solid #c0392b;color:#7b1d12;border-radius:8px;padding:12px;margin:8px 0;font-size:.85rem;font-weight:700}
+.banner button{margin-left:8px;font:inherit;padding:4px 10px;border-radius:6px;border:1px solid #7b1d12;background:#fff;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="no-print card">
+  <div class="row">
+    <label>Year</label>
+    <select id="yearSel"></select>
+    <label><input type="checkbox" id="incPolicy" checked> Include policy rows</label>
+    <button type="button" class="pill" id="btnPrint">Print / PDF</button>
+    <a class="pill dim" href="ops.html" style="text-decoration:none">← Main</a>
+  </div>
+  <p class="status" id="status">Loading live warranty set…</p>
+  <div id="banner" class="banner" style="display:none" role="alert"></div>
+  <p class="note" id="setStamp"></p>
+  <p class="note">Leadership = three-pager. Shop = enterprise handout. Plant = one page per building. Trend pack = two-page YTD handout.</p>
+  <div class="row" style="margin-top:8px">
+    <span style="font-size:0.78rem;font-weight:800">View</span>
+    <button type="button" class="pill" id="vLead" data-view="lead">Leadership</button>
+    <button type="button" class="pill dim" id="vShop" data-view="shop">Shop</button>
+    <button type="button" class="pill dim" id="v51" data-view="51">Plant 51</button>
+    <button type="button" class="pill dim" id="v53" data-view="53">Plant 53</button>
+    <button type="button" class="pill dim" id="v57" data-view="57">Plant 57</button>
+    <button type="button" class="pill dim" id="v76" data-view="76">Plant 76</button>
+    <button type="button" class="pill dim" id="vAll" data-view="plants">All plants</button>
+    <button type="button" class="pill dim" id="vHand" data-view="handout">Trend pack</button>
+  </div>
+</div>
+
+<div id="packLead">
+<div class="mast">
+  <div>
+    <h1>EXECUTIVE WARRANTY &amp; WCPU ANALYSIS</h1>
+    <p class="lede" id="lede">Cross-Plant Composite Evaluation &amp; Quality Cost Forensics</p>
+  </div>
+  <div class="period" id="metaLine"></div>
+</div>
+<div class="kpis" id="kpis"></div>
+
+<div class="card">
+  <h2>1. Executive summary &amp; plant performance matrix</h2>
+  <p class="body" id="execCopy"></p>
+  <table>
+    <thead><tr>
+      <th>Plant / Division</th><th>Units Rep.</th><th>Total Cost</th><th>% Total Spend</th><th>Plant WCPU</th><th>Variance vs. Enterprise</th><th>Primary Root Mechanism</th>
+    </tr></thead>
+    <tbody id="plantBody"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>2. Fix type / claim action cost distribution</h2>
+  <p class="note" id="fixNote"></p>
+  <table>
+    <thead><tr>
+      <th>Action Type</th><th>Enterprise Total</th><th>% Spend</th><th>Enterprise WCPU</th><th>Plant 51 WCPU</th><th>Plant 53 WCPU</th><th>Plant 57 WCPU</th><th>Plant 76 WCPU</th>
+    </tr></thead>
+    <tbody id="fixBody"></tbody>
+  </table>
+</div>
+
+<div class="card page2">
+  <h2>3. Cross-plant commodity Pareto analysis</h2>
+  <table>
+    <thead><tr>
+      <th>Commodity System</th><th>Total Spend</th><th>% Spend</th><th>Ent. WCPU</th><th>P51 WCPU</th><th>P53 WCPU</th><th>P57 WCPU</th><th>P76 WCPU</th>
+    </tr></thead>
+    <tbody id="comBody"></tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>4. Top 12 defect item cost drivers</h2>
+  <table>
+    <thead><tr>
+      <th>Item Description</th><th>Total Cost</th><th>% Spend</th><th>Ent. WCPU</th><th>P51 WCPU</th><th>P53 WCPU</th><th>P57 WCPU</th><th>P76 WCPU</th><th>Primary Failure Mode</th>
+    </tr></thead>
+    <tbody id="topBody"></tbody>
+  </table>
+</div>
+
+<div class="card page3">
+  <h2>5. Plant forensic deep-dives &amp; targeted root causes</h2>
+  <div id="forensics"></div>
+</div>
+
+<div class="card">
+  <h2>6. Executive quality action plan &amp; containment roadmap</h2>
+  <table>
+    <thead><tr>
+      <th>Target Area</th><th>Plants</th><th>Corrective Action &amp; Engineering Intervention</th><th>Targeted WCPU Recovery</th>
+    </tr></thead>
+    <tbody id="planBody"></tbody>
+  </table>
+  <p class="note" id="methodNote"></p>
+</div>
+<p class="docfoot"><span>CONFIDENTIAL // QUALITY &amp; WARRANTY OPERATIONS // MY2026</span><span id="footRight">Print from Ops · WCPU report</span></p>
+</div>
+
+<div id="packShop" hidden>
+  <div class="mast">
+    <div>
+      <h1>Warranty cost by plant</h1>
+      <p class="lede" id="shopLede">All four plants · same live set as the leadership pack</p>
+    </div>
+    <div class="period" id="shopMeta"></div>
+  </div>
+  <p class="body" id="shopIntro"></p>
+  <div class="card">
+    <h2>This pack vs last pack</h2>
+    <p class="body" id="shopTrendStory"></p>
+    <table>
+      <thead><tr>
+        <th>Plant</th><th>This $</th><th>Last $</th><th>Δ $</th>
+        <th>This WCPU</th><th>Last WCPU</th><th>Δ WCPU</th><th>Units this</th>
+      </tr></thead>
+      <tbody id="shopTrendBody"></tbody>
+    </table>
+    <p class="note" id="shopTrendNote"></p>
+  </div>
+  <div class="plantGrid" id="shopCards"></div>
+  <div class="card">
+    <h2>What is costing the most</h2>
+    <table>
+      <thead><tr>
+        <th>Item</th><th>All plants $</th><th>Share</th><th>WCPU</th><th>Hottest plant</th>
+      </tr></thead>
+      <tbody id="shopTop"></tbody>
+    </table>
+  </div>
+  <div class="card">
+    <h2>What each plant owns this year</h2>
+    <ul class="plain" id="shopFights"></ul>
+  </div>
+  <p class="note" id="shopNote"></p>
+</div>
+
+<div id="packHandout" hidden>
+  <div class="mast">
+    <div>
+      <h1>WARRANTY TREND — MY2026</h1>
+      <p class="lede" id="handLede">Year-to-date</p>
+    </div>
+    <div class="period" id="handMeta"></div>
+  </div>
+  <div class="kpis" id="handKpis"></div>
+  <p class="body" id="handIntro"></p>
+  <div class="plantGrid" id="handCards"></div>
+  <div class="card page2">
+    <h2>Pack dates</h2>
+    <p class="note">WCPU = warranty dollars ÷ claimed units.</p>
+    <h3 style="margin-top:10px">WCPU · pack over pack</h3>
+    <table><thead><tr><th>Week ending</th><th>Ent</th><th>Δ</th><th>51</th><th>53</th><th>57</th><th>76</th><th>Units</th></tr></thead><tbody id="handWcpu"></tbody></table>
+    <h3 style="margin-top:12px">Spend · pack over pack</h3>
+    <table><thead><tr><th>Week ending</th><th>Ent $</th><th>Δ</th><th>51</th><th>53</th><th>57</th><th>76</th></tr></thead><tbody id="handSpend"></tbody></table>
+    <h3 style="margin-top:12px">Named line · YTD $</h3>
+    <table><thead><tr><th>Issue</th><th>Prior pack</th><th>This pack</th><th>Δ</th></tr></thead><tbody id="handNamed"></tbody></table>
+    <h3 style="margin-top:12px">Activity this period · MY2026</h3>
+    <p class="body" id="handWeek"></p>
+    <table><thead><tr><th>Plant</th><th>New $</th><th>Coaches</th><th>Top line</th></tr></thead><tbody id="handWeekBody"></tbody></table>
+    <p class="note" id="handFoot"></p>
+  </div>
+</div>
+<div id="packPlant" hidden></div>
+
+<script>
+requireOps();
+(function(){
+  var PLANTS = ["51","53","57","76"];
+  var hits = [];
+  var generated = "";
+  var prevSummary = null;
+  var compareData = null;
+  var activity = [];
+  var view = "lead";
+  var packHistory = [];
+  var FIGHT_SHORT = {
+    "51": "Linoleum / sleds",
+    "53": "Filon / handling",
+    "57": "Rubber roof",
+    "76": "Metal hang"
+  };
+  var TARGET = {
+    "51": "−$65 WCPU. Still the lowest of the four.",
+    "53": "−$350 WCPU. Still the outlier versus enterprise.",
+    "57": "−$80 WCPU.",
+    "76": "−$50 WCPU."
+  };
+  var PACK_SEED = [
+    { generated:"2026-08-28", spend:452025, units:1027, wcpu:440.14,
+      byPlant:{ "51":{spend:173279,units:462,wcpu:375.06}, "53":{spend:63698,units:52,wcpu:1224.96}, "57":{spend:56166,units:107,wcpu:524.92}, "76":{spend:158883,units:406,wcpu:391.34} },
+      named:{ lino:69741, metal:55493, paint53:22355, rubber57:16075 } },
+    { generated:"2026-09-02", spend:476998, units:1049, wcpu:454.72,
+      byPlant:{ "51":{spend:180693,units:470,wcpu:384.45}, "53":{spend:71741,units:55,wcpu:1304.39}, "57":{spend:58814,units:109,wcpu:539.58}, "76":{spend:165749,units:415,wcpu:399.39} },
+      named:{ lino:70372, metal:57982, paint53:22355, rubber57:16075 } },
+    { generated:"2026-09-14", spend:478805, units:1091, wcpu:438.87,
+      byPlant:{ "51":{spend:178113,units:486,wcpu:366.49}, "53":{spend:73616,units:60,wcpu:1226.93}, "57":{spend:64763,units:114,wcpu:568.10}, "76":{spend:162314,units:431,wcpu:376.60} },
+      named:{ lino:68374, metal:57161, paint53:22229, rubber57:16250 } }
+  ];
+  var FIGHT = {
+    "51": "Linoleum and subfloor. Film the floor after decking. Non-marking sleds under cabinets and slides.",
+    "53": "Filon and handling — there is no paint line here. Paint dollars are repair then repaint after damage.",
+    "57": "Rubber roof dwell and adhesive open-time. Paneling and linoleum sit right behind it.",
+    "76": "Metal hang and fastening. Check roll-form racks before hang. Positive-stop staple noses."
+  };
+
+  function el(id){ return document.getElementById(id); }
+  function money(n){
+    n = Number(n)||0;
+    var sign = n<0?"-":"";
+    n = Math.abs(n);
+    return sign + "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function moneyK(n){
+    n = Number(n)||0;
+    if (Math.abs(n) >= 1000) return "$" + (n/1000).toFixed(1) + "k";
+    return money(n);
+  }
+  function pct(n){ return (n*100).toFixed(1) + "%"; }
+  function wcpu(cost, units){ return units ? cost/units : 0; }
+  function yearOf(h){ return String(h.year||"").replace(/\.0$/,"").trim(); }
+  function fixOf(h){
+    var f = String(h.fix||"").trim();
+    if (!f) return "(no Fix on hit)";
+    return f.replace(/\s+/g," ");
+  }
+  function bucket(desc){
+    var d = String(desc||"").toLowerCase().replace(/\s+/g," ");
+    var order = [
+      ["Paint", ["paint","graphics"]],
+      ["Flooring & Subfloor", ["linoleum","flooring - decking","flooring - linoleum"]],
+      ["Rubber roof", ["roof","membrane","air conditioner roof"]],
+      ["Bath & Plumbing Fixtures", ["faucet","shower","kitchen sink","tub/shower"]],
+      ["Plumbing & Tanks", ["water line","water heater","holding tank","fresh water","city fill"]],
+      ["Cabinetry & Furniture", ["cabinet","dinette","booth","mattress","seat","sofa","cushion","countertop"]],
+      ["Doors & Windows", ["door","window","hinge"]],
+      ["Ext. Trim, Sealant & Underbelly", ["exterior molding","underbelly","awning","gutter"]],
+      ["Interior Walls & Trim", ["paneling","batten","trim - plastic","trim, batten","interior door frame"]],
+      ["Metal", ["metal","aluminum siding","radius metal","sidewall","fender","front cap","fiberglass","diamond plate"]]
+    ];
+    for (var i=0;i<order.length;i++){
+      for (var j=0;j<order[i][1].length;j++){
+        if (d.indexOf(order[i][1][j]) >= 0) return order[i][0];
+      }
+    }
+    return "Chassis, Slide-Outs, Elect & Misc";
+  }
+  function hotCell(v){
+    if (v >= 100) return ' class="n hot"';
+    if (v <= 0) return ' class="n"';
+    return ' class="n"';
+  }
+  function varClass(v){
+    if (v >= 0.5) return "hot";
+    if (v > 0.05) return "warn";
+    if (v < 0) return "okv";
+    return "";
+  }
+
+  function filtered(){
+    var y = el("yearSel").value;
+    var pol = el("incPolicy").checked;
+    return hits.filter(function(h){
+      if (!pol && h.policy) return false;
+      if (y && y !== "ALL" && yearOf(h) !== y) return false;
+      return PLANTS.indexOf(String(h.plant)) >= 0 || !h.plant ? PLANTS.indexOf(String(h.plant)) >= 0 : false;
+    }).filter(function(h){ return PLANTS.indexOf(String(h.plant)) >= 0; });
+  }
+
+  function unitsMap(list){
+    var u = { ENT:{} };
+    PLANTS.forEach(function(p){ u[p] = {}; });
+    list.forEach(function(h){
+      var key = String(h.plant)+"|"+String(h.unit);
+      u.ENT[key] = 1;
+      if (u[h.plant]) u[h.plant][String(h.unit)] = 1;
+    });
+    var out = { ENT: Object.keys(u.ENT).length };
+    PLANTS.forEach(function(p){ out[p] = Object.keys(u[p]).length; });
+    return out;
+  }
+  function costMap(list){
+    var c = { ENT:0 };
+    PLANTS.forEach(function(p){ c[p]=0; });
+    list.forEach(function(h){
+      var n = Number(h.cost)||0;
+      c.ENT += n;
+      if (c[h.plant] != null) c[h.plant] += n;
+    });
+    return c;
+  }
+
+  function render(){
+    var list = filtered();
+    var units = unitsMap(list);
+    var costs = costMap(list);
+    var y = el("yearSel").value;
+    var titleYear = y === "ALL" ? "All model years" : ("Model Year " + y);
+    el("lede").textContent = "Cross-Plant Composite Evaluation & Quality Cost Forensics  •  " + titleYear;
+    el("metaLine").innerHTML =
+      "<b>Reporting Period: " + titleYear + " Cumulative</b>" +
+      "Total Units Sampled: " + units.ENT.toLocaleString() + " Units<br>" +
+      "Total Gross Expense: " + money(costs.ENT) +
+      (generated ? ("<br>Live set " + generated) : "");
+
+    var entW = wcpu(costs.ENT, units.ENT);
+    var worstP = PLANTS.slice().sort(function(a,b){ return wcpu(costs[b],units[b]) - wcpu(costs[a],units[a]); })[0];
+    var worstW = wcpu(costs[worstP], units[worstP]);
+    var top2 = costs["51"] + costs["76"];
+
+    var fixBag = {};
+    list.forEach(function(h){
+      var f = fixOf(h);
+      if (!fixBag[f]) { fixBag[f] = { ENT:0, "51":0,"53":0,"57":0,"76":0, n:0 }; }
+      fixBag[f].ENT += Number(h.cost)||0;
+      if (fixBag[f][h.plant] != null) fixBag[f][h.plant] += Number(h.cost)||0;
+      fixBag[f].n++;
+    });
+    var fixKeys = Object.keys(fixBag).sort(function(a,b){ return fixBag[b].ENT - fixBag[a].ENT; });
+    var topFix = fixKeys[0] || "—";
+    var topFixPct = costs.ENT ? fixBag[topFix].ENT / costs.ENT : 0;
+
+    var comBag = {};
+    list.forEach(function(h){
+      var b = bucket(h.desc);
+      if (!comBag[b]) { comBag[b] = { ENT:0, "51":0,"53":0,"57":0,"76":0 }; }
+      comBag[b].ENT += Number(h.cost)||0;
+      if (comBag[b][h.plant] != null) comBag[b][h.plant] += Number(h.cost)||0;
+    });
+    var comKeys = Object.keys(comBag).sort(function(a,b){ return comBag[b].ENT - comBag[a].ENT; });
+    var topCom = comKeys[0] || "—";
+
+    el("kpis").innerHTML =
+      kpi("ENTERPRISE WCPU", money(entW), units.ENT.toLocaleString() + " Represented Units", "meta") +
+      kpi("HIGHEST UNIT SEVERITY", money(worstW), "Plant " + worstP + " (" + (entW? (worstW/entW).toFixed(2) : "—") + "× Baseline)", "bad") +
+      kpi("DOMINANT ACTION", pct(topFixPct), topFix + " (" + money(wcpu(fixBag[topFix]?fixBag[topFix].ENT:0, units.ENT)) + " WCPU)", "good") +
+      kpi("TOP 2 PLANTS SPEND", pct(costs.ENT? top2/costs.ENT : 0), "P51 + P76 (" + moneyK(top2) + " Total)", "warm") +
+      kpi("TOP DEFECT COMMODITY", money(wcpu(comBag[topCom]?comBag[topCom].ENT:0, units.ENT)), topCom, "meta");
+
+    function kpi(k,v,s,cls){
+      return '<div class="kpi '+cls+'"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
+    }
+
+    var roots = {};
+    PLANTS.forEach(function(p){
+      var sub = list.filter(function(h){ return h.plant===p; });
+      var td = {};
+      sub.forEach(function(h){
+        var d = h.desc || "(blank)";
+        td[d] = (td[d]||0) + (Number(h.cost)||0);
+      });
+      var ranked = Object.keys(td).sort(function(a,b){ return td[b]-td[a]; });
+      var a = ranked[0], b = ranked[1];
+      roots[p] = a ? (a + " (" + money(wcpu(td[a], units[p])) + " WCPU)" + (b ? "; " + b : "")) : "—";
+    });
+
+    var pb = el("plantBody"); pb.innerHTML = "";
+    var plantOrder = PLANTS.slice().sort(function(a,b){ return (costs[b]||0) - (costs[a]||0); }).concat(["ENT"]);
+    plantOrder.forEach(function(p){
+      var label = p==="ENT" ? "Enterprise Total" : ("Plant " + p);
+      var c = costs[p]||0, u = units[p]||0, w = wcpu(c,u);
+      var share = costs.ENT ? c/costs.ENT : 0;
+      var v = entW ? (w-entW)/entW : 0;
+      var tr = document.createElement("tr");
+      if (p==="ENT") tr.className = "tot";
+      var varHtml = p==="ENT" ? "—" : ((v>=0?"+":"") + pct(v));
+      var vc = p==="ENT" ? "" : varClass(v);
+      tr.innerHTML = "<td><b>"+label+"</b></td>" +
+        '<td class="c">'+u.toLocaleString()+'</td>' +
+        '<td class="n">'+money(c)+'</td>' +
+        '<td class="c">'+pct(share)+'</td>' +
+        '<td class="n"><b>'+money(w)+'</b></td>' +
+        '<td class="c '+vc+'">'+varHtml+'</td>' +
+        "<td>"+(p==="ENT" ? (topFix + " " + pct(topFixPct)) : roots[p])+"</td>";
+      pb.appendChild(tr);
+    });
+
+    var volPlants = ["51","76"].map(function(p){ return "Plant "+p; }).join(" and ");
+    var deltaLine = "";
+    // Server compare: same model-year filter on both sides, computed once on the server. No client-side delta here.
+    var cmp = compareData && compareData[yearWanted() === "ALL" ? "all" : yearWanted()];
+    if (cmp && cmp.basisChange) {
+      deltaLine = " Prior comparison: basis change. " + (cmp.basisNote || "The prior set was on a different basis, so no delta is shown.");
+    } else if (cmp && cmp.prior && cmp.delta) {
+      var dd = cmp.delta;
+      deltaLine = " Vs " + (cmp.priorLabel || "prior set").replace(/^prior = /, "") + " (all claim lines summed, same filter both sides): spend " + money(cmp.prior.spend) +
+        " → " + money(cmp.current.spend) + " (" + (dd.spend>=0?"+":"") + money(dd.spend) + "). Units " + cmp.prior.units + " → " + cmp.current.units +
+        " (" + (dd.units>=0?"+":"") + dd.units + "). WCPU " + money(cmp.prior.wcpu) + " → " + money(cmp.current.wcpu) + " (dollars ÷ units with a claim).";
+    }
+    el("execCopy").innerHTML =
+      "This pack sets the " + titleYear + " warranty cost picture across four plants. " +
+      "<b>" + volPlants + " dictate enterprise dollar volume (" + pct(costs.ENT? top2/costs.ENT : 0) +
+      " of total gross)</b>, while <b>Plant " + worstP + " carries the highest WCPU at " +
+      money(worstW) + " (" + (entW? (worstW/entW).toFixed(2) : "—") +
+      "× enterprise) on " + (units[worstP]||0) + " represented units</b>. Top commodity is " +
+      topCom + " at " + money(wcpu(comBag[topCom]?comBag[topCom].ENT:0, units.ENT)) +
+      " enterprise WCPU." + (deltaLine ? " " + deltaLine : "");
+
+    var missingFix = list.filter(function(h){ return !String(h.fix||"").trim(); }).length;
+    if (el("fixNote")) el("fixNote").textContent = "";
+    if (missingFix) el("status").textContent = missingFix + " hits have no Fix field. Action type stays blank until the plant files include Fix.";
+
+    var fb = el("fixBody"); fb.innerHTML = "";
+    var fixOrder = ["Replace","Repair","Reseal","Adjust","Repaint","Clean"];
+    var orderedFix = fixOrder.filter(function(f){ return fixBag[f]; }).concat(
+      fixKeys.filter(function(f){ return fixOrder.indexOf(f) < 0; })
+    );
+    orderedFix.forEach(function(f){
+      var row = fixBag[f];
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+f+"</td>" +
+        '<td class="n">'+money(row.ENT)+'</td>' +
+        '<td class="c">'+pct(costs.ENT? row.ENT/costs.ENT : 0)+'</td>' +
+        '<td class="n">'+money(wcpu(row.ENT, units.ENT))+'</td>' +
+        PLANTS.map(function(p){ return "<td"+hotCell(wcpu(row[p], units[p]))+">"+money(wcpu(row[p], units[p]))+"</td>"; }).join("");
+      fb.appendChild(tr);
+    });
+    var trt = document.createElement("tr");
+    trt.className = "tot";
+    trt.innerHTML = "<td>Total Action Profile</td><td class=\"n\">"+money(costs.ENT)+"</td><td class=\"c\">100.00%</td><td class=\"n\">"+money(entW)+"</td>" +
+      PLANTS.map(function(p){ return '<td class="n">'+money(wcpu(costs[p], units[p]))+"</td>"; }).join("");
+    fb.appendChild(trt);
+
+    var cb = el("comBody"); cb.innerHTML = "";
+    comKeys.forEach(function(name){
+      var row = comBag[name];
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+name+"</td>" +
+        '<td class="n">'+money(row.ENT)+'</td>' +
+        '<td class="c">'+pct(costs.ENT? row.ENT/costs.ENT : 0)+'</td>' +
+        '<td class="n">'+money(wcpu(row.ENT, units.ENT))+'</td>' +
+        PLANTS.map(function(p){ return "<td"+hotCell(wcpu(row[p], units[p]))+">"+money(wcpu(row[p], units[p]))+"</td>"; }).join("");
+      cb.appendChild(tr);
+    });
+    var trc = document.createElement("tr");
+    trc.className = "tot";
+    trc.innerHTML = "<td>Enterprise Total</td><td class=\"n\">"+money(costs.ENT)+"</td><td class=\"c\">100%</td><td class=\"n\">"+money(entW)+"</td>" +
+      PLANTS.map(function(p){ return '<td class="n">'+money(wcpu(costs[p], units[p]))+"</td>"; }).join("");
+    cb.appendChild(trc);
+
+    var item = {};
+    list.forEach(function(h){
+      var d = h.desc || "(blank)";
+      if (!item[d]) item[d] = { ENT:0,"51":0,"53":0,"57":0,"76":0, prob:{} };
+      item[d].ENT += Number(h.cost)||0;
+      if (item[d][h.plant] != null) item[d][h.plant] += Number(h.cost)||0;
+      var pr = String(h.problem||"").trim() || "(blank)";
+      item[d].prob[pr] = (item[d].prob[pr]||0) + 1;
+    });
+    var topItems = Object.keys(item).sort(function(a,b){ return item[b].ENT - item[a].ENT; }).slice(0,12);
+    var tb = el("topBody"); tb.innerHTML = "";
+    topItems.forEach(function(name){
+      var row = item[name];
+      var rawMode = Object.keys(row.prob).sort(function(a,b){ return row.prob[b]-row.prob[a]; })[0] || "";
+      var modeMap = {
+        "Flooring - Linoleum": "Tears, subfloor adhesive, roller gouges",
+        "Interior Paneling": "Seam gapping, staple pop, corner blowout",
+        "Metal": "Dents, lock seam, transit scrap",
+        "Metal (Exterior Skin)": "Dents, lock seam, transit scrap",
+        "Paint": "Filon repair then repaint (no paint line at 53)",
+        "Roof, Rubber-Towable": "Membrane tear, decking telegraphing",
+        "Rubber Roof Membrane": "Adhesive open-time, edge lifting",
+        "Exterior Molding": "Corner extrusion gaps, lap sealant voids",
+        "Aluminum Siding": "Panel replacement, staple blowout at studs",
+        "Radius Metal": "Transition bend buckling, corner fitment",
+        "Ceiling Paneling": "Ceiling panel sag, fastener pull-through",
+        "Underbelly": "Coroplast sagging, fastener pull",
+        "Cabinet": "Face frame alignment, hinge screw pull-out",
+        "Sidewall, P/S": "Sidewall damage / component failure"
+      };
+      var mode = modeMap[name] || rawMode;
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td>"+name+"</td>" +
+        '<td class="n">'+money(row.ENT)+'</td>' +
+        '<td class="c">'+pct(costs.ENT? row.ENT/costs.ENT : 0)+'</td>' +
+        '<td class="n">'+money(wcpu(row.ENT, units.ENT))+'</td>' +
+        PLANTS.map(function(p){ return "<td"+hotCell(wcpu(row[p], units[p]))+">"+money(wcpu(row[p], units[p]))+"</td>"; }).join("") +
+        "<td>"+mode+"</td>";
+      tb.appendChild(tr);
+    });
+
+    var html = "";
+    var diveOrder = PLANTS.slice().sort(function(a,b){ return wcpu(costs[b],units[b]) - wcpu(costs[a],units[a]); });
+    diveOrder.forEach(function(p){
+      var sub = list.filter(function(h){ return h.plant===p; });
+      var c = costs[p], u = units[p], w = wcpu(c,u);
+      var td = {}, bb = {};
+      sub.forEach(function(h){
+        var d = h.desc || "(blank)";
+        td[d] = (td[d]||0) + (Number(h.cost)||0);
+        var b = bucket(h.desc);
+        bb[b] = (bb[b]||0) + (Number(h.cost)||0);
+      });
+      var topD = Object.keys(td).sort(function(a,b){ return td[b]-td[a]; }).slice(0,2);
+      var topB = Object.keys(bb).sort(function(a,b){ return bb[b]-bb[a]; })[0] || "—";
+      var titles = {
+        "53": "PLANT 53: PAINT / FILON HANDLING  ("+money(w)+" WCPU)",
+        "51": "PLANT 51: SUBFLOOR & LINOLEUM  ("+money(w)+" WCPU • "+moneyK(c)+" GROSS)",
+        "76": "PLANT 76: METAL SKIN & WALLBOARD  ("+money(w)+" WCPU • "+moneyK(c)+" GROSS)",
+        "57": "PLANT 57: RUBBER ROOF  ("+money(w)+" WCPU)"
+      };
+      html += '<div class="dive p'+p+'"><h3>'+(titles[p]||("PLANT "+p+" — "+money(w)+" WCPU"))+'</h3><ul>';
+      html += "<li><b>"+topB+"</b> "+money(wcpu(bb[topB]||0,u))+" WCPU ("+pct(c?(bb[topB]||0)/c:0)+" of plant).";
+      if (p==="53") html += " Paint-coded dollars are filon repair then repaint — there is no paint line at 53.";
+      html += "</li>";
+      topD.forEach(function(d){
+        html += "<li>"+d+": "+money(td[d])+" ("+money(wcpu(td[d],u))+" WCPU).</li>";
+      });
+      html += "</ul></div>";
+    });
+    el("forensics").innerHTML = html;
+
+    var lino = item["Flooring - Linoleum"] || { ENT:0,"51":0,"53":0,"57":0,"76":0 };
+    var metal = item["Metal"] || item["Metal (Exterior Skin)"] || { ENT:0,"51":0,"53":0,"57":0,"76":0 };
+    if (!item["Metal"] && item["Metal"]) metal = item["Metal"];
+    var metalRow = item["Metal"] || { ENT:0,"51":0,"53":0,"57":0,"76":0 };
+    var paintRow = item["Paint"] || { ENT:0,"51":0,"53":0,"57":0,"76":0 };
+    var roofEnt = comBag["Rubber roof"] || comBag["Roof Envelope"] || { ENT:0,"51":0,"53":0,"57":0,"76":0 };
+
+    el("planBody").innerHTML =
+      row("Filon / transport handling","Plant 53",
+          "No paint line at 53. Damage prevention in handling and transport, then repair + repaint of filon. Live paint-coded spend "+money(paintRow["53"]||0)+" / "+money(wcpu(paintRow["53"]||0, units["53"]))+" WCPU.",
+          "−$350.00 / unit (P53)") +
+      row("Flooring protection & sleds","Plant 51, P57",
+          "Heavy-duty film post-decking. Non-marking sleds for cabinet and slide staging. Plant 51 owns "+pct(lino.ENT? lino["51"]/lino.ENT : 0)+" of enterprise linoleum $.",
+          "−$65.00 / unit (P51)") +
+      row("Metal hang & fastening poka-yoke","Plant 76",
+          "Positive-stop staple noses. Audit roll-form racks before hang. Plant 76 owns "+pct(metalRow.ENT? metalRow["76"]/metalRow.ENT : 0)+" of enterprise metal $.",
+          "−$50.00 / unit (P76)") +
+      row("Rubber roof dwell audit","Plant 53, P57",
+          "Adhesive mil-thickness and temp/humidity open-time. Verify roller pressure. Plant 57 rubber roof "+money(wcpu(roofEnt["57"]||0, units["57"]))+" WCPU · "+pct(costs["57"]?(roofEnt["57"]||0)/costs["57"]:0)+" of plant.",
+          "−$80.00 / unit (P57)") +
+      row("Total enterprise target impact","All",
+          "Four plant levers. Enterprise target −$115 WCPU.",
+          "−$115.00 / Enterprise WCPU");
+
+    function row(a,b,c,d){
+      return "<tr><td><b>"+a+"</b></td><td>"+b+"</td><td>"+c+"</td><td>"+d+"</td></tr>";
+    }
+
+    if (el("footRight")) el("footRight").textContent = generated ? ("Live set " + generated) : "Print from Ops · WCPU report";
+
+    if (el("methodNote")) el("methodNote").textContent = "";
+
+    renderShop(list, units, costs, entW, item, titleYear);
+    renderPlant(list, units, costs, entW, item, titleYear);
+    renderHandout(list, units, costs, entW);
+    applyView();
+  }
+
+  function yearWanted(){ return el("yearSel") ? el("yearSel").value : "2026"; }
+  function wantPolicy(){ return el("incPolicy") ? el("incPolicy").checked : true; }
+  function livePacks(){
+    return (activity || []).filter(function(p){
+      return p && p.kind !== "baseline" && p.kind !== "basis-change" && (Number(p.addedN)||0) > 0 && (Number(p.addedCost)||0) !== 0;
+    }).sort(function(a,b){
+      return String(a.weekEnding||"").localeCompare(String(b.weekEnding||""));
+    });
+  }
+  function packHits(pack){
+    var y = yearWanted();
+    var pol = wantPolicy();
+    return (pack && pack.added || []).filter(function(h){
+      if (!pol && h.policy) return false;
+      if (y && y !== "ALL" && yearOf(h) !== y) return false;
+      return PLANTS.indexOf(String(h.plant)) >= 0;
+    });
+  }
+  function rollSlice(list, plant){
+    var sub = plant ? list.filter(function(h){ return String(h.plant)===plant; }) : list;
+    var cost = 0, units = {}, top = {};
+    sub.forEach(function(h){
+      cost += Number(h.cost)||0;
+      var u = String(h.unit||"");
+      if (u) units[(h.plant||"")+"|"+u] = 1;
+      var name = String(h.desc||"").trim() || "(blank)";
+      top[name] = (top[name]||0) + (Number(h.cost)||0);
+    });
+    var ranked = Object.keys(top).sort(function(a,b){ return top[b]-top[a]; }).slice(0,3)
+      .map(function(name){ return { name:name, cost:top[name] }; });
+    var n = Object.keys(units).length;
+    return { cost:cost, units:n, wcpu: n ? cost/n : 0, top:ranked };
+  }
+  function deltaLabel(cur, prev){
+    if (prev == null) return '<span class="flat">first</span>';
+    if (!prev && !cur) return '<span class="flat">—</span>';
+    if (!prev && cur) return '<span class="up">new</span>';
+    var d = (cur - prev) / Math.abs(prev);
+    var cls = d > 0.02 ? "up" : (d < -0.02 ? "dn" : "flat");
+    var sign = d > 0 ? "+" : "";
+    return '<span class="'+cls+'">'+sign+(d*100).toFixed(0)+'%</span>';
+  }
+  function deltaWords(cur, prev){
+    if (prev == null) return "first pack";
+    if (!prev && cur) return "up from zero";
+    if (!prev && !cur) return "flat";
+    var d = (cur - prev) / Math.abs(prev);
+    if (Math.abs(d) < 0.02) return "flat";
+    return (d > 0 ? "up " : "down ") + Math.abs(d*100).toFixed(0) + "%";
+  }
+  function mixLine(curTop, prevTop){
+    var curNames = (curTop||[]).map(function(r){ return r.name; });
+    var prevNames = (prevTop||[]).map(function(r){ return r.name; });
+    if (!curNames.length) return "No new items this pack.";
+    var same = curNames.length === prevNames.length && curNames.every(function(n,i){ return n === prevNames[i]; });
+    var line = "Top 3: " + curNames.join(", ") + ".";
+    if (same) return line + " Mix unchanged.";
+    if (!prevNames.length) return line;
+    return line + " Last pack was " + prevNames.join(", ") + ".";
+  }
+  function packLabel(pack){
+    var we = String(pack && pack.weekEnding || "").slice(0,10);
+    return we || "undated pack";
+  }
+  function twoPacks(){
+    var packs = livePacks();
+    if (!packs.length) return { cur:null, prev:null };
+    return { cur: packs[packs.length-1], prev: packs.length>1 ? packs[packs.length-2] : null };
+  }
+  function noTrendHtml(){
+    return "No week-over-week yet.";
+  }
+
+  function itemHotPlant(row){
+    var best = PLANTS[0], bestN = -1;
+    PLANTS.forEach(function(p){
+      if ((row[p]||0) > bestN) { bestN = row[p]||0; best = p; }
+    });
+    return "Plant " + best + " · " + money(bestN);
+  }
+
+  function renderShop(list, units, costs, entW, item, titleYear){
+    el("shopLede").textContent = titleYear + " · all four plants";
+    el("shopMeta").innerHTML =
+      "<b>" + titleYear + "</b>" +
+      units.ENT.toLocaleString() + " coaches with a claim<br>" +
+      money(costs.ENT) + " total" +
+      (generated ? ("<br>Live set " + generated) : "");
+    el("shopIntro").innerHTML =
+      "WCPU on this sheet is warranty dollars divided by the coaches that already had a claim — not every unit built. " +
+      "Enterprise is " + money(entW) + " on " + units.ENT.toLocaleString() + " claimed units. " +
+      "Plant 51 and Plant 76 hold " + pct(costs.ENT ? (costs["51"]+costs["76"])/costs.ENT : 0) + " of the dollars.";
+
+    el("shopCards").innerHTML = PLANTS.map(function(p){
+      var c = costs[p]||0, u = units[p]||0, w = wcpu(c,u);
+      var sub = list.filter(function(h){ return h.plant===p; });
+      var td = {};
+      sub.forEach(function(h){ var d = h.desc||"(blank)"; td[d]=(td[d]||0)+(Number(h.cost)||0); });
+      var ranked = Object.keys(td).sort(function(a,b){ return td[b]-td[a]; }).slice(0,2);
+      return '<div class="plantCard p'+p+'"><h3>Plant '+p+'</h3>' +
+        '<div class="big">'+money(w)+'</div>' +
+        '<div class="sub">WCPU · '+money(c)+' · '+u.toLocaleString()+' claimed units</div>' +
+        '<ul>'+ranked.map(function(d){ return '<li>'+d+' — '+money(td[d])+'</li>'; }).join("")+'</ul>' +
+        '<p class="note" style="margin:6px 0 0">'+FIGHT[p]+'</p></div>';
+    }).join("");
+
+    var topItems = Object.keys(item).sort(function(a,b){ return item[b].ENT - item[a].ENT; }).slice(0,8);
+    el("shopTop").innerHTML = topItems.map(function(name){
+      var row = item[name];
+      return "<tr><td>"+name+"</td>" +
+        '<td class="n">'+money(row.ENT)+'</td>' +
+        '<td class="c">'+pct(costs.ENT? row.ENT/costs.ENT : 0)+'</td>' +
+        '<td class="n">'+money(wcpu(row.ENT, units.ENT))+'</td>' +
+        "<td>"+itemHotPlant(row)+"</td></tr>";
+    }).join("");
+
+    el("shopFights").innerHTML = PLANTS.map(function(p){
+      return "<li><b>Plant "+p+"</b> — "+FIGHT[p]+"</li>";
+    }).join("");
+
+    var pair = twoPacks();
+    if (!pair.cur) {
+      el("shopTrendStory").textContent = noTrendHtml();
+      el("shopTrendBody").innerHTML = "";
+      el("shopTrendNote").textContent = "";
+    } else {
+      var curHits = packHits(pair.cur);
+      var prevHits = pair.prev ? packHits(pair.prev) : [];
+      var entC = rollSlice(curHits);
+      var entP = pair.prev ? rollSlice(prevHits) : null;
+      el("shopTrendStory").innerHTML =
+        "Week ending <b>"+packLabel(pair.cur)+"</b> added "+money(entC.cost)+" on "+entC.units.toLocaleString()+" coaches (WCPU "+money(entC.wcpu)+"). " +
+        (entP
+          ? ("Prior pack "+packLabel(pair.prev)+" was "+money(entP.cost)+" on "+entP.units.toLocaleString()+" (WCPU "+money(entP.wcpu)+"). Spend "+deltaWords(entC.cost, entP.cost)+". WCPU "+deltaWords(entC.wcpu, entP.wcpu)+".")
+          : "That is the first activity pack.") +
+        " "+mixLine(entC.top, entP && entP.top);
+      var rows = PLANTS.map(function(p){
+        var c = rollSlice(curHits, p);
+        var pr = pair.prev ? rollSlice(prevHits, p) : null;
+        return "<tr><td><b>Plant "+p+"</b></td>" +
+          '<td class="n">'+money(c.cost)+"</td>" +
+          '<td class="n">'+(pr?money(pr.cost):"—")+"</td>" +
+          '<td class="c">'+deltaLabel(c.cost, pr?pr.cost:null)+"</td>" +
+          '<td class="n">'+money(c.wcpu)+"</td>" +
+          '<td class="n">'+(pr?money(pr.wcpu):"—")+"</td>" +
+          '<td class="c">'+deltaLabel(c.wcpu, pr?pr.wcpu:null)+"</td>" +
+          '<td class="c">'+c.units+"</td></tr>";
+      }).join("");
+      var totC = rollSlice(curHits);
+      var totP = pair.prev ? rollSlice(prevHits) : null;
+      rows += '<tr class="tot"><td>Enterprise</td>' +
+        '<td class="n">'+money(totC.cost)+"</td>" +
+        '<td class="n">'+(totP?money(totP.cost):"—")+"</td>" +
+        '<td class="c">'+deltaLabel(totC.cost, totP?totP.cost:null)+"</td>" +
+        '<td class="n">'+money(totC.wcpu)+"</td>" +
+        '<td class="n">'+(totP?money(totP.wcpu):"—")+"</td>" +
+        '<td class="c">'+deltaLabel(totC.wcpu, totP?totP.wcpu:null)+"</td>" +
+        '<td class="c">'+totC.units+"</td></tr>";
+      el("shopTrendBody").innerHTML = rows;
+      el("shopTrendNote").textContent = "";
+    }
+    el("shopNote").textContent = "";
+  }
+
+  function plantSheet(p, list, units, costs, entW, item, titleYear){
+    var c = costs[p]||0, u = units[p]||0, w = wcpu(c,u);
+    var v = entW ? (w-entW)/entW : 0;
+    var vs = (v>=0?"+":"") + pct(v) + " vs enterprise " + money(entW);
+    var sub = list.filter(function(h){ return h.plant===p; });
+    var td = {}, fx = {};
+    sub.forEach(function(h){
+      var d = h.desc||"(blank)";
+      td[d]=(td[d]||0)+(Number(h.cost)||0);
+      var f = fixOf(h);
+      fx[f]=(fx[f]||0)+(Number(h.cost)||0);
+    });
+    var ranked = Object.keys(td).sort(function(a,b){ return td[b]-td[a]; }).slice(0,5);
+    var topFix = Object.keys(fx).sort(function(a,b){ return fx[b]-fx[a]; })[0] || "—";
+    var rows = ranked.map(function(d,i){
+      return "<tr><td>"+(i+1)+". "+d+"</td>" +
+        '<td class="n">'+money(td[d])+'</td>' +
+        '<td class="c">'+pct(c? td[d]/c : 0)+'</td>' +
+        '<td class="n">'+money(wcpu(td[d], u))+'</td></tr>';
+    }).join("");
+    return '<div class="sheet">' +
+      '<h1>Plant '+p+' — warranty sheet</h1>' +
+      '<p class="lede">'+titleYear+'</p>' +
+      '<div class="kpis">' +
+        '<div class="kpi meta"><div class="k">Plant WCPU</div><div class="v">'+money(w)+'</div><div class="s">'+vs+'</div></div>' +
+        '<div class="kpi"><div class="k">Warranty $</div><div class="v">'+moneyK(c)+'</div><div class="s">'+money(c)+'</div></div>' +
+        '<div class="kpi"><div class="k">Claimed units</div><div class="v">'+u.toLocaleString()+'</div><div class="s">coaches that took a claim</div></div>' +
+        '<div class="kpi warm"><div class="k">Top action</div><div class="v" style="font-size:0.95rem">'+topFix+'</div><div class="s">'+money(fx[topFix]||0)+'</div></div>' +
+        '<div class="kpi '+(v>=0.5?"bad":"meta")+'"><div class="k">Share of all $</div><div class="v">'+pct(costs.ENT? c/costs.ENT : 0)+'</div><div class="s">enterprise '+moneyK(costs.ENT)+'</div></div>' +
+      '</div>' +
+      '<div class="fight p'+p+'"><b>This plant owns:</b> '+FIGHT[p]+'</div>' +
+      plantTrendBlock(p) +
+      '<h2>Top 5 items in this building</h2>' +
+      '<table><thead><tr><th>Item</th><th>$</th><th>Share of plant</th><th>WCPU</th></tr></thead><tbody>'+rows+'</tbody></table>' +
+      '<p class="note">WCPU = dollars ÷ claimed units at this plant. Not units built. Live set '+(generated||"—")+'.</p>' +
+      '</div>';
+  }
+
+  function plantTrendBlock(p){
+    var pair = twoPacks();
+    if (!pair.cur) {
+      return '<h2>This pack vs last pack</h2><p class="note">'+noTrendHtml()+'</p>';
+    }
+    var cur = rollSlice(packHits(pair.cur), p);
+    var prev = pair.prev ? rollSlice(packHits(pair.prev), p) : null;
+    var story = "Plant "+p+" · week ending "+packLabel(pair.cur)+" · spend "+money(cur.cost)+" · WCPU "+money(cur.wcpu)+" · "+cur.units+" units. " +
+      (prev
+        ? ("Prior pack "+packLabel(pair.prev)+": spend "+deltaWords(cur.cost, prev.cost)+" · WCPU "+deltaWords(cur.wcpu, prev.wcpu)+".")
+        : "First activity pack.") +
+      " "+mixLine(cur.top, prev && prev.top);
+    var topRows = (cur.top||[]).map(function(r,i){
+      var last = 0;
+      if (prev) {
+        var hit = (prev.top||[]).filter(function(x){ return x.name===r.name; })[0];
+        last = hit ? hit.cost : 0;
+      }
+      return "<tr><td>"+(i+1)+". "+r.name+"</td>" +
+        '<td class="n">'+money(r.cost)+"</td>" +
+        '<td class="n">'+(prev?money(last):"—")+"</td>" +
+        '<td class="c">'+deltaLabel(r.cost, prev?last:null)+"</td></tr>";
+    }).join("") || '<tr><td colspan="4">No new items this pack.</td></tr>';
+    return '<h2>This pack vs last pack</h2>' +
+      '<p class="trendLine">'+story+'</p>' +
+      '<table><thead><tr><th>Top this pack</th><th>This $</th><th>Last $</th><th>Δ</th></tr></thead><tbody>'+topRows+'</tbody></table>' +
+      '' ;
+  }
+
+  function renderPlant(list, units, costs, entW, item, titleYear){
+    var which = view;
+    var plants = (which === "plants") ? PLANTS : (PLANTS.indexOf(which)>=0 ? [which] : PLANTS);
+    el("packPlant").innerHTML = plants.map(function(p){
+      return plantSheet(p, list, units, costs, entW, item, titleYear);
+    }).join("");
+  }
+
+
+  function namedOf(list){
+    var o = { lino:0, metal:0, paint53:0, rubber57:0 };
+    (list||[]).forEach(function(h){
+      var d = String(h.desc||"");
+      var dl = d.toLowerCase();
+      var c = Number(h.cost)||0;
+      var p = String(h.plant||"");
+      if (dl.indexOf("linoleum")>=0) o.lino += c;
+      if (d.trim()==="Metal") o.metal += c;
+      if (p==="53" && d.trim()==="Paint") o.paint53 += c;
+      if (p==="57" && (dl.indexOf("rubber roof")>=0 || dl.indexOf("roof, rubber")>=0 || dl.indexOf("roof membrane")>=0)) o.rubber57 += c;
+    });
+    return o;
+  }
+  function liveSnap(list, units, costs, generated){
+    var by = {};
+    PLANTS.forEach(function(p){
+      by[p] = { spend: costs[p]||0, units: units[p]||0, wcpu: wcpu(costs[p]||0, units[p]||0) };
+    });
+    return {
+      generated: generated || "",
+      spend: costs.ENT||0,
+      units: units.ENT||0,
+      wcpu: wcpu(costs.ENT||0, units.ENT||0),
+      byPlant: by,
+      named: namedOf(list)
+    };
+  }
+  function packKey(row){ return String(row && row.generated || "").slice(0,10); }
+  function mergedPacks(live){
+    var map = {};
+    PACK_SEED.forEach(function(r){ map[packKey(r)] = r; });
+    (packHistory||[]).forEach(function(r){ if (r && packKey(r)) map[packKey(r)] = r; });
+    if (live && packKey(live)) map[packKey(live)] = live;
+    return Object.keys(map).sort().map(function(k){ return map[k]; });
+  }
+  function money0(n){
+    n = Math.round(Number(n)||0);
+    var sign = n<0?"-":"";
+    return sign + "$" + Math.abs(n).toLocaleString();
+  }
+  function money2(n){ return money(n); }
+  function dlt(cur, prev){
+    if (prev==null) return "—";
+    var d = (Number(cur)||0) - (Number(prev)||0);
+    if (Math.abs(d) < 0.005) return "flat";
+    var sign = d>0?"+":"−";
+    return sign + money(Math.abs(d)).replace("$","");
+  }
+  function dltW(cur, prev){
+    if (prev==null) return "—";
+    var d = (Number(cur)||0) - (Number(prev)||0);
+    if (Math.abs(d) < 0.005) return "flat";
+    var sign = d>0?"+":"−";
+    return sign + "$" + Math.abs(d).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function lastActivityMy(){
+    var packs = (activity||[]).filter(function(p){ return p && p.kind!=="baseline" && p.kind!=="basis-change" && (Number(p.addedN)||0)>0; });
+    if (!packs.length) return null;
+    return packs[packs.length-1];
+  }
+  function renderHandout(list, units, costs, entW){
+    if (!el("handKpis")) return;
+    var live = liveSnap(list, units, costs, generated);
+    var rows = mergedPacks(live);
+    var cur = rows[rows.length-1] || live;
+    var prev = rows.length>1 ? rows[rows.length-2] : null;
+    var label = (prev ? packKey(prev) : "—") + " → " + (packKey(cur) || generated || "now");
+    el("handLede").textContent = "Year-to-date · " + label;
+    el("handMeta").innerHTML = "<b>" + label + "</b>MY2026";
+    var dw = prev ? (cur.wcpu - prev.wcpu) : 0;
+    var ds = prev ? (cur.spend - prev.spend) : 0;
+    var du = prev ? (cur.units - prev.units) : 0;
+    function kpi(k,v,s,cls){
+      return '<div class="kpi '+cls+'"><div class="k">'+k+'</div><div class="v">'+v+'</div><div class="s">'+s+'</div></div>';
+    }
+    el("handKpis").innerHTML =
+      kpi("ENTERPRISE WCPU", money2(cur.wcpu), prev?dltW(cur.wcpu, prev.wcpu)+" Δ":"first pack", dw>0.5?"bad":(dw<-0.5?"good":"meta")) +
+      kpi("YTD SPEND", money0(cur.spend), prev?dlt(cur.spend, prev.spend)+" Δ":"—", ds>0?"warm":"meta") +
+      kpi("CLAIMED UNITS", (cur.units||0).toLocaleString(), prev?((du>0?"+":"")+du+" Δ"):"—", "meta") +
+      kpi("WATCH", "Plant 53", "still the WCPU outlier", "bad");
+    el("handIntro").textContent =
+      "Enterprise WCPU is " + money2(cur.wcpu) + " on " + (cur.units||0).toLocaleString() + " claimed units. " +
+      (prev ? ("Prior pack " + packKey(prev) + " was " + money2(prev.wcpu) + " on " + prev.units.toLocaleString() + ".") : "") +
+      " Plant 53 remains the high WCPU plant.";
+    el("handCards").innerHTML = PLANTS.map(function(p){
+      var now = cur.byPlant[p] || {spend:0,units:0,wcpu:0};
+      var was = prev && prev.byPlant ? prev.byPlant[p] : null;
+      var dW = was ? now.wcpu - was.wcpu : 0;
+      var dS = was ? now.spend - was.spend : 0;
+      var cls = dW>0.5 ? "up" : (dW<-0.5 ? "dn" : "flat");
+      var act = lastActivityMy();
+      var weekHits = act ? packHits(act).filter(function(h){ return String(h.plant)===p; }) : [];
+      var rolled = rollSlice(weekHits);
+      var top = rolled.top && rolled.top[0] ? rolled.top[0].name + " " + money0(rolled.top[0].cost) : "—";
+      return '<div class="plantCard p'+p+'"><h3>PLANT '+p+' · '+FIGHT_SHORT[p]+'</h3>' +
+        '<div class="big">'+money2(now.wcpu)+'</div>' +
+        '<div class="sub"><span class="'+cls+'">'+(was?dltW(now.wcpu,was.wcpu):"—")+' Δ</span> · spend '+(was?dlt(now.spend,was.spend):"—")+'</div>' +
+        '<p class="note" style="margin:0 0 6px"><b>TARGET</b> '+TARGET[p]+'</p>' +
+        '<p class="note" style="margin:0"><b>THIS PERIOD</b> '+(act?money0(rolled.cost)+" · "+top:"—")+'</p>' +
+        '</div>';
+    }).join("");
+
+    el("handWcpu").innerHTML = rows.map(function(r,i){
+      var pr = i? rows[i-1] : null;
+      var bp = r.byPlant || {};
+      return "<tr"+(i===rows.length-1?' class="tot"':'')+"><td>"+packKey(r)+"</td>" +
+        '<td class="n">'+money2(r.wcpu)+"</td>" +
+        '<td class="c">'+(pr?dltW(r.wcpu,pr.wcpu):"—")+"</td>" +
+        PLANTS.map(function(p){ return '<td class="n">'+money2((bp[p]||{}).wcpu)+"</td>"; }).join("") +
+        '<td class="c">'+(r.units||0).toLocaleString()+"</td></tr>";
+    }).join("");
+    el("handSpend").innerHTML = rows.map(function(r,i){
+      var pr = i? rows[i-1] : null;
+      var bp = r.byPlant || {};
+      return "<tr"+(i===rows.length-1?' class="tot"':'')+"><td>"+packKey(r)+"</td>" +
+        '<td class="n">'+money0(r.spend)+"</td>" +
+        '<td class="c">'+(pr?dlt(r.spend,pr.spend):"—")+"</td>" +
+        PLANTS.map(function(p){ return '<td class="n">'+money0((bp[p]||{}).spend)+"</td>"; }).join("") +
+        "</tr>";
+    }).join("");
+    var namedNow = cur.named || {lino:0,metal:0,paint53:0,rubber57:0};
+    var namedPrev = prev && prev.named ? prev.named : null;
+    var namedRows = [
+      ["Linoleum", namedNow.lino, namedPrev && namedPrev.lino],
+      ["Metal (exterior skin)", namedNow.metal, namedPrev && namedPrev.metal],
+      ["Paint — Plant 53 (filon / handling)", namedNow.paint53, namedPrev && namedPrev.paint53],
+      ["Rubber roof family — Plant 57", namedNow.rubber57, namedPrev && namedPrev.rubber57]
+    ];
+    el("handNamed").innerHTML = namedRows.map(function(r){
+      return "<tr><td>"+r[0]+"</td>" +
+        '<td class="n">'+(r[2]==null?"—":money0(r[2]))+"</td>" +
+        '<td class="n">'+money0(r[1])+"</td>" +
+        '<td class="c">'+(r[2]==null?"—":dlt(r[1], r[2]))+"</td></tr>";
+    }).join("");
+    var act = lastActivityMy();
+    if (!act) {
+      el("handWeek").textContent = "No new MY2026 activity in this period.";
+      el("handWeekBody").innerHTML = "";
+    } else {
+      var myHits = packHits(act);
+      var ent = rollSlice(myHits);
+      el("handWeek").textContent = "Week ending " + packLabel(act) + " added " + money0(ent.cost) + " on " + ent.units + " MY2026 coaches.";
+      el("handWeekBody").innerHTML = PLANTS.map(function(p){
+        var r = rollSlice(myHits, p);
+        var top = r.top && r.top[0] ? r.top[0].name + " · " + money0(r.top[0].cost) : "—";
+        return "<tr><td>Plant "+p+"</td>" +
+          '<td class="n">'+money0(r.cost)+"</td>" +
+          '<td class="c">'+r.units+"</td>" +
+          "<td>"+top+"</td></tr>";
+      }).join("");
+    }
+    el("handFoot").textContent = "WCPU = warranty dollars ÷ claimed units.";
+  }
+
+  function applyView(){
+    var lead = view === "lead";
+    var shop = view === "shop";
+    var plant = view === "plants" || PLANTS.indexOf(view) >= 0;
+    var hand = view === "handout";
+    el("packLead").hidden = !lead;
+    el("packShop").hidden = !shop;
+    el("packPlant").hidden = !plant;
+    if (el("packHandout")) el("packHandout").hidden = !hand;
+    ["vLead","vShop","v51","v53","v57","v76","vAll","vHand"].forEach(function(id){
+      var b = el(id);
+      if (!b) return;
+      b.className = "pill" + (b.getAttribute("data-view") === view ? "" : " dim");
+    });
+  }
+
+  function showBanner(msg, retry){
+    var b = document.getElementById("banner"); b.style.display = "block"; b.textContent = msg;
+    if (retry) { var x = document.createElement("button"); x.type = "button"; x.textContent = "Retry"; x.onclick = retry; b.appendChild(x); }
+  }
+  function hideBanner(){ var b = document.getElementById("banner"); if (b) b.style.display = "none"; }
+  function setStamp(d){
+    var s = document.getElementById("setStamp"); if (!s || !d || !d.ingestId) return;
+    s.textContent = "Set " + d.ingestId + (d.migrated ? " (migrated baseline)" : "") + " · uploaded " + (d.ingestedAt || "time unknown") + " · rows kept: all (" + (d.rowsKept == null ? "?" : d.rowsKept) + " claim lines summed) · basis " + (d.basis || "?") + " · " + (d.priorLabel || "");
+  }
+  function fillYears(){
+    var ys = {};
+    hits.forEach(function(h){ var y = yearOf(h); if (y) ys[y]=1; });
+    var keys = Object.keys(ys).sort();
+    var sel = el("yearSel");
+    sel.innerHTML = '<option value="ALL">All years</option>' + keys.map(function(y){
+      return '<option value="'+y+'"'+(y==="2026"?" selected":"")+">MY "+y+"</option>";
+    }).join("");
+    if (ys["2026"]) sel.value = "2026";
+  }
+
+  function apply(data, src){
+    hits = (data && data.hits) ? data.hits : [];
+    generated = (data && data.generated) || "";
+    prevSummary = data && data.prevSummary ? data.prevSummary : null;
+    compareData = data && data.compare ? data.compare : null;
+    setStamp(data);
+    activity = data && Array.isArray(data.activity) ? data.activity : [];
+    packHistory = data && Array.isArray(data.packHistory) ? data.packHistory : [];
+    el("status").textContent = "Loaded " + hits.length + " hits (" + src + ").";
+    fillYears();
+    render();
+  }
+
+  el("yearSel").onchange = render;
+  el("incPolicy").onchange = render;
+  el("btnPrint").onclick = function(){ window.print(); };
+  ["vLead","vShop","v51","v53","v57","v76","vAll","vHand"].forEach(function(id){
+    el(id).onclick = function(){
+      view = this.getAttribute("data-view");
+      if (hits.length) render();
+      else applyView();
+    };
+  });
+  if (location.hash.indexOf("handout")>=0 || location.hash.indexOf("pack")>=0) view = "handout";
+  else if (location.hash.indexOf("shop")>=0) view = "shop";
+  else if (location.hash.indexOf("plants")>=0) view = "plants";
+  else if (/#(51|53|57|76)/.test(location.hash)) view = location.hash.replace("#","");
+
+  function loadLive(){
+    fetch("/.netlify/functions/warranty").then(function(r){
+      return r.text().then(function(raw){
+        var data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch (pe) { throw new Error("unreadable reply (" + r.status + ")"); }
+        if (!r.ok) throw new Error(r.status === 401 ? "Ops PIN needed or wrong (401)" : (data.error || ("status " + r.status)));
+        return data;
+      });
+    }).then(function(data){
+      hideBanner();
+      if (data && data.hits && data.hits.length) { apply(data, "live"); if (data.derivedStale || data.indexStale) showBanner("Saved copies are behind the newest upload; these numbers come from the newest upload itself. Repair is on the Warranty page."); return; }
+      el("status").textContent = "No live warranty hits — upload a pack.";
+    }).catch(function(e){
+      el("status").textContent = "Failed to load warranty hits — " + e.message;
+      showBanner("Could not read the live warranty set: " + e.message + ". Nothing on this page is current.", loadLive);
+    });
+  }
+  loadLive();
+})();
+</script>
+</body>
+</html>

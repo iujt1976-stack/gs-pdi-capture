@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS PDI — Edit inspection</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 980px; margin: 0 auto; padding-bottom: 48px; }
+h1 { font-size: 1.25rem; text-align: center; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; }
+h2 { font-size: 0.95rem; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; margin-bottom: 2px; }
+input, select, textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 8px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > div { flex: 1; min-width: 140px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; cursor: pointer; background: #2c3e50; margin: 4px 6px 0 0; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; white-space: pre-wrap; }
+.note { font-size: 0.75rem; color: #666; }
+.pass { border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fafafa; }
+.pass.on { border-color: #1f4e79; background: #eaf2fb; }
+.check { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 0.8rem; padding: 3px 0; border-bottom: 1px solid #eee; }
+.check select { width: 110px; margin: 0; }
+.def { border: 1px solid #eee; padding: 8px; margin-bottom: 8px; }
+.danger { background: #c0392b; }
+.pills { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.pill { padding: 6px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 800; border: 1px solid #ccc; }
+.pill.in { background: #eafaf1; border-color: #27ae60; color: #145a32; }
+.pill.miss { background: #fdedec; border-color: #c0392b; color: #7b241c; }
+.pill.assist { background: #fef9e7; border-color: #d4ac0d; color: #7d6608; }
+.pill.admin { background: #e8daef; border-color: #7d3c98; color: #4a235a; }
+.admin-only { display: none; }
+body.show-admin .admin-only { display: block; }
+#btnAdminToggle { background: #1a5276; width: 100%; margin: 0 0 12px; }
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>EDIT INSPECTION</h1>
+
+<div class="card" id="pin">
+  <h2>Pin units on today's board</h2>
+  <p class="note">Use this when coaches are done on the floor but Day’s Units / Daily Log is short. Does not invent records. Puts the serials back on today’s list and repairs a stomped lane if a Capture already exists.</p>
+  <label>Date</label>
+  <input type="date" id="pinDate">
+  <label>Unit numbers (one per line or comma)</label>
+  <textarea id="pinUnits" rows="5" placeholder="Serials only"></textarea>
+  <button type="button" class="btn" id="btnPinIndex" style="background:#196f3d">Pin these on today's board</button>
+  <p class="status" id="pinStatus"></p>
+</div>
+
+<div class="card" id="laneInt">
+  <h2>Lane integrity (W2)</h2>
+  <p class="note"><b>Audit</b> only reads: it lists lanes where a Fail was cleared by a later Pass (A, legitimate before W2), where a Pass sits on a live defect (B), and where session history has marks that the lane summary lacks (C). It never restores anything. <b>Heal all lanes</b> rebuilds a lane summary from its saved sittings, only for lanes saved since W2, and only when the store lists a sitting the summary has not folded. Safe to run again. Run it after the release and at end of day.</p>
+  <label>From</label>
+  <input type="date" id="liFrom">
+  <label>To</label>
+  <input type="date" id="liTo">
+  <button type="button" class="btn" id="btnLiAudit" style="background:#1f4e79">Audit lanes (read only)</button>
+  <button type="button" class="btn" id="btnLiHeal" style="background:#196f3d">Heal all lanes</button>
+  <p class="status" id="liStatus" style="white-space:pre-wrap"></p>
+</div>
+
+<div class="card" id="laneHealth">
+  <h2>Lane health (W3A)</h2>
+  <p class="note">A scan, not a live counter: it reads every lane in the date range and counts what is wrong. It changes nothing. The last finished scan is stored and shown below. A mark filed under its owning lane is not counted as missing.</p>
+  <label>From</label>
+  <input type="date" id="lhFrom">
+  <label>To</label>
+  <input type="date" id="lhTo">
+  <button type="button" class="btn" id="btnLhScan" style="background:#1f4e79">Run health scan</button>
+  <p class="status" id="lhStatus" style="white-space:pre-wrap"></p>
+  <p class="note" id="lhLast"></p>
+</div>
+
+<div class="card" id="failsClear">
+  <h2>Fails awaiting clear (W3A)</h2>
+  <p class="note">A Fail stays a Fail until an admin clears it here. Pick Pass or N/A, type the reason, press the button. The Fail line, its defect and the history are all updated together and the clear is logged with your reason. Run the health scan above to fill this list.</p>
+  <label><input type="checkbox" id="fcShowTest"> Show test units (0000, 000001)</label>
+  <div id="fcList"></div>
+</div>
+
+<div class="card" id="laneRestore">
+  <h2>Restore damaged lanes (W3A)</h2>
+  <p class="note"><b>Step 1</b> Dry run only reads: for each lane it lists every mark that would change (from, to), flags any Fail to non-Fail (apply refuses those), any Pass to N/A and any completion flip, and puts the counts on top. Restore PATCHES the lane summary: it sets the restored Fail lines and adds marks the whole unit lacks; it never rebuilds the lane, renames a key or changes any other mark. <b>Step 2</b> Save the list: you approve exactly that list (it gets an id). <b>Step 3</b> Apply writes only what the saved list says, only to lanes still as the dry run saw them. Sittings are never touched. The old summary is kept in an admin log. A Fail you restore can still be cleared: use "Fails awaiting clear" or the Edit tool, and the clear stands (a re-run of this list will not re-fail it). Units 0000 and 000001 are refused. <b>Parity</b> checks that the new rebuild gives the same result as W2 on every lane without a restore.</p>
+  <label>From</label>
+  <input type="date" id="lrFrom">
+  <label>To</label>
+  <input type="date" id="lrTo">
+  <button type="button" class="btn" id="btnLrDry" style="background:#1f4e79">1. Dry run (read only)</button>
+  <button type="button" class="btn" id="btnLrParity" style="background:#555">Parity check (read only)</button>
+  <p class="status" id="lrStatus" style="white-space:pre-wrap"></p>
+  <div id="lrList" style="max-height:340px;overflow:auto;font-size:12px"></div>
+  <button type="button" class="btn" id="btnLrSave" style="background:#196f3d;display:none">2. Save this list for approval</button>
+  <p class="note" id="lrListId"></p>
+  <label>Reason (required)</label>
+  <input type="text" id="lrReason" placeholder="e.g. audit 11/6, B and C lanes approved">
+  <button type="button" class="btn" id="btnLrApply" style="background:#a93226;display:none">3. Apply the approved list</button>
+</div>
+
+<button type="button" class="btn" id="btnAdminToggle">Show admin tools — time / merge / batch / admin-close</button>
+
+<div class="card admin-only">
+  <h2>Add unit as Administratively Closed</h2>
+  <p class="note">Done in the plant, never hit four digital lanes. Lands on Daily Log and Day’s Units Cleared. Does not wipe lanes already in.</p>
+  <div class="row">
+    <div><label>Unit #</label><input type="text" id="adminUnit" inputmode="numeric"></div>
+    <div>
+      <label>Plant</label>
+      <select id="adminPlant">
+        <option value="">Auto</option>
+        <option value="51">51</option>
+        <option value="53">53</option>
+        <option value="57">57</option>
+        <option value="76">76</option>
+      </select>
+    </div>
+    <div><label>Date</label><input type="date" id="adminDate"></div>
+  </div>
+  <label>Reason (required)</label>
+  <input type="text" id="adminReason" placeholder="paper complete / missed digital">
+  <button type="button" class="btn" id="btnAdminUnit" style="background:#196f3d">Add as Administratively Closed</button>
+  <p class="status" id="adminStatus"></p>
+</div>
+
+<div class="card">
+  <h2>1. Load unit</h2>
+  <label>Unit #</label>
+  <input type="text" id="unit" inputmode="numeric" placeholder="Serial only">
+  <button type="button" class="btn" id="btnLoad">Load unit</button>
+  <p class="status" id="status">Load a unit first. Every write needs a reason in the box below.</p>
+</div>
+
+<div class="card" id="tools" style="display:none">
+  <h2>2. Lane status</h2>
+  <div id="lanePills" class="pills"></div>
+  <p class="note" id="laneNote"></p>
+
+
+  <h2>Delete this lane</h2>
+  <p class="note">Junk sitting, not a wrong serial. Other lanes stay.</p>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="delLane">
+        <option value="I">Interior</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="U">PDI Validation</option>
+        <option value="4">Interior (old sheet)</option>
+      </select>
+    </div>
+    <div>
+      <label>Reason (required)</label>
+      <input type="text" id="delReason" placeholder="wrong unit, not a real sitting">
+    </div>
+  </div>
+  <button type="button" class="btn danger" id="btnDelete">Delete this lane</button>
+
+  <h2>Reopen a force-close</h2>
+  <p class="note">Takes the admin close off. A stub with no marks is removed. A real sitting stays.</p>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="reopenLane">
+        <option value="I">Interior</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="U">PDI Validation</option>
+      </select>
+    </div>
+    <div>
+      <label>Reason (required)</label>
+      <input type="text" id="reopenReason" placeholder="closed by mistake">
+    </div>
+  </div>
+  <button type="button" class="btn" id="btnReopen">Reopen this lane</button>
+
+  <h2>Name on this lane</h2>
+  <p class="note">Sets the inspector on every sitting in the lane. Does not move the record.</p>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="nameLane">
+        <option value="I">Interior</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="U">PDI Validation</option>
+      </select>
+    </div>
+    <div>
+      <label>Inspector</label>
+      <select id="nameInsp"></select>
+    </div>
+  </div>
+  <label>Reason (required)</label>
+  <input type="text" id="nameReason" placeholder="wrong name on the sitting">
+  <button type="button" class="btn" id="btnName">Set name on this lane</button>
+
+  <h2>3. Force-close a lane</h2>
+  <p class="note">Closes a missing lane, an Add Inspection leftover, or a partial Capture so the unit can clear. Does not wipe marks already on the record.</p>
+  <label>Reason (required)</label>
+  <input type="text" id="closeReason" placeholder="e.g. paper traveler complete — digital leftover">
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="closeLane">
+        <option value="">Pick lane</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="I">Interior</option>
+        <option value="U">PDI Validation</option>
+      </select>
+    </div>
+  </div>
+  <button type="button" class="btn" id="btnClose" style="background:#7f8c8d">Force close selected lane</button>
+  <button type="button" class="btn danger" id="btnCloseMissing">Close every missing lane on this unit</button>
+</div>
+
+<div class="card admin-only" id="adminTimeMerge">
+  <h2>4. Time</h2>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="timeLane">
+        <option value="">Pick lane</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="I">Interior</option>
+        <option value="U">PDI Validation</option>
+      </select>
+    </div>
+    <div>
+      <label>Set minutes</label>
+      <input type="number" id="timeMins" min="0" step="1" placeholder="e.g. 22">
+    </div>
+  </div>
+  <label>Reason (required)</label>
+  <input type="text" id="timeReason" placeholder="why the clock changes">
+  <button type="button" class="btn" id="btnSet">Set minutes</button>
+  <button type="button" class="btn" id="btnVoid" style="background:#c0392b">Void time</button>
+
+  <h2>Exempt from target</h2>
+  <p class="note">Seat-eval only. Pulls this sitting out of the lane-time median (target is set in Ops Settings).</p>
+  <button type="button" class="btn" id="btnExempt" style="background:#8e44ad">Exempt from target</button>
+
+  <h2>5. Merge fat-finger serial</h2>
+  <p class="note">Copies every lane and clears this serial. Not the one-lane move.</p>
+  <label>Merge this serial into</label>
+  <input type="text" id="mergeTo" inputmode="numeric" placeholder="Correct unit #">
+  <label>Reason (required)</label>
+  <input type="text" id="mergeReason" placeholder="wrong serial typed">
+  <button type="button" class="btn danger" id="btnMerge">Merge into that unit</button>
+
+  <h2>Move one lane</h2>
+  <p class="note">Moves only the lane you pick. Other lanes stay on this serial. Use this when Interior was typed on the wrong unit.</p>
+  <div class="row">
+    <div>
+      <label>Lane</label>
+      <select id="moveLane">
+        <option value="I">Interior</option>
+        <option value="4">Interior (old sheet)</option>
+        <option value="R">Rain, Seals, Roofs</option>
+        <option value="S">Systems</option>
+        <option value="E">Exterior + Underbelly</option>
+        <option value="U">PDI Validation</option>
+        <option value="1">L1</option>
+        <option value="2">L2</option>
+        <option value="3">L3</option>
+      </select>
+    </div>
+    <div>
+      <label>Move onto unit</label>
+      <input type="text" id="moveTo" inputmode="numeric" placeholder="24482">
+    </div>
+  </div>
+  <label>Reason (required)</label>
+  <input type="text" id="moveReason" placeholder="interior typed on 24483, belongs on 24482">
+  <button type="button" class="btn danger" id="btnMove">Move this lane</button>
+</div>
+
+<div id="laneHist"></div>
+<div id="passes"></div>
+<div id="editor"></div>
+
+<div class="card admin-only">
+  <h2>Batch close leftovers</h2>
+  <p class="note">Last 7 days still missing a lane. Officially done in the plant — close the missing / assist-only lanes. Real Capture lanes already in stay. Time on new stubs is voided.</p>
+  <div class="row">
+    <div>
+      <label>As-of date</label>
+      <input type="date" id="batchDate">
+    </div>
+  </div>
+  <label>Reason (required)</label>
+  <input type="text" id="batchReason" placeholder="plant leftovers closed">
+  <button type="button" class="btn" id="btnLoadLeft" style="background:#1a5276">Load leftovers</button>
+  <button type="button" class="btn" id="btnAllLeft" style="background:#5d6d7e">Select all</button>
+  <button type="button" class="btn danger" id="btnBatchClose">Close missing lanes on selected</button>
+  <p class="status" id="batchStatus"></p>
+  <div id="batchList"></div>
+  <label style="margin-top:10px">Or paste serials (one per line)</label>
+  <textarea id="batchPaste" rows="4" placeholder="177695&#10;177696"></textarea>
+</div>
+
+<script src="gs-lanes.js"></script>
+<script src="lane-history.js"></script>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  document.getElementById("btnAdminToggle").onclick = function(){
+    document.body.classList.toggle("show-admin");
+    var on = document.body.classList.contains("show-admin");
+    this.textContent = on ? "Hide admin tools" : "Show admin tools — merge / exempt / batch / admin-close";
+  };
+  var current = null;
+  var active = null;
+  var ROSTER = [];
+  var INACTIVE = [];
+  fetch(API+"/settings").then(function(r){return r.text();}).then(function(raw){
+    try {
+      var rj = JSON.parse(raw||"{}");
+      // Ops response also carries the INACTIVE people, so editing an old record keeps its original inspector.
+      INACTIVE = ((rj.inactive)||[]).map(function(x){ return x && x.name; }).filter(function(n){ return n && /\s/.test(n); });
+      ROSTER = ((rj.inspectors)||[]).filter(function(n){ return n && /\s/.test(n); }).concat(INACTIVE);
+    } catch(e){ ROSTER=[]; INACTIVE=[]; }
+  }).catch(function(){});
+  function el(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"})[c]; }); }
+  function serial(v){
+    v = String(v||"").trim();
+    if (v.indexOf("-")>=0) v = v.split("-").pop().trim();
+    return v;
+  }
+  function setStatus(m){ el("status").textContent = m||""; }
+  function laneIn(rec){
+    if (!rec || rec.mergedInto) return false;
+    if (rec.adminClose || rec.batchClose) return true;
+    return rec.laneComplete !== false && !rec.assistOnly;
+  }
+  async function readJson(res){
+    var raw = await res.text();
+    var data = {};
+    if (raw && raw.charAt(0) === "<") throw new Error("Server "+res.status+" timed out");
+    try { data = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error("Server "+res.status+" (not JSON)"); }
+    if (!res.ok) throw new Error(data.error || ("HTTP "+res.status));
+    return data;
+  }
+  async function post(path, body){
+    var res = await fetch(API+path, { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
+    return readJson(res);
+  }
+
+  function paintStatus(){
+    var box = el("lanePills");
+    if (!box) return;
+    box.innerHTML = "";
+    var missing = [];
+    (function(){
+      var have = Object.keys((current && current.lanes) || {});
+      return window.gsLanes ? (function(){
+        var need = gsLanes.required(have);
+        have.forEach(function(k){ if (need.indexOf(k)<0) need.push(k); });
+        return need;
+      })() : ["R","S","E","I"];
+    })().forEach(function(l){
+      var rec = (current && current.lanes) ? current.lanes[l] : null;
+      var pill = document.createElement("span");
+      pill.className = "pill";
+      if (!rec) { pill.className += " miss"; pill.textContent = (window.gsLanes?gsLanes.short(l):("L"+l))+" missing"; missing.push(l); }
+      else if (rec.adminClose || rec.batchClose) { pill.className += " admin"; pill.textContent = "L"+l+" admin close"; }
+      else if (laneIn(rec)) { pill.className += " in"; pill.textContent = "L"+l+" in"; }
+      else if (rec.assistOnly) { pill.className += " assist"; pill.textContent = (window.gsLanes?gsLanes.short(l):("L"+l))+" assist only"; missing.push(l); }
+      else { pill.className += " miss"; pill.textContent = (window.gsLanes?gsLanes.short(l):("L"+l))+" open"; missing.push(l); }
+      box.appendChild(pill);
+    });
+    el("laneNote").textContent = missing.length
+      ? ("Not cleared — still need " + missing.map(function(x){return window.gsLanes?gsLanes.short(x):("L"+x);}).join(", ") + ".")
+      : "Required seats count as in.";
+    if (missing.length === 1) el("closeLane").value = missing[0];
+  }
+
+  async function load(){
+    var unit = serial(el("unit").value);
+    if (!/^\d+$/.test(unit)) { alert("Numeric serial only."); return; }
+    el("unit").value = unit;
+    setStatus("Loading "+unit+"…");
+    try {
+      var res = await fetch(API+"/get-unit?unit="+encodeURIComponent(unit)+"&history=1");
+      current = await readJson(res);
+      el("tools").style.display = "block";
+      paintStatus();
+      paintHistory();
+      paintPasses();
+      el("editor").innerHTML = "";
+      active = null;
+      setStatus("Loaded. "+(current.present||[]).length+" lanes in.");
+    } catch(e){ setStatus("Load failed: "+e.message); }
+  }
+
+  function allPasses(){
+    var list = [];
+    Object.keys(current.lanes||{}).forEach(function(l){
+      var lane = (current.lanes||{})[l];
+      var passes = (lane && lane.passes && lane.passes.length) ? lane.passes : (lane ? [lane] : []);
+      passes.forEach(function(p, i){
+        list.push({ lane:l, pass:p, idx:i+1, n:passes.length, key:p._key||"" });
+      });
+    });
+    return list;
+  }
+
+  // r6d: what this sitting did on an attributed lane -- first marks counted, changes / clears / N-A-over-fail / admin edits listed.
+  function histHtml(item){
+    var lane = (current && current.lanes || {})[item.lane], d = item.pass;
+    if (!lane || lane.attrV !== 1 || !lane.history || !d || !d.sess) return "";
+    function hd(at){ var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(at||"")); return m ? (Number(m[2])+"/"+Number(m[3])) : ""; }
+    var first = 0, out = [];
+    lane.history.forEach(function(h){
+      if (h.sess !== d.sess) return;
+      if (h.adminEdit) { out.push("Admin edit by "+esc(h.by)+" "+hd(h.at)+" — "+esc(h.reason)); return; }
+      if (h.naOverFail) { out.push("N/A over fail on "+esc(h.check)+" (fail stays open)"); return; }
+      if (h.from == null) { first++; return; }
+      out.push(esc(h.check)+": "+esc(h.from)+" → "+esc(h.to)+(h.cleared ? " (cleared the fail)" : ""));
+    });
+    var head = "Sitting by "+esc(d.by || d.inspector || "?")+" — "+first+" new mark"+(first===1?"":"s");
+    return head + (out.length ? "<br>"+out.join("<br>") : "");
+  }
+
+  // r7a: Lane History above the edit controls, read-only, one collapsed block per lane that has more than one sitting. Painted once per load (not on every pass click).
+  function paintHistory(){
+    var box = el("laneHist"); box.innerHTML = "";
+    if (!window.GSHistory || !current) return;
+    var any = false, card = document.createElement("div");
+    card.className = "card"; card.innerHTML = "<h2>Lane history (read-only)</h2>";
+    Object.keys(current.lanes||{}).forEach(function(l){
+      var lane = current.lanes[l];
+      if (!GSHistory.worth(lane)) return;
+      any = true;
+      var t = document.createElement("div"); t.className = "note"; t.style.fontWeight = "700"; t.textContent = (window.gsLanes ? gsLanes.name(l) : "Lane "+l);
+      card.appendChild(t);
+      GSHistory.mount(card, { unit: current.unit, lane: l, api: API });
+    });
+    if (any) box.appendChild(card);
+  }
+
+  // r8a: water test answer of a sitting (Rain lane). Shown on the pass; an admin can correct it below, with the reason, like any other edit.
+  var RR_WH = [["roof","Roof"],["slide_roof","Slide roof"],["ceiling","Ceiling"],["wall","Wall"],["floor","Floor"],["window_compartment","Window / compartment"],["other_exterior_components","Other exterior components"],["other","Other"]];
+  var RR_RES = { no_leak:"No leak", leaked:"Leaked", not_tested:"Not tested" };
+  function rrText(r){
+    if (!r || !r.result) return "";
+    var wn = {}; RR_WH.forEach(function(w){ wn[w[0]] = w[1]; });
+    return (RR_RES[r.result] || r.result) + ((r.result === "leaked" && (r.where||[]).length) ? " — " + r.where.map(function(w){ return wn[w] || w; }).join(", ") : "") + (r.note ? " — " + r.note : "");
+  }
+  function rrPassLine(d){
+    if (!d || !d.rainRun || !d.rainRun.result) return "";
+    var bits = ["Water test: " + esc(rrText(d.rainRun))];
+    (d.rainRunEdits||[]).forEach(function(e){ bits.push("corrected by " + esc(e.by) + " — " + esc(e.reason) + " (was: " + esc(rrText(e.from)) + ")"); });
+    return bits.join(" · ");
+  }
+  function rrEditor(d){
+    if (!d || !d.rainRun || !d.rainRun.result) return "";
+    var cur = d.rainRun, h = '<h2>Water test result</h2><div id="rrEdit">';
+    h += '<div class="row"><div><label>Result</label><select id="eRainRes">';
+    [["no_leak","No leak"],["leaked","Leaked"],["not_tested","Not tested"]].forEach(function(o){ h += '<option value="'+o[0]+'"'+(cur.result===o[0]?' selected':'')+'>'+o[1]+'</option>'; });
+    h += '</select></div></div><label>Where (Leaked only)</label><div>';
+    RR_WH.forEach(function(w){ h += '<label style="display:inline-block;margin-right:10px;text-transform:none"><input type="checkbox" data-rrw="'+w[0]+'"'+((cur.where||[]).indexOf(w[0])>=0?' checked':'')+' style="width:auto"> '+w[1]+'</label>'; });
+    h += '</div><label>Note (required for Other, 300 max)</label><textarea id="eRainNote" rows="2" maxlength="300">'+esc(cur.note||"")+'</textarea></div>';
+    return h;
+  }
+  function rrFromEditor(){
+    var r = el("eRainRes"); if (!r) return null;
+    var where = []; document.querySelectorAll("#rrEdit [data-rrw]").forEach(function(c){ if (c.checked) where.push(c.getAttribute("data-rrw")); });
+    return { result: r.value, where: r.value === "leaked" ? where : [], note: (el("eRainNote").value||"").trim() };
+  }
+  function paintPasses(){
+    var box = el("passes"); box.innerHTML = "";
+    var card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = "<h2>6. Passes on this unit</h2>";
+    var list = allPasses();
+    if (!list.length) { card.innerHTML += "<p class='note'>No submits on this serial yet.</p>"; box.appendChild(card); return; }
+    list.forEach(function(item){
+      var d = item.pass;
+      var div = document.createElement("div");
+      div.className = "pass"+(active && active.key===item.key ? " on":"");
+      div.innerHTML = "<strong>L"+item.lane+" pass "+item.idx+"/"+item.n+"</strong> — "+esc(d.inspector||"?")+" — "+esc(d.date||"")+" — plant "+esc(d.plant||"—")+" — "+((d.defects||[]).length)+" defects"+(passPhotoCount(d) ? " — "+passPhotoCount(d)+" photo"+(passPhotoCount(d)===1?"":"s") : "")+(d.adminClose?" — ADMIN CLOSE":"")+(d.assistOnly?" — ASSIST":"")+(d.durationVoid?" — VOID":"")+(item.key?"":" — latest only")+'<button type="button" class="btn" data-open="1">Edit this pass</button>';
+      div.querySelector("[data-open]").onclick = function(){ openEditor(item); };
+      var rl = rrPassLine(d); if (rl) { var rb = document.createElement("div"); rb.className = "note"; rb.style.cssText = "margin:2px 0 4px 12px;font-size:0.8rem;font-weight:700"; rb.innerHTML = rl; div.appendChild(rb); }
+      var hx = histHtml(item);
+      if (hx) { var hb = document.createElement("div"); hb.className = "note"; hb.style.cssText = "margin:2px 0 8px 12px;font-size:0.8rem"; hb.innerHTML = hx; div.appendChild(hb); }
+      card.appendChild(div);
+    });
+    box.appendChild(card);
+  }
+
+  // r6c: photos on each defect of the pass being edited (the edit page used to show none, and a save dropped them).
+  function photoKeysOf(def){
+    var keys = [];
+    if (def && def.photos && def.photos.length) {
+      def.photos.forEach(function(ph){ var k = ph && (ph.key || ph.photoKey); if (k && keys.indexOf(k) < 0) keys.push(k); });
+    }
+    if (def && def.photoKey && keys.indexOf(def.photoKey) < 0) keys.unshift(def.photoKey);
+    return keys;
+  }
+  function photosHtml(def){
+    var keys = photoKeysOf(def);
+    if (!keys.length) return "";
+    var tok = (current && current.photoToken) ? "&tok="+encodeURIComponent(current.photoToken) : "";
+    return '<div class="defphotos" data-photos="'+keys.length+'">'+keys.map(function(k){
+      return '<img class="defphoto" alt="Defect photo" style="height:64px;margin:4px 6px 4px 0;border-radius:4px;border:1px solid #ccc" src="'+API+'/get-photo?key='+encodeURIComponent(k)+tok+'" onerror="this.style.display=\'none\'">';
+    }).join("")+'</div>';
+  }
+  function passPhotoCount(d){
+    var n = 0; (d.defects||[]).forEach(function(df){ n += photoKeysOf(df).length; }); return n;
+  }
+
+  function openEditor(item){
+    active = item;
+    paintPasses();
+    var d = item.pass;
+    var checks = d.checks || {};
+    var keys = Object.keys(checks);
+    function opt(val, label, cur){
+      return '<option value="'+esc(val)+'"'+(String(cur)===String(val)?' selected':'')+'>'+esc(label)+'</option>';
+    }
+    var checkHtml = keys.length ? keys.map(function(k){
+      var v = checks[k]||"";
+      return '<div class="check"><span>'+esc(k)+'</span><select data-check="'+esc(k)+'">'+
+        opt("", "—", v)+opt("pass","pass",v)+opt("fail","fail",v)+opt("na","n/a",v)+
+        '</select></div>';
+    }).join("") : "<p class='note'>No check keys on this pass.</p>";
+    var defs = (d.defects||[]);
+    var defHtml = defs.map(function(def, i){
+      var sev = def.severity==null ? "3" : String(def.severity);
+      return '<div class="def" data-def="'+i+'"><label>Defect '+(i+1)+'</label>'+
+        '<input data-f="point" value="'+esc(def.point||def.checkKey||"")+'" placeholder="point">'+
+        '<textarea data-f="desc" rows="2">'+esc(def.desc||"")+'</textarea>'+
+        photosHtml(def)+
+        '<button type="button" class="btn danger" data-del="'+i+'">Delete defect</button></div>';
+    }).join("") || "<p class='note'>No defects on this pass.</p>";
+    el("editor").innerHTML = '<div class="card"><h2>Edit L'+item.lane+' pass '+item.idx+'</h2>'+
+      (item.key ? "" : "<p class='note'>This pass has no session file — save writes a correction onto latest only.</p>")+
+      '<div class="row"><div><label>Inspector</label><select id="eInsp"></select></div>'+
+      '<div><label>Plant</label><select id="ePlant"><option value="51">51</option><option value="53">53</option><option value="57">57</option><option value="76">76</option></select></div>'+
+      '<div><label>Date</label><input id="eDate" type="date" value="'+esc(d.date||"")+'"></div>'+
+      '<div><label>Model</label><input id="eModel" value="'+esc(d.model||"")+'"></div></div>'+
+      rrEditor(d)+
+      '<h2>Checks</h2>'+checkHtml+
+      '<h2>Defects</h2><div id="defBox">'+defHtml+'</div>'+
+      '<button type="button" class="btn" id="btnAddDef" style="background:#1a5276">+ Defect</button>'+
+      '<label style="margin-top:10px">Reason for this edit</label><input id="eReason" placeholder="required">'+
+      '<button type="button" class="btn" id="btnSave" style="background:#196f3d">Save this pass</button></div>';
+    if (d.plant) el("ePlant").value = d.plant;
+    (function paintInsp(){
+      var sel = el("eInsp");
+      if (!sel) return;
+      sel.innerHTML = "";
+      var z = document.createElement("option"); z.value=""; z.textContent="— Select full name —"; sel.appendChild(z);
+      ROSTER.forEach(function(n){
+        var o = document.createElement("option"); o.value=n; o.textContent=n + (INACTIVE.indexOf(n)>=0 ? " (inactive)" : ""); sel.appendChild(o);
+      });
+      var nameSel = el("nameInsp");
+      if (nameSel && !nameSel.options.length) {
+        var blank = document.createElement("option"); blank.value=""; blank.textContent="— Select full name —"; nameSel.appendChild(blank);
+        ROSTER.forEach(function(n){ var o=document.createElement("option"); o.value=n; o.textContent=n + (INACTIVE.indexOf(n)>=0 ? " (inactive)" : ""); nameSel.appendChild(o); });
+      }
+      if (d.inspector && /\s/.test(d.inspector) && ROSTER.indexOf(d.inspector)>=0) sel.value = d.inspector;
+    })();
+    el("defBox").onclick = function(ev){
+      var b = ev.target.closest("[data-del]");
+      if (!b) return;
+      b.parentNode.remove();
+    };
+    el("btnAddDef").onclick = function(){
+      var n = el("defBox").querySelectorAll(".def").length + 1;
+      var wrap = document.createElement("div");
+      wrap.className = "def";
+      wrap.innerHTML = '<label>Defect '+n+'</label><input data-f="point" placeholder="point"><textarea data-f="desc" rows="2"></textarea><button type="button" class="btn danger" data-del="x">Delete defect</button>';
+      el("defBox").appendChild(wrap);
+    };
+    el("btnSave").onclick = savePass;
+  }
+
+  function collectChecks(){
+    var o = {};
+    Array.prototype.forEach.call(document.querySelectorAll("[data-check]"), function(s){
+      if (s.value) o[s.getAttribute("data-check")] = s.value;
+    });
+    return o;
+  }
+  function collectDefs(){
+    var list = [];
+    Array.prototype.forEach.call(document.querySelectorAll("#defBox .def"), function(box){
+      // r6c: start from the ORIGINAL defect (looked up by the index it had when the pass opened, so deleting an
+      // earlier defect does not shift the lookup) and overlay only what the form edits. Photos, pass number and
+      // every other stored field survive an admin edit.
+      var oi = box.getAttribute("data-def");
+      var src = (oi != null && active && active.pass && active.pass.defects && active.pass.defects[Number(oi)]) || {};
+      var d = {};
+      Object.keys(src).forEach(function(k){ d[k] = src[k]; });
+      Array.prototype.forEach.call(box.querySelectorAll("[data-f]"), function(inp){
+        d[inp.getAttribute("data-f")] = inp.value;
+      });
+      if (!d.reasonCode && src.reasonCode) d.reasonCode = src.reasonCode;
+      d.severity = src.severity == null ? 3 : Number(src.severity);
+      if (src.checkKey && !d.checkKey) d.checkKey = src.checkKey;
+      list.push(d);
+    });
+    return list;
+  }
+
+  async function savePass(){
+    if (!active) return;
+    var reason = (el("eReason").value||"").trim();
+    if (!reason) { alert("Reason required."); return; }
+    if (!el("eInsp").value || !/\s/.test(el("eInsp").value)) { alert("Full name required — pick from the roster."); return; }
+    var key = active.key;
+    if (!key) key = "pdi/"+serial(el("unit").value)+"/"+active.lane+"/latest";
+    var rrNew = rrFromEditor(), rrOld = active.pass && active.pass.rainRun, rrBody;
+    if (rrNew && rrOld) {
+      if (rrNew.result === "leaked" && !rrNew.where.length) { setStatus("Water test: pick where it leaked (one or more)."); return; }
+      if (rrNew.where.indexOf("other") >= 0 && !rrNew.note) { setStatus("Water test: \u201cOther\u201d needs a note."); return; }
+      if (JSON.stringify([rrNew.result, rrNew.where, rrNew.note]) !== JSON.stringify([rrOld.result, rrOld.where || [], rrOld.note || ""])) rrBody = rrNew;
+    }
+    setStatus("Saving…");
+    try {
+      await post("/submit-edit", {
+        rainRun: rrBody,
+        key:key,
+        inspector:el("eInsp").value,
+        plant:el("ePlant").value,
+        date:el("eDate").value,
+        model:el("eModel").value,
+        checks:collectChecks(),
+        defects:collectDefs(),
+        reason:reason,
+        admin:"Jason"
+      });
+      setStatus("Saved L"+active.lane+" pass. Latest rebuilt.");
+      load();
+    } catch(e){ setStatus("Save failed: "+e.message); }
+  }
+
+  function siblingMeta(){
+    var date = "", plant = "";
+    if (current && current.lanes) {
+      Object.keys(current.lanes).forEach(function(l){
+        var x = current.lanes[l];
+        if (!x) return;
+        if (!date && x.date) date = x.date;
+        if (!plant && x.plant) plant = x.plant;
+      });
+    }
+    return { date: date, plant: plant };
+  }
+
+  async function closeOne(lane, reason){
+    var unit = serial(el("unit").value);
+    var meta = siblingMeta();
+    await post("/submit-close", { unit:unit, lane:String(lane), date:meta.date, plant:meta.plant, reason:reason, admin:"Jason" });
+  }
+
+  el("btnClose").onclick = async function(){
+    var unit = serial(el("unit").value);
+    var lane = el("closeLane").value;
+    var reason = (el("closeReason").value||"").trim();
+    if (!lane) { alert("Pick a lane"); return; }
+    if (!reason) { alert("Reason required."); return; }
+    if (!confirm("Force-close L"+lane+" on "+unit+"?")) return;
+    try {
+      await closeOne(lane, reason);
+      setStatus("L"+lane+" force-closed on "+unit+". Reload Day's Units to see Cleared.");
+      load();
+    } catch(e){ setStatus("Close failed: "+e.message); }
+  };
+
+  el("btnCloseMissing").onclick = async function(){
+    var unit = serial(el("unit").value);
+    var reason = (el("closeReason").value||"").trim();
+    if (!reason) { alert("Reason required."); return; }
+    var have = Object.keys((current && current.lanes) || {});
+    var missing = (window.gsLanes?gsLanes.required(have):["R","S","E","I"]).filter(function(l){
+      var rec = current && current.lanes ? current.lanes[l] : null;
+      return !laneIn(rec);
+    });
+    if (!missing.length) { alert("Nothing missing on this unit."); return; }
+    if (!confirm("Force-close L"+missing.join(", L")+" on "+unit+"?")) return;
+    try {
+      for (var i=0;i<missing.length;i++) await closeOne(missing[i], reason);
+      setStatus("Closed L"+missing.join(", L")+" on "+unit+".");
+      load();
+    } catch(e){ setStatus("Close failed: "+e.message); }
+  };
+
+  el("btnMerge").onclick = async function(){
+    var from = serial(el("unit").value);
+    var to = serial(el("mergeTo").value);
+    var reason = (el("mergeReason").value||"").trim();
+    if (!reason) { alert("Reason required."); return; }
+    if (!/^\d+$/.test(to)) { alert("Correct unit # required."); return; }
+    if (!confirm("Merge "+from+" into "+to+"? This copies every lane.")) return;
+    try { await post("/submit-merge", { from:from, to:to, reason:reason, admin:"Jason" }); el("unit").value = to; setStatus("Merged into "+to); load(); }
+    catch(e){ setStatus("Merge failed: "+e.message); }
+  };
+
+  async function laneFix(action, lane, reason, extra){
+    var unit = serial(el("unit").value);
+    if (!reason) { alert("Reason required."); return; }
+    var body = Object.assign({ action:action, unit:unit, lane:lane, reason:reason, admin:"Jason" }, extra||{});
+    var data = await post("/submit-lane-fix", body);
+    setStatus(action+" "+lane+" on "+unit+".");
+    load();
+    return data;
+  }
+  el("btnDelete").onclick = async function(){
+    var unit = serial(el("unit").value);
+    var lane = el("delLane").value;
+    var reason = (el("delReason").value||"").trim();
+    if (!confirm("Delete lane "+lane+" on "+unit+"? Other lanes stay.")) return;
+    try { await laneFix("delete", lane, reason); } catch(e){ setStatus("Delete failed: "+e.message); }
+  };
+  el("btnReopen").onclick = async function(){
+    var lane = el("reopenLane").value;
+    var reason = (el("reopenReason").value||"").trim();
+    if (!confirm("Reopen lane "+lane+"?")) return;
+    try { await laneFix("reopen", lane, reason); } catch(e){ setStatus("Reopen failed: "+e.message); }
+  };
+  el("btnName").onclick = async function(){
+    var lane = el("nameLane").value;
+    var reason = (el("nameReason").value||"").trim();
+    var inspector = el("nameInsp").value;
+    if (!inspector) { alert("Pick the inspector."); return; }
+    try { await laneFix("inspector", lane, reason, { inspector:inspector }); } catch(e){ setStatus("Name failed: "+e.message); }
+  };
+
+  el("btnMove").onclick = async function(){
+    var from = serial(el("unit").value);
+    var to = serial(el("moveTo").value);
+    var lane = el("moveLane").value;
+    var reason = (el("moveReason").value||"").trim();
+    if (!reason) { alert("Reason required."); return; }
+    if (!/^\d+$/.test(to) || to === from) { alert("A different unit # is required."); return; }
+    if (!confirm("Move lane "+lane+" from "+from+" onto "+to+"? Other lanes stay on "+from+".")) return;
+    try {
+      var data = await post("/submit-move-lane", { from:from, to:to, lane:lane, reason:reason, admin:"Jason" });
+      el("unit").value = to;
+      setStatus("Moved "+lane+" onto "+to+(data.appended ? " (appended)" : "")+".");
+      load();
+    } catch(e){ setStatus("Move failed: "+e.message); }
+  };
+
+  async function timeAct(action){
+    var unit = serial(el("unit").value);
+    var lane = el("timeLane").value;
+    var reason = (el("timeReason").value||"").trim();
+    if (!lane) { alert("Pick a lane"); return; }
+    if (!reason) { alert("Reason required."); return; }
+    var minutes = action==="set" ? Number(el("timeMins").value) : undefined;
+    if (action==="set" && !Number.isFinite(minutes)) { alert("Enter minutes"); return; }
+    try { await post("/submit-time", { unit:unit, lane:lane, stage:"pdi", action:action, minutes:minutes, reason:reason, admin:"Jason" }); setStatus("Time "+action+" on L"+lane); load(); }
+    catch(e){ setStatus("Time failed: "+e.message); }
+  }
+  el("btnSet").onclick = function(){ timeAct("set"); };
+  el("btnVoid").onclick = function(){ timeAct("void"); };
+  el("btnExempt").onclick = function(){ timeAct("exempt"); };
+
+  var leftover = [];
+  function paintLeftovers(){
+    var box = el("batchList");
+    if (!leftover.length) { box.innerHTML = "<p class='note'>No open leftovers in that window.</p>"; return; }
+    box.innerHTML = leftover.map(function(u,i){
+      return '<label class="check"><span><input type="checkbox" data-i="'+i+'" checked> Unit '+esc(u.unit)+' · plant '+esc(u.plant)+' · missing L'+(u.missing||[]).join(",")+' · last '+esc(u.lastDate||"—")+"</span></label>";
+    }).join("");
+  }
+  el("btnLoadLeft").onclick = async function(){
+    var date = el("batchDate").value || new Date().toISOString().slice(0,10);
+    el("batchDate").value = date;
+    el("batchStatus").textContent = "Loading leftovers…";
+    try {
+      async function fetchScope(scope){
+        var res = await fetch(API+"/day-units?date="+encodeURIComponent(date)+"&scope="+scope);
+        return readJson(res).then(function(data){ return data.units||[]; });
+      }
+      var todayOpen = (await fetchScope("today")).filter(function(u){ return u.bucket === "today-open"; });
+      var carry = [];
+      try { carry = await fetchScope("carry"); } catch (e2) { el("batchStatus").textContent = "Today loaded · leftovers timed out"; }
+      leftover = todayOpen.concat(carry.filter(function(u){ return u.bucket === "carryover" || u.bucket === "today-open"; }));
+      paintLeftovers();
+      el("batchStatus").textContent = leftover.length + " open units. Uncheck any that are not actually done.";
+    } catch(e){ el("batchStatus").textContent = "Load leftovers failed: "+e.message; }
+  };
+  el("btnAllLeft").onclick = function(){
+    Array.prototype.forEach.call(document.querySelectorAll("#batchList input[type=checkbox]"), function(c){ c.checked = true; });
+  };
+  el("btnBatchClose").onclick = async function(){
+    var picked = [];
+    Array.prototype.forEach.call(document.querySelectorAll("#batchList input[type=checkbox]"), function(c){
+      if (c.checked && leftover[Number(c.getAttribute("data-i"))]) picked.push(leftover[Number(c.getAttribute("data-i"))].unit);
+    });
+    var extra = (el("batchPaste").value||"").split(/[\s,;]+/).map(serial).filter(function(u){ return /^\d+$/.test(u); });
+    extra.forEach(function(u){ if (picked.indexOf(u)<0) picked.push(u); });
+    if (!picked.length) { alert("Select or paste units first."); return; }
+    var reason = (el("batchReason").value||"").trim();
+    if (!reason) { alert("Reason required."); return; }
+    if (!confirm("Force-close every MISSING / assist-only lane on "+picked.length+" units?\nLanes already submitted stay.")) return;
+    el("batchStatus").textContent = "Closing "+picked.length+"…";
+    var closed = 0, failed = [];
+    for (var i=0;i<picked.length;i+=20){
+      var chunk = picked.slice(i,i+20);
+      try {
+        var out = await post("/submit-close-batch", { units:chunk, reason:reason, admin:"Jason" });
+        (out.results||[]).forEach(function(r){ closed += (r.closed||[]).length; });
+      } catch(e){ failed.push(e.message); }
+    }
+    el("batchStatus").textContent = "Closed "+closed+" missing lanes across "+picked.length+" units."+(failed.length?" Failures: "+failed.join("; "):"");
+    el("btnLoadLeft").click();
+  };
+  if (el("batchDate") && !el("batchDate").value) el("batchDate").valueAsDate = new Date();
+  if (el("adminDate") && !el("adminDate").value) el("adminDate").valueAsDate = new Date();
+  el("btnAdminUnit").onclick = async function(){
+    var unit = serial(el("adminUnit").value);
+    var reason = (el("adminReason").value||"").trim();
+    if (!/^\d+$/.test(unit)) { alert("Numeric serial only."); return; }
+    if (!reason) { alert("Reason required."); return; }
+    el("adminStatus").textContent = "Closing "+unit+"…";
+    try {
+      var out = await post("/submit-admin-unit", {
+        unit: unit,
+        plant: el("adminPlant").value,
+        date: el("adminDate").value,
+        reason: reason,
+        admin: "Jason"
+      });
+      el("adminStatus").textContent = unit+" Administratively Closed · plant "+(out.plant||"—")+" · closed L"+(out.closed||[]).join(",")+(out.alreadyIn&&out.alreadyIn.length?" · already in L"+out.alreadyIn.join(","):"");
+      el("unit").value = unit;
+      load();
+    } catch(e){ el("adminStatus").textContent = "Failed: "+e.message; }
+  };
+  el("btnLoad").onclick = load;
+  (function(){
+    var d = el("pinDate");
+    if (d && !d.value) {
+      try { d.value = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }); }
+      catch (e) { d.valueAsDate = new Date(); }
+    }
+  })();
+
+  (function(){
+    function day(off){ var d = new Date(Date.now() + off * 86400000); try { return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); } catch (e) { return d.toISOString().slice(0, 10); } }
+    if (el("liFrom") && !el("liFrom").value) el("liFrom").value = day(-30);
+    if (el("liTo") && !el("liTo").value) el("liTo").value = day(0);
+    // resumable: the function stops at its time budget and returns next=<unit>; this loop calls again with after=<next> until done
+    async function runLi(mode){
+      var from = el("liFrom").value, to = el("liTo").value;
+      if (!from || !to) { alert("Pick both dates."); return; }
+      var tot = { mode: mode, units: 0, lanes: 0, A: [], B: [], C: [], failNoDefect: [], failNoDetail: [], unfolded: [], healed: [], settling: [], noSessKeys: 0 };
+      var after = "", rounds = 0;
+      el("btnLiAudit").disabled = true; el("btnLiHeal").disabled = true;
+      try {
+        for (;;) {
+          el("liStatus").textContent = (mode === "heal" ? "Healing" : "Auditing") + "… " + tot.units + " units so far. Do not close this page.";
+          var res = await fetch(API + "/lane-audit?mode=" + mode + "&from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + (after ? "&after=" + encodeURIComponent(after) : ""));
+          var raw = await res.text(); var out = {};
+          try { out = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + res.status)); }
+          if (!res.ok || out.error) throw new Error(out.error || ("Server " + res.status));
+          tot.units += out.checkedUnits || 0; tot.lanes += out.lanes || 0; tot.noSessKeys += out.noSessKeys || 0;
+          ["A", "B", "C", "failNoDefect", "failNoDetail", "unfolded", "healed", "settling"].forEach(function(k){ tot[k] = tot[k].concat(out[k] || []); });
+          if (out.done || !out.next || ++rounds > 400) break;
+          after = out.next;
+        }
+        var fmt = function(a){ return a.map(function(x){ return typeof x === "string" ? x : (x.lane + " (" + (x.checks || x.sessions || []).join(", ") + ")"); }).join("\n  "); };
+        el("liStatus").textContent = (mode === "heal" ? "Heal finished" : "Audit finished") + ": " + tot.units + " units, " + tot.lanes + " lanes.\n" +
+          (mode === "heal"
+            ? "Rebuilt " + tot.healed.length + " lane(s)" + (tot.healed.length ? ":\n  " + tot.healed.join("\n  ") : "") + "\nStill settling " + tot.settling.length + (tot.settling.length ? " (run again in a minute):\n  " + tot.settling.join("\n  ") : "") + "\nLanes saved before W2 (not touched): " + tot.noSessKeys
+            : "A, Fail cleared by a later Pass (defect superseded): " + tot.A.length + (tot.A.length ? "\n  " + fmt(tot.A) : "") +
+              "\nB, Pass sitting on a live defect: " + tot.B.length + (tot.B.length ? "\n  " + fmt(tot.B) : "") +
+              "\nC, marks in history missing from the lane summary: " + tot.C.length + (tot.C.length ? "\n  " + fmt(tot.C) : "") +
+              "\nFail line with no defect: " + tot.failNoDefect.length + (tot.failNoDefect.length ? "\n  " + fmt(tot.failNoDefect) : "") +
+              "\nFail line whose defect has no text: " + tot.failNoDetail.length + (tot.failNoDetail.length ? "\n  " + fmt(tot.failNoDetail) : "") +
+              "\nSittings not folded into a W2 lane summary: " + tot.unfolded.length + (tot.unfolded.length ? "\n  " + fmt(tot.unfolded) : ""));
+      } catch (e) {
+        el("liStatus").textContent = "Stopped: " + (e.message || e) + "\nSo far: " + tot.units + " units. Run it again; it picks up where it can and changes nothing twice.";
+      } finally { el("btnLiAudit").disabled = false; el("btnLiHeal").disabled = false; }
+    }
+    if (el("btnLiAudit")) el("btnLiAudit").onclick = function(){ runLi("audit"); };
+    if (el("btnLiHeal")) el("btnLiHeal").onclick = function(){ if (confirm("Rebuild lane summaries from their saved sittings (W2 lanes only)?")) runLi("heal"); };
+  })();
+  (function(){
+    function day(off){ var d = new Date(Date.now() + off * 86400000); try { return d.toLocaleDateString("en-CA", { timeZone: "America/New_York" }); } catch (e) { return d.toISOString().slice(0, 10); } }
+    if (el("lhFrom") && !el("lhFrom").value) el("lhFrom").value = "2026-08-15";
+    if (el("lhTo") && !el("lhTo").value) el("lhTo").value = day(0);
+    var FAILS = [];
+    async function jget(url){ var r = await fetch(url); var raw = await r.text(); var o = {}; try { o = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + r.status)); } if (!r.ok || o.error) throw new Error(o.error || ("Server " + r.status)); return o; }
+    async function jpost(url, body){ var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); var raw = await r.text(); var o = {}; try { o = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + r.status)); } if (!r.ok || o.error) { var er = new Error(o.error || ("Server " + r.status)); er.code = o.code; throw er; } return o; }
+    function showLast(l){
+      if (!el("lhLast")) return;
+      if (!l) { el("lhLast").textContent = "No scan stored yet."; return; }
+      var c = l.counts || {};
+      el("lhLast").textContent = "Last finished scan " + String(l.savedAt || "").replace("T", " ").slice(0, 16) + " UTC, " + l.from + " to " + l.to + ", " + l.units + " units, " + l.lanes + " lanes: unfolded " + (c.unfolded || 0) + ", Fail with no defect " + (c.failNoDefect || 0) + ", Pass with a live defect " + (c.passLiveDefect || 0) + ", Fail with no description " + (c.failNoDetail || 0) + ", marks missing from the whole unit " + (c.classC || 0) + ", Fails awaiting clear " + (c.failsAwaitingClear != null ? c.failsAwaitingClear : l.failsListed) + (l.legacyFails ? " (+" + l.legacyFails + " on older lanes that cannot be cleared here)" : "") + (l.complete ? "" : " [scan did not finish]");
+    }
+    function drawFails(){
+      var box = el("fcList"); if (!box) return;
+      var showTest = el("fcShowTest") && el("fcShowTest").checked;
+      var rows = FAILS.filter(function(f){ return showTest || !f.test; });
+      if (!rows.length) { box.innerHTML = '<p class="note">' + (FAILS.length ? "Only test units are left." : "No Fails listed. Run the health scan.") + "</p>"; return; }
+      box.innerHTML = rows.map(function(f, i){
+        var id = f.unit + "|" + f.lane + "|" + f.check;
+        return '<div class="fc-row" data-id="' + esc(id) + '" style="border-top:1px solid #ddd;padding:8px 0">' +
+          "<b>" + esc(f.unit) + "</b> lane " + esc(f.lane) + " · " + esc(f.label) + (f.plant ? " · plant " + esc(f.plant) : "") + "<br>" +
+          '<span class="note">' + (f.desc ? esc(f.desc) : "(no description on the defect)") + (f.by ? " — " + esc(f.by) : "") + (f.at ? " " + esc(String(f.at).slice(0, 10)) : "") + "</span><br>" +
+          '<input type="text" class="fc-reason" placeholder="Reason (required)" style="width:100%;margin:4px 0">' +
+          '<input type="text" class="fc-na" placeholder="N/A reason (only for N/A)" style="width:100%;margin:4px 0">' +
+          '<button type="button" class="btn fc-pass" style="background:#196f3d">Clear to Pass</button> ' +
+          '<button type="button" class="btn fc-nabtn" style="background:#7d6608">Clear to N/A</button>' +
+          ' <span class="status fc-msg"></span></div>';
+      }).join("");
+      Array.prototype.forEach.call(box.querySelectorAll(".fc-row"), function(row){
+        function go(to){
+          var id = row.getAttribute("data-id").split("|");
+          var reason = row.querySelector(".fc-reason").value.trim(), na = row.querySelector(".fc-na").value.trim();
+          var msg = row.querySelector(".fc-msg");
+          if (!reason) { msg.textContent = "Type the reason first."; return; }
+          if (to === "na" && !na) { msg.textContent = "N/A needs its own reason."; return; }
+          if (!confirm("Clear this Fail to " + (to === "pass" ? "Pass" : "N/A") + "? This is logged with your reason.")) return;
+          msg.textContent = "Clearing… wait.";
+          Array.prototype.forEach.call(row.querySelectorAll("button"), function(b){ b.disabled = true; });
+          jpost(API + "/fail-clear", { unit: id[0], lane: id[1], check: id[2], to: to, reason: reason, naReason: na }).then(function(o){
+            FAILS = FAILS.filter(function(f){ return !(f.unit === id[0] && f.lane === id[1] && f.check === id[2]); });
+            msg.textContent = "Cleared.";
+            setTimeout(drawFails, 600);
+          }).catch(function(e){
+            msg.textContent = "Not cleared: " + (e.message || e);
+            Array.prototype.forEach.call(row.querySelectorAll("button"), function(b){ b.disabled = false; });
+          });
+        }
+        row.querySelector(".fc-pass").onclick = function(){ go("pass"); };
+        row.querySelector(".fc-nabtn").onclick = function(){ go("na"); };
+      });
+    }
+    if (el("fcShowTest")) el("fcShowTest").onchange = drawFails;
+    jget(API + "/lane-health?mode=last").then(function(o){ showLast(o.last); if (o.last && Array.isArray(o.last.fails) && !FAILS.length) { FAILS = o.last.fails; drawFails(); } }).catch(function(){ if (el("lhLast")) el("lhLast").textContent = "Last scan could not be read."; });
+    drawFails();
+    async function scan(){
+      var from = el("lhFrom").value, to = el("lhTo").value;
+      if (!from || !to) { alert("Pick both dates."); return; }
+      var tot = { from: from, to: to, units: 0, lanes: 0, unfolded: [], failNoDefect: [], failNoDetail: [], passLiveDefect: [], classC: [], fails: [], legacyFails: 0, listFailed: [] };
+      var after = "", rounds = 0, complete = false;
+      el("btnLhScan").disabled = true;
+      try {
+        for (;;) {
+          el("lhStatus").textContent = "Scanning… " + tot.units + " units so far. Do not close this page.";
+          var out = await jget(API + "/lane-health?mode=scan&from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to) + (after ? "&after=" + encodeURIComponent(after) : ""));
+          tot.units += out.checkedUnits || 0; tot.lanes += out.lanes || 0; tot.legacyFails += out.legacyFails || 0;
+          ["unfolded", "failNoDefect", "failNoDetail", "passLiveDefect", "classC", "fails", "listFailed"].forEach(function(k){ tot[k] = tot[k].concat(out[k] || []); });
+          if (out.done || !out.next) { complete = true; break; }
+          if (++rounds > 400) break;
+          after = out.next;
+        }
+        tot.counts = { unfolded: tot.unfolded.length, failNoDefect: tot.failNoDefect.length, failNoDetail: tot.failNoDetail.length, passLiveDefect: tot.passLiveDefect.length, classC: tot.classC.length, failsAwaitingClear: tot.fails.length };
+        tot.complete = complete;
+        var fmt = function(a){ return a.map(function(x){ return x.lane + " (" + (x.checks || x.sessions || []).join(", ") + ")"; }).join("\n  "); };
+        el("lhStatus").textContent = (complete ? "Scan finished" : "Scan stopped early") + ": " + tot.units + " units, " + tot.lanes + " lanes.\n" +
+          "Sittings not folded into a W2 lane summary: " + tot.unfolded.length + (tot.unfolded.length ? "\n  " + fmt(tot.unfolded) : "") +
+          "\nFail line with no defect: " + tot.failNoDefect.length + (tot.failNoDefect.length ? "\n  " + fmt(tot.failNoDefect) : "") +
+          "\nPass sitting on a live defect: " + tot.passLiveDefect.length + (tot.passLiveDefect.length ? "\n  " + fmt(tot.passLiveDefect) : "") +
+          "\nFail line whose defect has no text: " + tot.failNoDetail.length + (tot.failNoDetail.length ? "\n  " + fmt(tot.failNoDetail) : "") +
+          "\nMarks in history missing from the whole unit: " + tot.classC.length + (tot.classC.length ? "\n  " + fmt(tot.classC) : "") +
+          "\nFails awaiting clear: " + tot.fails.length + (tot.legacyFails ? " (+" + tot.legacyFails + " on older lanes that cannot be cleared here)" : "") +
+          (tot.listFailed.length ? "\nCould not list sittings for: " + tot.listFailed.join(", ") : "");
+        FAILS = tot.fails; drawFails();
+        try { await jpost(API + "/lane-health", { mode: "save", result: { from: from, to: to, units: tot.units, lanes: tot.lanes, counts: tot.counts, legacyFails: tot.legacyFails, fails: tot.fails, complete: complete } }); jget(API + "/lane-health?mode=last").then(function(o){ showLast(o.last); }); } catch (e) { el("lhStatus").textContent += "\n(The result could not be stored: " + (e.message || e) + ")"; }
+      } catch (e) {
+        el("lhStatus").textContent = "Stopped: " + (e.message || e) + "\nSo far: " + tot.units + " units. Run it again.";
+      } finally { el("btnLhScan").disabled = false; }
+    }
+    if (el("btnLhScan")) el("btnLhScan").onclick = scan;
+  })();
+  (function(){
+    if (!el("laneRestore")) return;
+    async function jget(url){ var r = await fetch(url); var raw = await r.text(); var o = {}; try { o = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + r.status)); } if (!r.ok || o.error) throw new Error(o.error || ("Server " + r.status)); return o; }
+    async function jpost(url, body){ var r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); var raw = await r.text(); var o = {}; try { o = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + r.status)); } if (!r.ok || o.error) throw new Error(o.error || ("Server " + r.status)); return o; }
+    var ENTRIES = [], LISTID = "";
+    var d0 = new Date(); el("lrTo").value = d0.toISOString().slice(0, 10); el("lrFrom").value = "2026-08-15";
+    function esc(t){ return String(t == null ? "" : t).replace(/[&<>"]/g, function(c){ return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+    function sumOf(){
+      var t = { lanes: ENTRIES.length, b: 0, c: 0, f2n: 0, p2n: 0, flips: 0 };
+      ENTRIES.forEach(function(e){ (e.changes || []).forEach(function(c){ if (c.why === "B restore") t.b++; else if (c.why === "C add") t.c++; }); var f = e.flags || {}; t.f2n += (f.failToNonFail || []).length; t.p2n += (f.passToNa || []).length; if (f.completionFlip) t.flips++; });
+      return t;
+    }
+    function draw(){
+      var t = sumOf();
+      var head = ENTRIES.length ? '<div style="padding:6px 0;font-weight:bold">Summary: ' + t.lanes + " lanes patched. Marks set back to Fail (B): " + t.b + ". Marks added (C, add only): " + t.c + ". Fail turned into non-Fail: " + t.f2n + (t.f2n ? " (REFUSED, apply is blocked)" : "") + ". Pass turned into N/A: " + t.p2n + ". Completion flips: " + t.flips + ".</div>" : "";
+      el("lrList").innerHTML = head + ENTRIES.map(function(e){
+        var ch = (e.changes || []).map(function(c){ return esc(c.check) + ": " + esc(c.from == null ? "(blank)" : c.from) + " -> " + esc(c.to) + (c.why ? " (" + esc(c.why) + ")" : ""); }).join("<br>");
+        var df = (e.defects || []).map(function(x){ return "defect " + esc(x.check) + ": " + esc(x.from) + " -> " + esc(x.to); }).join("<br>");
+        var cp = e.completion && e.completion.from !== e.completion.to ? "<br><b>completion " + esc(e.completion.from) + " -> " + esc(e.completion.to) + " (FLIP)</b>" : "";
+        var fl = e.flags || {}; if ((fl.failToNonFail || []).length) cp += "<br><b>FAIL -> NON-FAIL: " + esc(fl.failToNonFail.join(", ")) + " (apply refused)</b>"; if ((fl.passToNa || []).length) cp += "<br><b>PASS -> N/A: " + esc(fl.passToNa.join(", ")) + "</b>";
+        if ((e.warn || []).length) cp += "<br>" + e.warn.map(esc).join("<br>");
+        return '<div style="border-top:1px solid #ccc;padding:4px 0"><b>' + esc(e.lane) + "</b> [" + esc((e.classes || []).join("+")) + "]<br>" + ch + (df ? "<br>" + df : "") + cp + "</div>";
+      }).join("");
+      el("btnLrSave").style.display = ENTRIES.length ? "" : "none";
+    }
+    async function loop(mode, extra, take){
+      var after = "", rounds = 0, complete = false, units = 0;
+      for (;;) {
+        var o = await jget(API + "/lane-restore?mode=" + mode + "&from=" + encodeURIComponent(el("lrFrom").value) + "&to=" + encodeURIComponent(el("lrTo").value) + (after ? "&after=" + encodeURIComponent(after) : ""));
+        units += o.checkedUnits || 0; take(o, units);
+        if (o.done || !o.next) { complete = true; break; }
+        if (++rounds > 400) break;
+        after = o.next;
+      }
+      return complete;
+    }
+    el("btnLrDry").onclick = async function(){
+      if (!el("lrFrom").value || !el("lrTo").value) { alert("Pick both dates."); return; }
+      ENTRIES = []; LISTID = ""; el("lrListId").textContent = ""; el("btnLrApply").style.display = "none";
+      var refused = [], bLeave = 0, unread = [], units = 0; el("btnLrDry").disabled = true;
+      try {
+        var ok = await loop("dry", null, function(o, u){ units = u; ENTRIES = ENTRIES.concat(o.entries || []); refused = refused.concat(o.refusedUnits || []); bLeave += (o.bLeave || []).length; unread = unread.concat(o.unreadable || []); el("lrStatus").textContent = "Dry run… " + u + " units so far. Do not close this page."; });
+        el("lrStatus").textContent = (ok ? "Dry run finished" : "Dry run stopped early") + ": " + units + " units. Lanes that would change: " + ENTRIES.length + " (B marks " + sumOf().b + ", C adds " + sumOf().c + ", Fail->non-Fail " + sumOf().f2n + ", Pass->N/A " + sumOf().p2n + ", completion flips " + sumOf().flips + "). Left alone: " + bLeave + " Pass lines with a finding that were never a Fail." + (unread.length ? " Could not read: " + unread.join(", ") : "") + (refused.length ? " Refused units skipped: " + refused.join(", ") : "") + "\nNothing has been written.";
+        draw();
+      } catch (e) { el("lrStatus").textContent = "Stopped: " + (e.message || e); } finally { el("btnLrDry").disabled = false; }
+    };
+    el("btnLrSave").onclick = async function(){
+      try {
+        var o = await jpost(API + "/lane-restore", { mode: "save-list", entries: ENTRIES, from: el("lrFrom").value, to: el("lrTo").value });
+        LISTID = o.listId; el("lrListId").textContent = "Saved list " + o.listId + " (" + o.count + " lanes). Apply will write exactly this list.";
+        el("btnLrApply").style.display = "";
+      } catch (e) { el("lrListId").textContent = "Not saved: " + (e.message || e); }
+    };
+    el("btnLrApply").onclick = async function(){
+      var reason = (el("lrReason").value || "").trim();
+      if (!LISTID) { el("lrStatus").textContent = "Save the list first."; return; }
+      if (!reason) { el("lrStatus").textContent = "Type the reason before applying."; return; }
+      if (!confirm("Apply list " + LISTID + " (" + ENTRIES.length + " lanes)? Sittings are not touched; the old summaries are kept in a log.")) return;
+      el("btnLrApply").disabled = true;
+      var tot = { applied: 0, alreadyDone: 0, cleared: [], skipped: [], settling: [], flips: 0 }, after = "", rounds = 0;
+      try {
+        for (;;) {
+          var o = await jpost(API + "/lane-restore", { mode: "apply", listId: LISTID, reason: reason, after: after });
+          tot.applied += (o.applied || []).length; tot.alreadyDone += (o.alreadyDone || []).length; tot.cleared = tot.cleared.concat(o.clearedSince || []); tot.skipped = tot.skipped.concat(o.skipped || []); tot.settling = tot.settling.concat(o.settling || []); tot.flips += (o.completionFlips || []).length;
+          el("lrStatus").textContent = "Applying… " + tot.applied + " done. Do not close this page.";
+          if (o.done || !o.next) break;
+          if (++rounds > 400) break;
+          after = o.next;
+        }
+        el("lrStatus").textContent = "Applied " + tot.applied + " lanes; already done " + tot.alreadyDone + "; cleared by an admin since the restore (left alone) " + tot.cleared.length + (tot.cleared.length ? " (" + tot.cleared.map(function(x){ return x.lane; }).join(", ") + ")" : "") + "; completion flips " + tot.flips + "; skipped " + tot.skipped.length + (tot.skipped.length ? " (" + tot.skipped.map(function(x){ return x.lane + ": " + x.why; }).join("; ") + ")" : "") + (tot.settling.length ? "; still settling (run Apply again): " + tot.settling.join(", ") : "") + ".";
+      } catch (e) { el("lrStatus").textContent = "Stopped: " + (e.message || e) + " Applied so far: " + tot.applied + ". Apply again to continue; lanes already done are skipped."; } finally { el("btnLrApply").disabled = false; }
+    };
+    el("btnLrParity").onclick = async function(){
+      if (!el("lrFrom").value || !el("lrTo").value) { alert("Pick both dates."); return; }
+      var t = { lanes: 0, compared: 0, identical: 0, withOverlay: 0, differs: [] }, units = 0; el("btnLrParity").disabled = true;
+      try {
+        var ok = await loop("parity", null, function(o, u){ units = u; t.lanes += o.lanes || 0; t.compared += o.compared || 0; t.identical += o.identical || 0; t.withOverlay += o.withOverlay || 0; t.differs = t.differs.concat(o.differs || []); el("lrStatus").textContent = "Parity… " + u + " units so far."; });
+        el("lrStatus").textContent = (ok ? "Parity finished" : "Parity stopped early") + ": " + units + " units, " + t.compared + " lanes compared, " + t.identical + " identical, " + t.withOverlay + " with a restore (skipped), " + t.differs.length + " differ." + (t.differs.length ? "\n" + t.differs.map(function(x){ return x.lane + ": " + (x.diffs || []).map(function(d){ return d.check + " " + JSON.stringify(d.old) + " -> " + JSON.stringify(d.new); }).join("; "); }).join("\n") : "") + "\nNothing has been written.";
+      } catch (e) { el("lrStatus").textContent = "Stopped: " + (e.message || e); } finally { el("btnLrParity").disabled = false; }
+    };
+  })();
+  el("btnPinIndex").onclick = async function(){
+    var date = (el("pinDate").value || "").slice(0, 10);
+    var units = (el("pinUnits").value || "").split(/[\s,;]+/).map(serial).filter(function(u){ return /^\d+$/.test(u); });
+    if (!date) { alert("Pick the date."); return; }
+    if (!units.length) { alert("Put unit numbers in the box."); return; }
+    el("pinStatus").textContent = "Pinning " + units.length + "… wait. Do not click again.";
+    try {
+      var res = await fetch(API + "/repair-day-index?date=" + encodeURIComponent(date) + "&units=" + encodeURIComponent(units.join(",")));
+      var raw = await res.text();
+      var out = {};
+      try { out = raw ? JSON.parse(raw) : {}; } catch (e) { throw new Error(raw.slice(0, 120) || ("Server " + res.status)); }
+      if (!res.ok || out.error) throw new Error(out.error || ("Server " + res.status));
+      var order = ["R","S","E","I","U","1","2","3","4"];
+      var lines = (out.result || []).map(function(r){
+        var lanes = r.lanes || {};
+        var keys = Object.keys(lanes).sort(function(a, b){
+          var ia = order.indexOf(a), ib = order.indexOf(b);
+          return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+        });
+        return r.unit + " " + keys.map(function(l){ return l + "=" + (lanes[l] || "?"); }).join(" ");
+      });
+      el("pinStatus").textContent = "Pinned " + (out.count || units.length) + " on " + date + ".\n" + lines.join("\n") + "\nNow open Load Day’s Units once and wait.";
+    } catch (e) {
+      el("pinStatus").textContent = "Failed: " + e.message;
+    }
+  };
+  var q = new URLSearchParams(location.search).get("unit");
+  if (q) { el("unit").value = q; load(); }
+})();
+</script>
+</body>
+</html>

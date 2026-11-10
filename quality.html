@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — Quality</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; }
+.bar { background: #1f4e79; color: #fff; padding: 10px 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.bar a { color: #fff; text-decoration: none; font-size: 0.8rem; }
+.tab { border: none; background: #5d6d7e; color: #fff; font-weight: 800; padding: 10px 14px; border-radius: 8px; cursor: pointer; }
+.tab.on { background: #fff; color: #1f4e79; }
+iframe { width: 100%; height: calc(100vh - 52px); border: 0; background: #fff; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <button type="button" class="tab on" id="tLoop">Loop — Top 5 / tickets</button>
+  <button type="button" class="tab" id="tWar">Warranty vs point</button>
+  <button type="button" class="tab" id="tRep">WCPU report</button>
+  <button type="button" class="tab" id="tTr">Trends</button>
+  <button type="button" class="tab" id="tCo">Captured cohort</button>
+  <a href="ops.html">← Main</a>
+</div>
+<iframe id="frame" title="Quality" src="loop.html"></iframe>
+<script>
+requireOps();
+(function(){
+  var frame = document.getElementById("frame");
+  function show(which){
+    document.getElementById("tLoop").className = "tab" + (which==="loop"?" on":"");
+    document.getElementById("tWar").className = "tab" + (which==="warranty"?" on":"");
+    document.getElementById("tRep").className = "tab" + (which==="report"?" on":"");
+    document.getElementById("tTr").className = "tab" + (which==="trend"?" on":"");
+    document.getElementById("tCo").className = "tab" + (which==="cohort"?" on":"");
+    frame.src = which === "warranty" ? "warranty.html"
+      : (which === "report" ? "warranty-report.html"
+      : (which === "trend" ? "warranty-trend.html"
+      : (which === "cohort" ? "cohort.html"
+      : "loop.html")));
+    location.hash = which;
+  }
+  document.getElementById("tLoop").onclick = function(){ show("loop"); };
+  document.getElementById("tWar").onclick = function(){ show("warranty"); };
+  document.getElementById("tRep").onclick = function(){ show("report"); };
+  document.getElementById("tTr").onclick = function(){ show("trend"); };
+  document.getElementById("tCo").onclick = function(){ show("cohort"); };
+  if (location.hash.indexOf("handout")>=0) { show("report"); frame.src="warranty-report.html#handout"; return; }
+  if (location.hash.indexOf("trend")>=0) show("trend");
+  else if (location.hash.indexOf("report")>=0) show("report");
+  else if (location.hash.indexOf("cohort")>=0) show("cohort");
+  else if (location.hash.indexOf("warranty")>=0) show("warranty");
+})();
+</script>
+</body>
+</html>

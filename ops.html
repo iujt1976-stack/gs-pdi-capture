@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="GS Ops">
+<title>Gulf Stream — Ops</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #12151a; color: #fff; padding: 20px; min-height: 100vh; }
+h1 { text-align: center; font-size: 1.2rem; letter-spacing: 1px; margin: 16px 0 8px; }
+.row { max-width: 420px; margin: 0 auto; }
+.group { margin: 18px 0 8px; font-size: 0.68rem; letter-spacing: 1.2px; text-transform: uppercase; color: #8892a0; font-weight: 700; }
+.ops {
+  display: block; background: #6c3483; color: #fff; text-decoration: none;
+  text-align: center; padding: 16px; border-radius: 10px; margin-bottom: 10px;
+  font-weight: 800; font-size: 1rem;
+}
+.ops.quality { background: #1a5276; }
+.ops.people { background: #1e3a4c; }
+.park { display: flex; gap: 16px; justify-content: center; margin: 4px 0 8px; }
+.park a { color: #8b95a3; font-size: 0.82rem; text-decoration: none; font-weight: 600; }
+.note { text-align: center; color: #667; font-size: 0.7rem; margin-top: 28px; }
+</style>
+</head>
+<body>
+<h1>OPS</h1>
+<div class="row">
+  <div class="group">Quality</div>
+  <a class="ops quality" href="quality.html">Quality — Loop / Warranty / WCPU / Trends</a>
+
+  <div class="group">Today</div>
+  <a class="ops" href="daily.html">PDI Daily Log</a>
+  <a class="ops" href="prod-daily.html">Production Daily Log</a>
+  <div class="park">
+    <a href="hold.html">Hold form</a>
+    <a href="postpdi.html">Post-PDI form</a>
+  </div>
+
+  <div class="group">Unit</div>
+  <a class="ops" href="timeline.html">Unit timeline / summary</a>
+  <a class="ops" href="edit.html">Edit inspection</a>
+
+  <div class="group">People</div>
+  <a class="ops people" href="clock.html">Hours log</a>
+  <a class="ops people" href="performance.html">Inspector time / uptime</a>
+  <a class="ops people" href="lane-times.html">Lane times — seat eval</a>
+  <a class="ops people" href="settings.html">Settings — roster</a>
+</div>
+<p class="note">/ops.html · PIN required</p>
+<script>requireOps();</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — PDI cohort vs warranty</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f4f6f8; color: #1a1a1a; padding: 16px; max-width: 1000px; margin: 0 auto; }
+h1 { font-size: 1.25rem; color: #1f4e79; }
+h2 { font-size: .9rem; text-transform: uppercase; margin-bottom: 8px; color: #1f4e79; }
+.sub { color: #555; font-size: .85rem; margin: 4px 0 12px; }
+.kpis { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.kpi { background: #fff; border: 1px solid #ddd; border-top: 4px solid #1f4e79; border-radius: 8px; padding: 8px 12px; flex: 1 1 150px; min-width: 140px; }
+.kpi.bad { border-top-color: #c0392b; } .kpi.mid { border-top-color: #b9770e; } .kpi.na { border-top-color: #888; }
+.kpi .k { font-size: .7rem; color: #666; text-transform: uppercase; letter-spacing: .03em; }
+.kpi .v { font-size: 1.25rem; font-weight: 800; }
+.kpi .d { font-size: .8rem; color: #444; }
+.card { background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+th { font-size: .7rem; text-transform: uppercase; color: #666; }
+.n { text-align: right; font-variant-numeric: tabular-nums; }
+.note { color: #555; font-size: .8rem; margin-top: 8px; line-height: 1.4; }
+.status { font-size: .8rem; color: #1f4e79; margin: 6px 0; }
+a { color: #1f4e79; }
+.pill { border: none; background: #1f4e79; color: #fff; font-weight: 700; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: .8rem; text-decoration: none; display: inline-block; }
+.pill.dim { background: #5d6d7e; }
+select { font: inherit; padding: 4px 6px; border: 1px solid #bbb; border-radius: 6px; }
+.banner { background: #fdecea; border: 2px solid #c0392b; color: #7b1d12; border-radius: 8px; padding: 12px; margin: 8px 0 12px; font-size: .85rem; font-weight: 700; }
+.banner button { margin-left: 8px; font: inherit; padding: 4px 10px; border-radius: 6px; border: 1px solid #7b1d12; background: #fff; cursor: pointer; }
+.frozen { background: #fff8e1; border: 2px solid #b9770e; color: #5a4600; border-radius: 8px; padding: 10px; margin-bottom: 12px; font-size: .85rem; font-weight: 700; }
+.warn { color: #7b241c; font-weight: 700; }
+</style>
+</head>
+<body>
+<p><a href="ops.html">← Main</a> · <a href="warranty.html">Warranty set</a></p>
+<h1>PDI cohort vs warranty</h1>
+<p class="sub">Every unit with a PDI record since the fixed program start, matched on plant + serial to the live claim lines. Each claim line is scored against the exact checklist point the approved crosswalk maps its code to.</p>
+<div class="card" style="padding:8px 12px">
+  <label for="yearSel" style="font-size:.75rem;font-weight:700">Model year</label>
+  <select id="yearSel"><option value="all" selected>All PDI'd units on cohort</option><option value="2026">MY2026</option><option value="2027">MY2027</option></select>
+  <button type="button" class="pill" id="btnSnap">Freeze snapshot</button>
+  <select id="snapSel" aria-label="Past snapshots"><option value="">Past snapshots…</option></select>
+  <button type="button" class="pill dim" id="btnLive" style="display:none">Back to live</button>
+  <button type="button" class="pill dim" id="btnReload">Reload</button>
+</div>
+<p class="status" id="status">Loading…</p>
+<div id="banner" class="banner" style="display:none" role="alert"></div>
+<div id="frozenBar" class="frozen" style="display:none"></div>
+<div id="stamp" class="note"></div>
+<div class="kpis" id="kpis"></div>
+<div id="detail" style="display:none">
+  <div class="card"><h2>By plant</h2>
+    <table><thead><tr><th>Plant</th><th class="n">PDI'd units w/ claim</th><th class="n">Flagged, still paid</th><th class="n">Inspected clean, paid</th><th class="n">Lane not inspected</th><th class="n">Not on checklist</th><th class="n">No check (unit type)</th><th class="n">Escape rate</th></tr></thead><tbody id="plantBody"></tbody></table></div>
+  <div class="card"><h2>By build month</h2>
+    <table><thead><tr><th>Build month</th><th class="n">Units</th><th class="n">Flagged</th><th class="n">Clean</th><th class="n">Not insp.</th><th class="n">Not on list</th><th class="n">No check</th><th class="n">$</th></tr></thead><tbody id="monthBody"></tbody></table>
+    <p class="note">Claim date is not captured in the export, so claims are grouped by the unit's build month (offline date). Recent months are still collecting claims.</p></div>
+  <div class="card"><h2>Units built (exposure)</h2><div id="exposure"></div></div>
+  <div class="card"><h2>Units with claims</h2>
+    <table><thead><tr><th>Plant</th><th>Serial</th><th>Built</th><th>PDI</th><th class="n">$ paid</th><th class="n">Lines</th><th class="n">Flagged</th><th class="n">Clean</th><th>Notes</th><th></th></tr></thead><tbody id="unitBody"></tbody></table></div>
+  <div class="card" id="exclCard"><h2>Left out</h2><div id="excl" class="note"></div></div>
+</div>
+<p class="note" id="foot"></p>
+
+<script src="lane-data.js"></script>
+<script src="crosswalk.js"></script>
+<script src="cohort-score.js"></script>
+<script>
+requireOps();
+(function () {
+  var API = "/.netlify/functions";
+  var S = { cw: null, hits: null, warranty: null, units: null, unitData: null, settings: null, exposure: null, res: null, frozen: null };
+  function el(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); }
+  function money(n) { return "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 }); }
+  function today() { return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date()); }
+  function banner(msg, retry) {
+    var b = el("banner"); b.style.display = "block"; b.textContent = msg;
+    if (retry) { var x = document.createElement("button"); x.type = "button"; x.textContent = "Retry"; x.onclick = retry; b.appendChild(x); }
+    el("kpis").innerHTML = ""; el("detail").style.display = "none"; el("foot").textContent = "";
+  }
+  function clearBanner() { el("banner").style.display = "none"; }
+
+  /** One read. Anything that is not a 200 with parseable JSON is an error that names the call. */
+  async function jget(path, ms) {
+    var ctl = new AbortController(); var t = setTimeout(function () { ctl.abort(); }, ms || 25000);
+    try {
+      var r = await fetch(API + "/" + path, { signal: ctl.signal }); var txt = await r.text(); var j;
+      try { j = txt ? JSON.parse(txt) : {}; } catch (e) { throw new Error(path.split("?")[0] + ": unreadable reply (" + r.status + ")"); }
+      if (!r.ok) throw new Error(path.split("?")[0] + ": " + (r.status === 401 ? "Ops PIN needed or wrong (401)" : (j.error || ("status " + r.status))));
+      return j;
+    } catch (e) { if (e.name === "AbortError") throw new Error(path.split("?")[0] + ": timed out"); throw e; }
+    finally { clearTimeout(t); }
+  }
+  async function pool(items, n, fn) {
+    var i = 0, failures = [];
+    async function worker() { while (i < items.length) { var k = i++; try { await fn(items[k], k); } catch (e) { failures.push({ item: items[k], why: e.message || String(e) }); } } }
+    var ws = []; for (var w = 0; w < n; w++) ws.push(worker()); await Promise.all(ws); return failures;
+  }
+
+  async function load() {
+    clearBanner(); S.frozen = null; el("frozenBar").style.display = "none"; el("btnLive").style.display = "none";
+    el("kpis").innerHTML = ""; el("detail").style.display = "none";
+    try {
+      el("status").textContent = "Reading settings and crosswalk…";
+      var st = await jget("settings"); S.settings = st.warrantyCohort;
+      if (!S.settings || !S.settings.pdiProgramStart) throw new Error("settings: cohort settings missing from the reply");
+      var cwr = await fetch("warranty-crosswalk.json"); if (!cwr.ok) throw new Error("warranty-crosswalk.json: status " + cwr.status);
+      S.cw = await cwr.json();
+      var v = window.GS_CROSSWALK.validate(S.cw, window.GS_LANE_API, { requireApproved: true });
+      if (!v.ok) throw new Error("crosswalk is not usable: " + v.errors.slice(0, 3).join("; "));
+      el("status").textContent = "Reading the live warranty set…";
+      S.warranty = await jget("warranty", 60000); S.hits = S.warranty.hits || [];
+      if (!S.hits.length) throw new Error("warranty: the live set has no claim lines");
+      el("status").textContent = "Listing PDI units since " + S.settings.pdiProgramStart + "…";
+      var cu = await jget("cohort-units?from=" + encodeURIComponent(S.settings.pdiProgramStart), 60000);
+      if (cu.errors && cu.errors.length) throw new Error("cohort-units: " + cu.errors.length + " day(s) could not be read (" + cu.errors.slice(0, 3).map(function (e) { return e.date + " " + e.message; }).join("; ") + ")");
+      S.units = cu.units || [];
+      var C = window.GS_COHORT; var claimed = {}; S.hits.forEach(function (h) { claimed[C.serialOf(h.unit)] = 1; });
+      var need = S.units.map(function (u) { return C.serialOf(u.unit); }).filter(function (s, i, a) { return s && a.indexOf(s) === i && claimed[s] && !C.isTestSerial(s, S.settings); });
+      S.unitData = {}; var done = 0;
+      var fails = await pool(need, 4, async function (serial) {
+        // W1.1 E7: a stale get-unit read must not score. Two reads that agree are the answer; a third decides; no agreement refuses to score.
+        var rs = await C.readStable(async function () {
+          var d = await jget("get-unit?unit=" + encodeURIComponent(serial), 25000);
+          if (!d || typeof d.lanes !== "object") throw new Error("get-unit " + serial + ": reply has no lanes");
+          return d;
+        }, function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); });
+        if (rs.differed) S.reread = (S.reread || 0) + 1;
+        var d = rs.data;
+        S.unitData[serial] = d; done++; if (done % 10 === 0 || done === need.length) el("status").textContent = "Reading PDI records " + done + " / " + need.length + "…";
+      });
+      if (fails.length) throw new Error("get-unit failed for " + fails.length + " of " + need.length + " units (first: " + fails[0].item + " — " + fails[0].why + "). Nothing is scored from a partial read.");
+      S.exposure = await jget("exposure");
+      el("status").textContent = "Scoring…";
+      render();
+      loadSnapshotList(); autoSnapshot();
+    } catch (e) {
+      el("status").textContent = "Not loaded.";
+      banner("NOT SCORED: " + e.message, load);
+    }
+  }
+
+  function compute(year) {
+    return window.GS_COHORT.score({ hits: S.hits, units: S.units, unitData: S.unitData, cw: S.cw, CW: window.GS_CROSSWALK, api: window.GS_LANE_API, settings: S.settings, today: today(), year: year, exposure: S.exposure });
+  }
+  function kpi(cls, k, v, d) { return '<div class="kpi ' + cls + '"><div class="k">' + esc(k) + '</div><div class="v">' + esc(v) + '</div>' + (d ? '<div class="d">' + esc(d) + '</div>' : "") + "</div>"; }
+
+  function paint(res, meta) {
+    var C = window.GS_COHORT, c = res.counts, d = res.dollars;
+    el("stamp").innerHTML = "Claim set <b>" + esc(meta.ingestId) + "</b> · crosswalk v" + esc(meta.crosswalkVersion) + " · program start " + esc(meta.pdiProgramStart) + " · build " + esc(meta.build || "") + " · model year: " + esc(res.year === "all" ? "all PDI'd units on cohort" : "MY" + res.year);
+    var rate = res.escapeRatePct == null ? "—" : res.escapeRatePct + "%";
+    el("kpis").innerHTML =
+      kpi("", "PDI'd units (cohort)", res.cohortUnits.toLocaleString(), res.claimedUnits + " have a claim line") +
+      kpi("bad", C.LABEL.flagged, c.flagged + " lines", money(d.flagged) + (res.w1Flagged ? " · " + res.w1Flagged + " from Walk 1" : "")) +
+      kpi("bad", C.LABEL.clean, c.clean + " lines", money(d.clean)) +
+      kpi("", "Escape rate", rate, res.denominator ? "clean ÷ (clean + flagged) = " + c.clean + " ÷ " + res.denominator : "nothing scoreable yet") +
+      kpi("mid", C.LABEL.notInspected, c.notInspected + " lines", money(d.notInspected)) +
+      kpi("na", C.LABEL.notOnChecklist, c.notOnChecklist + " lines", money(d.notOnChecklist)) +
+      kpi(c.unmapped ? "bad" : "na", C.LABEL.unmapped, c.unmapped + " lines", money(d.unmapped) + (c.unmapped ? " · add these codes to the crosswalk" : "")) +
+      kpi(res.untied && res.untied.defects ? "mid" : "na", "Untied defects", (res.untied ? res.untied.defects : 0) + " of " + (res.untied ? res.untied.total : 0), "free-text defects with no checklist line cannot flag a claim, so a unit with one can still read Inspected clean" + (res.untied && res.untied.units ? " · on " + res.untied.units + " units" : "")) +
+      kpi("na", C.LABEL.noCheck, c.noCheck + " lines", money(d.noCheck) + " · left out of the rate") +
+      (c.unknown ? kpi("bad", C.LABEL.unknown, c.unknown + " lines", money(d.unknown)) : "");
+    var pb = el("plantBody"); pb.innerHTML = "";
+    Object.keys(res.perPlant).sort().forEach(function (p) {
+      var x = res.perPlant[p], den = x.counts.clean + x.counts.flagged;
+      pb.innerHTML += "<tr><td>" + esc(p) + '</td><td class="n">' + Object.keys(x.units).length + '</td><td class="n">' + x.counts.flagged + " · " + money(x.dollars.flagged) + '</td><td class="n">' + x.counts.clean + " · " + money(x.dollars.clean) + '</td><td class="n">' + x.counts.notInspected + '</td><td class="n">' + x.counts.notOnChecklist + '</td><td class="n">' + x.counts.noCheck + '</td><td class="n">' + (den ? (Math.round(1000 * x.counts.clean / den) / 10) + "%" : "—") + "</td></tr>";
+    });
+    if (!Object.keys(res.perPlant).length) pb.innerHTML = '<tr><td colspan="8">No claim lines on cohort units for this selection.</td></tr>';
+    var mb = el("monthBody"); mb.innerHTML = "";
+    res.byMonth.forEach(function (m) { mb.innerHTML += "<tr><td>" + esc(m.month) + '</td><td class="n">' + m.units + '</td><td class="n">' + m.counts.flagged + '</td><td class="n">' + m.counts.clean + '</td><td class="n">' + m.counts.notInspected + '</td><td class="n">' + m.counts.notOnChecklist + '</td><td class="n">' + m.counts.noCheck + '</td><td class="n">' + money(m.dollars) + "</td></tr>"; });
+    var ex = el("exposure");
+    if (!res.exposureLoaded) ex.innerHTML = '<p class="note" style="margin:0"><b>Units built not loaded.</b> Nothing is estimated. Load them under Settings → Warranty cohort.</p>';
+    else {
+      var cells = (meta.exposureTable || {}), claimedBy = {}; res.units.forEach(function (u) { var k = u.plant + "|" + (u.offline ? u.offline.slice(0, 7) : "?"); claimedBy[k] = (claimedBy[k] || 0) + 1; });
+      var rows = {}; Object.keys(cells).forEach(function (k) { var p = k.split("|"); var pm = p[0] + "|" + p[1]; rows[pm] = (rows[pm] || 0) + cells[k]; });
+      ex.innerHTML = '<table><thead><tr><th>Plant</th><th>Build month</th><th class="n">Units built</th><th class="n">Cohort units with a claim</th><th class="n">Claimed ÷ built</th></tr></thead><tbody>' + Object.keys(rows).sort().map(function (pm) { var p = pm.split("|"), n = claimedBy[pm] || 0; return "<tr><td>" + esc(p[0]) + "</td><td>" + esc(p[1]) + '</td><td class="n">' + rows[pm] + '</td><td class="n">' + n + '</td><td class="n">' + (rows[pm] ? (Math.round(1000 * n / rows[pm]) / 10) + "%" : "—") + "</td></tr>"; }).join("") + "</tbody></table><p class='note'>Cohort units are only those that went through digital PDI, so this is a lower bound until every unit is on PDI.</p>";
+    }
+    var ub = el("unitBody"); ub.innerHTML = "";
+    res.units.slice(0, 300).forEach(function (u) { ub.innerHTML += "<tr><td>" + esc(u.plant) + "</td><td>" + esc(u.serial) + "</td><td>" + esc(u.offline || "—") + "</td><td>" + esc(u.pdiDate || "—") + '</td><td class="n">' + money(u.cost) + '</td><td class="n">' + u.lines + '</td><td class="n">' + u.counts.flagged + '</td><td class="n">' + u.counts.clean + '</td><td class="warn">' + esc(u.notes.join("; ")) + '</td><td><a href="timeline.html?unit=' + encodeURIComponent(u.serial) + '">Unit</a></td></tr>'; });
+    if (res.units.length > 300) ub.innerHTML += '<tr><td colspan="10" class="note">Showing the 300 largest by dollars of ' + res.units.length + ".</td></tr>";
+    el("excl").innerHTML = "Test serials excluded: <b>" + res.testExcluded.length + "</b>" + (res.testExcluded.length ? " (" + esc(res.testExcluded.slice(0, 20).join(", ")) + (res.testExcluded.length > 20 ? "…" : "") + ")" : "") + "<br>Plant could not be determined (not scored): <b>" + res.unknownPlant.length + "</b>" + (res.unknownPlant.length ? " (" + esc(res.unknownPlant.slice(0, 30).join(", ")) + ")" : "") + "<br>Policy-adjustment lines inside the numbers above: <b>" + res.policy.lines + "</b> / " + money(res.policy.dollars);
+    el("detail").style.display = "block";
+    el("foot").textContent = "Escape rate = Inspected clean ÷ (Inspected clean + Flagged, still paid). Lanes not inspected, codes not on the checklist and checks that do not exist for the unit type are shown with their dollars and left out of the rate. " +
+      "A claim is Flagged if any checklist point its code maps to was flagged on that unit; it is Inspected clean only if every mapped point that applies to the unit type was inspected and passed. " +
+      "Nothing in the system records whether rework was done, so 'Flagged, still paid' means the point was flagged at PDI and a claim was still paid on it; it does not show that rework was skipped or failed. " +
+      "Claim lines are the all-rows sum (nothing collapsed). Claim date is not captured in the export.";
+  }
+
+  function metaNow() { return { ingestId: S.warranty.ingestId, crosswalkVersion: S.cw.version, pdiProgramStart: S.settings.pdiProgramStart, build: window.GS_BUILD || "", exposureTable: (S.exposure && S.exposure.table) || {} }; }
+  function render() {
+    var year = el("yearSel").value; S.res = compute(year); paint(S.res, metaNow()); el("status").textContent = "Scored " + S.res.lines.length + " claim lines on " + S.res.cohortUnits + " cohort units.";
+  }
+
+  function snapshotBody(year) {
+    var res = year === el("yearSel").value && S.res ? S.res : compute(year);
+    return Object.assign({}, res, { ingestId: S.warranty.ingestId, crosswalkVersion: S.cw.version, build: window.GS_BUILD || "", pdiProgramStart: S.settings.pdiProgramStart, testSerialRanges: S.settings.testSerialRanges, testSerials: S.settings.testSerials, exposureTable: (S.exposure && S.exposure.table) || {}, counts: res.counts });
+  }
+  async function postSnapshot(year) {
+    var r = await fetch(API + "/cohort-snapshot", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: snapshotBody(year) }) });
+    var t = await r.text(), j = {}; try { j = JSON.parse(t); } catch (e) {}
+    if (!r.ok) throw new Error(j.error || r.status); return j;
+  }
+  async function loadSnapshotList() {
+    try {
+      var l = await jget("cohort-snapshot"); var sel = el("snapSel"); sel.innerHTML = '<option value="">Past snapshots…</option>';
+      (l.snapshots || []).forEach(function (s) { var o = document.createElement("option"); o.value = s.id; o.textContent = s.createdAt + " · " + s.ingestId.slice(0, 19) + " · cw v" + s.crosswalkVersion; sel.appendChild(o); });
+      return l;
+    } catch (e) { el("status").textContent += " (snapshot list unavailable: " + e.message + ")"; return null; }
+  }
+  async function autoSnapshot() {
+    try {
+      var l = await jget("cohort-snapshot");
+      var have = (l.snapshots || []).some(function (s) { return s.ingestId === S.warranty.ingestId && String(s.crosswalkVersion) === String(S.cw.version); });
+      if (!have) { var j = await postSnapshot("all"); el("status").textContent += " First view of this claim set: snapshot frozen (" + j.id + ")."; await loadSnapshotList(); }
+    } catch (e) { el("status").textContent += " Snapshot not saved: " + e.message; }
+  }
+  el("btnSnap").onclick = async function () {
+    if (S.frozen || !S.res) return;
+    try { var j = await postSnapshot(el("yearSel").value); el("status").textContent = "Snapshot frozen: " + j.id; await loadSnapshotList(); }
+    catch (e) { banner("Snapshot NOT saved: " + e.message); }
+  };
+  el("snapSel").onchange = async function () {
+    var id = this.value; if (!id) return;
+    try {
+      var s = await jget("cohort-snapshot?id=" + encodeURIComponent(id)); S.frozen = s; clearBanner();
+      el("frozenBar").style.display = "block"; el("frozenBar").textContent = "FROZEN snapshot " + s.id + " — taken " + s.createdAt + ". These are the numbers as they were then; nothing here recomputes.";
+      el("btnLive").style.display = "inline-block";
+      paint(s, { ingestId: s.ingestId, crosswalkVersion: s.crosswalkVersion, pdiProgramStart: s.pdiProgramStart, build: s.build, exposureTable: s.exposureTable });
+    } catch (e) { banner("Could not open that snapshot: " + e.message); }
+  };
+  el("btnLive").onclick = function () { S.frozen = null; el("frozenBar").style.display = "none"; el("btnLive").style.display = "none"; el("snapSel").value = ""; if (S.res) render(); };
+  el("yearSel").onchange = function () { if (S.frozen) return; if (S.res) render(); };
+  el("btnReload").onclick = load;
+  load();
+})();
+</script>
+</body>
+</html>

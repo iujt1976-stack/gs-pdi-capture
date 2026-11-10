@@ -1,0 +1,2031 @@
+{
+ "version": 1,
+ "status": "APPROVED",
+ "approvedBy": "Jason Thompson (decisions delegated to CC9, 11/3/2026)",
+ "approvedAt": "2026-11-03",
+ "codes": {
+  "1002": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "ac_air_vents"
+    }
+   ],
+   "group": "Systems — A/C & Vents"
+  },
+  "1004": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1005": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "awning"
+    },
+    {
+     "lane": "R",
+     "key": "awning_rail_seal"
+    }
+   ],
+   "group": "Exterior + Underbelly — Awning Rail / Splice / Full Travel"
+  },
+  "1007": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Brakes, Towables"
+  },
+  "1012": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows_compartment_doors"
+    }
+   ],
+   "group": "Exterior + Underbelly — Windows & Compartment Doors"
+  },
+  "1017": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Grab Handle - Exterior"
+  },
+  "1018": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Entry Step (Manual)"
+  },
+  "1019": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1021": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Exterior + Underbelly — Lugs / Axles / Springs / Brake Wires"
+  },
+  "1026": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "cap_transition"
+    }
+   ],
+   "group": "Rain + Seals — Cap Transition / Front Seam"
+  },
+  "1028": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "furnace_function"
+    },
+    {
+     "lane": "E",
+     "key": "furnace_heat_vents"
+    }
+   ],
+   "group": "Interior + LP — Furnace & Heat Vents"
+  },
+  "1029": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "osk_shell"
+    }
+   ],
+   "group": "Outside Kitchen Compartment Door"
+  },
+  "1034": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Rain + Seals — Membrane / Decking / Self Level Seal"
+  },
+  "1043": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1044": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Exterior + Underbelly — Fiberglass / Cap / Sidewall / Rear"
+  },
+  "1046": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Rain + Seals — Membrane / Decking / Self Level Seal"
+  },
+  "1048": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1049": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "roof_penetrations"
+    }
+   ],
+   "group": "Skylight"
+  },
+  "1050": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "awning"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    }
+   ],
+   "group": "Slide Out Awning"
+  },
+  "1051": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "slide_bulb_sweep_weather"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    }
+   ],
+   "group": "Slide Out Bulb Seal"
+  },
+  "1052": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Interior + LP — Ceiling & Wall Panels / Trim"
+  },
+  "1053": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "slideout_roof_underneath_floor"
+    }
+   ],
+   "group": "Slide Out Floor"
+  },
+  "1054": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "slideout_roof_underneath_floor"
+    }
+   ],
+   "group": "Exterior + Underbelly — Slide Floor / Screws / Corner Cups / Seals"
+  },
+  "1055": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_t_rails_alignment"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    },
+    {
+     "lane": "R",
+     "key": "slide_bulb_sweep_weather"
+    }
+   ],
+   "group": "Exterior + Underbelly — Slide T-Rails / Alignment / Sweeps / Bulb Seal"
+  },
+  "1056": {
+   "notOnChecklist": true,
+   "group": "Spare Tire"
+  },
+  "1060": {
+   "notOnChecklist": true,
+   "group": "Exterior + Underbelly — Tire Pressure / Spare Secured"
+  },
+  "1061": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "city_fill_backflow"
+    },
+    {
+     "lane": "E",
+     "key": "power_inlet_city_fresh_fill"
+    }
+   ],
+   "group": "Water Fill City"
+  },
+  "1062": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "water_heater_exterior_insp"
+    }
+   ],
+   "group": "Water Heater Door"
+  },
+  "1078": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_t_rails_alignment"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    },
+    {
+     "lane": "R",
+     "key": "slide_bulb_sweep_weather"
+    }
+   ],
+   "group": "Exterior + Underbelly — Slide T-Rails / Alignment / Sweeps / Bulb Seal"
+  },
+  "1083": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_t_rails_alignment"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    },
+    {
+     "lane": "R",
+     "key": "slide_bulb_sweep_weather"
+    }
+   ],
+   "group": "Exterior + Underbelly — Slide T-Rails / Alignment / Sweeps / Bulb Seal"
+  },
+  "1084": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Rain + Seals — Rubber / Glass Roof / Decking / Self Level"
+  },
+  "1086": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "awning"
+    },
+    {
+     "lane": "R",
+     "key": "awning_rail_seal"
+    }
+   ],
+   "group": "Exterior + Underbelly — Awning Rail / Splice / Full Travel"
+  },
+  "1094": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Sidewall, D/S"
+  },
+  "1105": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows_compartment_doors"
+    }
+   ],
+   "group": "Exterior + Underbelly — Windows & Compartment Doors"
+  },
+  "1107": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window, Sofa"
+  },
+  "1109": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window, Slide Out"
+  },
+  "1111": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window, Dinette"
+  },
+  "1122": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window, Front"
+  },
+  "1123": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Sidewall, Stud"
+  },
+  "1126": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows_compartment_doors"
+    }
+   ],
+   "group": "Exterior + Underbelly — Windows & Compartment Doors"
+  },
+  "1159": {
+   "notOnChecklist": true,
+   "group": "Exhaust System"
+  },
+  "1168": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "refrigerator_microwave"
+    }
+   ],
+   "group": "Interior + LP — Refrigerator / Microwave"
+  },
+  "1169": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "graphics"
+    }
+   ],
+   "group": "Graphics, Die Cut D/S"
+  },
+  "1170": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "graphics"
+    }
+   ],
+   "group": "Graphics, Die Cut Front"
+  },
+  "1171": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "graphics"
+    }
+   ],
+   "group": "Graphics, Die Cut P/S"
+  },
+  "1173": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "graphics"
+    }
+   ],
+   "group": "Logo Graphics"
+  },
+  "1174": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1177": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1178": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "graphics"
+    }
+   ],
+   "group": "Graphics,  Front"
+  },
+  "1179": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1184": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Hub And Drum 1 Wheel"
+  },
+  "1185": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Hubcap"
+  },
+  "1190": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "marker_tail_turn_signal_lights"
+    }
+   ],
+   "group": "Light, Clearance"
+  },
+  "1220": {
+   "notOnChecklist": true,
+   "group": "Powered Exterior Mirror"
+  },
+  "1224": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Exterior + Underbelly — Lugs / Axles / Springs / Brake Wires"
+  },
+  "1231": {
+   "notOnChecklist": true,
+   "group": "Chassis Outrigger"
+  },
+  "1240": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "recepts_gfis_usbs"
+    }
+   ],
+   "group": "Systems — Recepts / GFIs / USBs"
+  },
+  "1270": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_function"
+    },
+    {
+     "lane": "S",
+     "key": "slideout_t_rails_alignment"
+    }
+   ],
+   "group": "Systems — Slideout Function / Switches"
+  },
+  "1272": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_function"
+    }
+   ],
+   "group": "Slide Out Gear Box with Motor"
+  },
+  "1321": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "compartments"
+    },
+    {
+     "lane": "E",
+     "key": "windows_compartment_doors"
+    }
+   ],
+   "group": "Compartment Door Lock"
+  },
+  "1325": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "inverter"
+    }
+   ],
+   "group": "Solar Panel"
+  },
+  "1328": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "awning"
+    },
+    {
+     "lane": "R",
+     "key": "awning_rail_seal"
+    }
+   ],
+   "group": "Exterior + Underbelly — Awning Rail / Splice / Full Travel"
+  },
+  "1331": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "roof_penetrations"
+    }
+   ],
+   "group": "Rain + Seals — Rails / Vents / Antenna / Ladder Penetrations"
+  },
+  "1332": {
+   "notOnChecklist": true,
+   "group": "Front End Alignment"
+  },
+  "1363": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1364": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Passenger Side Sidewall"
+  },
+  "1365": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "window_valances"
+    }
+   ],
+   "group": "Curtain"
+  },
+  "1366": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1368": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "1370": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Door, Entry-Main Class C & Towables"
+  },
+  "1380": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "slide_roof_wet"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    }
+   ],
+   "group": "Slide Out Awning Fabric"
+  },
+  "1381": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "awning"
+    }
+   ],
+   "group": "Main Awning Hardware"
+  },
+  "1391": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "screw_gutter_rails"
+    }
+   ],
+   "group": "Screw & Gutter Rails"
+  },
+  "1399": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1402": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Exterior + Underbelly — Fiberglass / Cap / Sidewall / Rear"
+  },
+  "1407": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Exterior + Underbelly — Entry / Screen Door & Entry Steps"
+  },
+  "1410": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Screen Door"
+  },
+  "1411": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Cargo Screen"
+  },
+  "1412": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "refrigerator_microwave"
+    }
+   ],
+   "group": "Interior + LP — Refrigerator / Microwave"
+  },
+  "1414": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "refrigerator_microwave"
+    }
+   ],
+   "group": "Interior + LP — Refrigerator / Microwave"
+  },
+  "1426": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    }
+   ],
+   "group": "Rain + Seals — Exterior Seal / Anti-Wick"
+  },
+  "1433": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "underbelly"
+    }
+   ],
+   "group": "Exterior + Underbelly — Underbelly Secure / Protection"
+  },
+  "1440": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window D/S - P/S Large"
+  },
+  "1441": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    },
+    {
+     "lane": "R",
+     "key": "window_compartment_perimeter_leak"
+    }
+   ],
+   "group": "Window P/S - D/S Small"
+  },
+  "1446": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Rain + Seals — Membrane / Decking / Self Level Seal"
+  },
+  "1450": {
+   "notOnChecklist": true,
+   "group": "Trim Rings/Beauty (Wheels)"
+  },
+  "1454": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Exterior + Underbelly — Entry / Screen Door & Entry Steps"
+  },
+  "1457": {
+   "notOnChecklist": true,
+   "group": "License Plate Holder"
+  },
+  "1458": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Lug Nut"
+  },
+  "1462": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_function"
+    }
+   ],
+   "group": "Inwall Slideout System"
+  },
+  "1468": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "varmint_foam_loom"
+    }
+   ],
+   "group": "Exterior + Underbelly — Varmint / Foam Holes / Loomed Wires"
+  },
+  "1473": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Rain + Seals — Rubber / Glass Roof / Decking / Self Level"
+  },
+  "1474": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fenders_flare"
+    }
+   ],
+   "group": "Mudflap, 1-piece"
+  },
+  "1477": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_t_rails_alignment"
+    },
+    {
+     "lane": "E",
+     "key": "ext_slide_awning_seal"
+    },
+    {
+     "lane": "R",
+     "key": "slide_bulb_sweep_weather"
+    }
+   ],
+   "group": "Exterior + Underbelly — Slide T-Rails / Alignment / Sweeps / Bulb Seal"
+  },
+  "1488": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lugs_axles_springs"
+    }
+   ],
+   "group": "Exterior + Underbelly — Lugs / Axles / Springs / Brake Wires"
+  },
+  "1491": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    },
+    {
+     "lane": "R",
+     "key": "cap_transition"
+    }
+   ],
+   "group": "Cap - Rear Verticals"
+  },
+  "1494": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "fiberglass"
+    }
+   ],
+   "group": "Exterior + Underbelly — Fiberglass / Cap / Sidewall / Rear"
+  },
+  "1660": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Diamond Plate"
+  },
+  "1811": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "jacks_leveling_function"
+    }
+   ],
+   "group": "Systems — Jacks / Leveling Function"
+  },
+  "1880": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "interior_lights"
+    }
+   ],
+   "group": "Puck Light"
+  },
+  "2006": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "beds_bunks_under_furniture"
+    }
+   ],
+   "group": "Interior + LP — Beds / Bunks / Under Furniture"
+  },
+  "2008": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Cabinet Door"
+  },
+  "2010": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "lino_floor_decking"
+    }
+   ],
+   "group": "Rain + Seals — Lino & Floor Decking / Squeaks"
+  },
+  "2011": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "sofa_chairs_ladders"
+    }
+   ],
+   "group": "Sofa"
+  },
+  "2016": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Interior + LP — Dinette Table / Booths / Code"
+  },
+  "2018": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Interior + LP — Dinette Table / Booths / Code"
+  },
+  "2019": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Dinette Table"
+  },
+  "2026": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "lino_floor_decking"
+    }
+   ],
+   "group": "Rain + Seals — Lino & Floor Decking / Squeaks"
+  },
+  "2029": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "lino_floor_decking"
+    }
+   ],
+   "group": "Rain + Seals — Lino & Floor Decking / Squeaks"
+  },
+  "2032": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "furnace_function"
+    }
+   ],
+   "group": "Heat Ducting"
+  },
+  "2033": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "bed_bath_doors"
+    }
+   ],
+   "group": "Door, Interior"
+  },
+  "2035": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2036": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2037": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "countertops"
+    }
+   ],
+   "group": "Interior + LP — Countertops / Extensions"
+  },
+  "2038": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "beds_bunks_under_furniture"
+    }
+   ],
+   "group": "Interior + LP — Beds / Bunks / Under Furniture"
+  },
+  "2039": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2043": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Interior + LP — Ceiling & Wall Panels / Trim"
+  },
+  "2044": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Interior + LP — Ceiling & Wall Panels / Trim"
+  },
+  "2045": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Interior + LP — Ceiling & Wall Panels / Trim"
+  },
+  "2051": {
+   "checks": [
+    {
+     "lane": "R",
+     "key": "exterior_seal_antiwick"
+    },
+    {
+     "lane": "R",
+     "key": "rubber_roof_decking_self_level_seal"
+    }
+   ],
+   "group": "Seam Tape"
+  },
+  "2054": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2062": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "window_valances"
+    }
+   ],
+   "group": "Shade"
+  },
+  "2115": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "bed_bath_doors"
+    }
+   ],
+   "group": "Interior + LP — Bed / Bath Doors / Struts"
+  },
+  "2121": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "2122": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "2159": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "beds_bunks_under_furniture"
+    }
+   ],
+   "group": "Interior + LP — Beds / Bunks / Under Furniture"
+  },
+  "2164": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2183": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Interior + LP — Dinette Table / Booths / Code"
+  },
+  "2185": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Lock, Rear Entry Door"
+  },
+  "2192": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Cabinet, Refrigerator"
+  },
+  "2193": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Cabinet, Entertainment Center"
+  },
+  "2201": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "entry_screen_door_entry_steps"
+    }
+   ],
+   "group": "Entry Door Lock"
+  },
+  "2204": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "bed_bath_doors"
+    }
+   ],
+   "group": "Interior + LP — Bed / Bath Doors / Struts"
+  },
+  "2209": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    }
+   ],
+   "group": "P-Trap, Kitchen Sink"
+  },
+  "2222": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Door, Kitchen Overhead Cabinet"
+  },
+  "2231": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Door, Bathroom Lower Cabinet"
+  },
+  "2257": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2277": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cab_seats_belts"
+    }
+   ],
+   "group": "Drivers Seat"
+  },
+  "2279": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "sofa_chairs_ladders"
+    }
+   ],
+   "group": "Interior + LP — Sofa / Chairs / Ladders"
+  },
+  "2285": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "2293": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Shower Pan"
+  },
+  "2303": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "2345": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Table Leg"
+  },
+  "2369": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2371": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "2374": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Cabinet, Pantry"
+  },
+  "2392": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "fireplace_function"
+    }
+   ],
+   "group": "Fireplace"
+  },
+  "2403": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "windows"
+    }
+   ],
+   "group": "Window, Trim Ring Med&Small"
+  },
+  "2408": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "compartments"
+    }
+   ],
+   "group": "Storage Compartment"
+  },
+  "2414": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "beds_bunks_under_furniture"
+    }
+   ],
+   "group": "Cabover Bunk Floor"
+  },
+  "2418": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Trim - Padded"
+  },
+  "2423": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "cabinet_doors_panels_trim_stiles"
+    }
+   ],
+   "group": "Interior + LP — Cabinet Doors / Panels / Trim / Stiles"
+  },
+  "2425": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "ac_air_vents"
+    }
+   ],
+   "group": "Air Conditioner Inside Assembly"
+  },
+  "2465": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "cab_radio"
+    }
+   ],
+   "group": "Stereo-Drive (Way-Interglobal)"
+  },
+  "2510": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "dinette_table_booths"
+    }
+   ],
+   "group": "Table"
+  },
+  "3002": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    }
+   ],
+   "group": "Sink Drain"
+  },
+  "3004": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Systems — Black / Grey / Fresh Tanks"
+  },
+  "3005": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "city_fill_backflow"
+    },
+    {
+     "lane": "E",
+     "key": "power_inlet_city_fresh_fill"
+    }
+   ],
+   "group": "Hookup, City Water"
+  },
+  "3007": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "city_fill_backflow"
+    }
+   ],
+   "group": "Systems — City Fill / Backflow Check"
+  },
+  "3009": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Systems — Black / Grey / Fresh Tanks"
+  },
+  "3010": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Gate Valve - Black Tank"
+  },
+  "3011": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Gray Holding Tank"
+  },
+  "3014": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "3015": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    }
+   ],
+   "group": "Drain, Kitchen Sink"
+  },
+  "3016": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "3020": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Faucet, Shower"
+  },
+  "3022": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "3026": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "3030": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    },
+    {
+     "lane": "E",
+     "key": "plumbing_slope_tank_leaks"
+    }
+   ],
+   "group": "Systems — Drains / P-Traps"
+  },
+  "3032": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Systems — Monitor Panel / Converter / Water Pump"
+  },
+  "3048": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Gate Valve - Gray Tank"
+  },
+  "3056": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    },
+    {
+     "lane": "E",
+     "key": "plumbing_slope_tank_leaks"
+    }
+   ],
+   "group": "Systems — Drains / P-Traps"
+  },
+  "3057": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    },
+    {
+     "lane": "E",
+     "key": "plumbing_slope_tank_leaks"
+    }
+   ],
+   "group": "Systems — Drains / P-Traps"
+  },
+  "3061": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Shower Pan"
+  },
+  "3066": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "tub_shower_sinks_faucets"
+    }
+   ],
+   "group": "Interior + LP — Tub / Shower / Toilet / Sinks / Faucets"
+  },
+  "3070": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "air_test_water_lines"
+    },
+    {
+     "lane": "S",
+     "key": "faucets_pressurize"
+    }
+   ],
+   "group": "Water Line Fitting"
+  },
+  "3071": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Holding Tank Probe"
+  },
+  "3077": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "black_grey_fresh_tanks"
+    }
+   ],
+   "group": "Overflow Hose/Freshwater"
+  },
+  "4004": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "tv_antenna_booster"
+    }
+   ],
+   "group": "Systems — TV / Antenna / Booster"
+  },
+  "4007": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "battery_hookup_disconnect"
+    }
+   ],
+   "group": "Battery Disconnect"
+  },
+  "4009": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Converter, Lower"
+  },
+  "4010": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "detectors"
+    }
+   ],
+   "group": "CO Detector"
+  },
+  "4015": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "varmint_foam_loom"
+    },
+    {
+     "lane": "S",
+     "key": "marker_tail_turn_signal_lights"
+    }
+   ],
+   "group": "Wiring, Exterior 12V"
+  },
+  "4016": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "recepts_gfis_usbs"
+    }
+   ],
+   "group": "Systems — Recepts / GFIs / USBs"
+  },
+  "4017": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "furnace_function"
+    },
+    {
+     "lane": "E",
+     "key": "furnace_heat_vents"
+    }
+   ],
+   "group": "Interior + LP — Furnace & Heat Vents"
+  },
+  "4018": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "generator"
+    }
+   ],
+   "group": "Systems — Generator Start / Load / Exhaust"
+  },
+  "4020": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "ac_dc_panel"
+    }
+   ],
+   "group": "Systems — AC/DC Panel / Breakers / Fuses"
+  },
+  "4021": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "recepts_gfis_usbs"
+    },
+    {
+     "lane": "S",
+     "key": "continuity_test"
+    }
+   ],
+   "group": "Wiring, Interior 110V"
+  },
+  "4023": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "refrigerator_microwave"
+    }
+   ],
+   "group": "Microwave-Greystone"
+  },
+  "4027": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "range_hood_stove_fireplace"
+    }
+   ],
+   "group": "Oven/Range"
+  },
+  "4028": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "refrigerator_microwave"
+    }
+   ],
+   "group": "Interior + LP — Refrigerator / Microwave"
+  },
+  "4030": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "power_inlet_city_fresh_fill"
+    }
+   ],
+   "group": "Shore Power Cord - Detachable"
+  },
+  "4033": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "tv_antenna_booster"
+    }
+   ],
+   "group": "Systems — TV / Antenna / Booster"
+  },
+  "4035": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "thermostat"
+    }
+   ],
+   "group": "Thermostat"
+  },
+  "4040": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "water_heater"
+    }
+   ],
+   "group": "Systems — Water Heater (110 OFF after test)"
+  },
+  "4051": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "generator"
+    }
+   ],
+   "group": "Systems — Generator Start / Load / Exhaust"
+  },
+  "4059": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Systems — Monitor Panel / Converter / Water Pump"
+  },
+  "4078": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Harness, Monitor Panel"
+  },
+  "4093": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Water Pump Switch"
+  },
+  "4137": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "continuity_test"
+    },
+    {
+     "lane": "S",
+     "key": "ac_dc_panel"
+    }
+   ],
+   "group": "Junction Box"
+  },
+  "4138": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "recepts_gfis_usbs"
+    }
+   ],
+   "group": "110V GFI Recepticle/Outlet"
+  },
+  "4143": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "monitor_panel_converter_water_pump"
+    }
+   ],
+   "group": "Systems — Monitor Panel / Converter / Water Pump"
+  },
+  "4145": {
+   "notOnChecklist": true,
+   "group": "Stereo/Radio (towable)"
+  },
+  "4167": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "tv_antenna_booster"
+    }
+   ],
+   "group": "Coax Cable"
+  },
+  "5020": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lp_lines_secured"
+    },
+    {
+     "lane": "S",
+     "key": "lp_drop_test"
+    }
+   ],
+   "group": "LP Gas Line"
+  },
+  "5203": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lp_lines_secured"
+    },
+    {
+     "lane": "S",
+     "key": "lp_drop_test"
+    }
+   ],
+   "group": "LP Tank Gauge"
+  },
+  "5204": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "lp_lines_secured"
+    },
+    {
+     "lane": "S",
+     "key": "lp_drop_test"
+    }
+   ],
+   "group": "LP Tank"
+  },
+  "6000": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "drainage_pipes"
+    },
+    {
+     "lane": "E",
+     "key": "plumbing_slope_tank_leaks"
+    }
+   ],
+   "group": "Systems — Drains / P-Traps"
+  },
+  "6045": {
+   "checks": [
+    {
+     "lane": "S",
+     "key": "slideout_function"
+    }
+   ],
+   "group": "Slide Out Cable Harness"
+  },
+  "6055": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "7499": {
+   "notOnChecklist": true,
+   "group": "Recall - Lateral Fuel Tank Support"
+  },
+  "7504": {
+   "checks": [
+    {
+     "lane": "E",
+     "key": "metal_glass_diamond_plate"
+    }
+   ],
+   "group": "Exterior + Underbelly — Metal / Glass / Diamond Plate"
+  },
+  "9921": {
+   "checks": [
+    {
+     "lane": "I",
+     "key": "ceiling_wall_panels_trim"
+    }
+   ],
+   "group": "Interior + LP — Ceiling & Wall Panels / Trim"
+  }
+ }
+}

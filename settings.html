@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="ops-boot.js"></script>
+<script src="build.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GS — Settings</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, Helvetica, sans-serif; background: #f0f2f5; color: #111; padding: 16px; max-width: 760px; margin: 0 auto; }
+h1 { font-size: 1.2rem; text-align: center; }
+h2 { font-size: 0.95rem; margin-bottom: 8px; }
+.home { text-align: center; margin: 0 0 8px; }
+.home a { color: #1a5276; font-size: 0.85rem; font-weight: 700; text-decoration: none; }
+.card { background: #fff; border: 1px solid #ccc; border-radius: 8px; padding: 14px; margin-bottom: 12px; overflow-x: auto; }
+label { display: block; font-size: 0.7rem; font-weight: 700; color: #555; text-transform: uppercase; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th { text-align: left; font-size: 0.7rem; text-transform: uppercase; color: #555; padding: 4px 6px; }
+td { padding: 6px; border-top: 1px solid #e3e3e3; vertical-align: middle; }
+td.code code { font-size: 1.1rem; font-weight: 700; letter-spacing: 3px; }
+input[type=text] { padding: 8px; font-size: 1rem; border: 1px solid #ccc; border-radius: 6px; }
+input.code-edit { width: 5.5em; letter-spacing: 3px; text-align: center; }
+input#addName { width: 100%; max-width: 320px; }
+.btn { padding: 12px 16px; border: none; border-radius: 8px; font-weight: 700; color: #fff; background: #196f3d; cursor: pointer; margin-top: 8px; }
+.btn.small { padding: 6px 10px; margin: 0; font-size: 0.8rem; background: #1a5276; }
+.btn.warn { background: #a04000; }
+.btn.grey { background: #777; }
+.status { font-size: 0.8rem; color: #666; margin-top: 8px; }
+.warnline { background: #fff3cd; border: 1px solid #e0b800; color: #5a4600; padding: 8px 10px; border-radius: 6px; font-size: 0.85rem; font-weight: 700; margin-bottom: 10px; }
+.badge-on { color: #196f3d; font-weight: 700; }
+.badge-off { color: #a04000; font-weight: 700; }
+.pending { color: #a04000; font-size: 0.8rem; }
+.empty { color: #777; font-size: 0.85rem; padding: 6px; }
+</style>
+</head>
+<body>
+<p class="home no-print"><a href="ops.html">← Main</a></p>
+<h1>SETTINGS</h1>
+<div class="card" id="rosterCard">
+  <h2>Inspectors</h2>
+  <p class="warnline" id="noCode" style="display:none"></p>
+  <table id="tblActive">
+    <thead><tr><th>Name</th><th>Status</th><th>Code</th><th>Reset</th><th>Edit (4 digits)</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <div style="margin-top:12px">
+    <label for="addName">Add inspector (first and last name — code is made for you)</label>
+    <input type="text" id="addName" placeholder="First Last" autocomplete="off">
+    <button type="button" class="btn small" id="btnAdd">Add</button>
+  </div>
+  <h2 style="margin-top:16px">Inactive</h2>
+  <table id="tblInactive">
+    <thead><tr><th>Name</th><th>Status</th><th>Code</th><th>Reset</th><th>Edit (4 digits)</th></tr></thead>
+    <tbody></tbody>
+  </table>
+  <button type="button" class="btn" id="btnSave">Save</button>
+  <p class="status" id="status">First and last name on every row. Inactive names cannot save anything from the floor.</p>
+</div>
+<div class="card" id="cohortCard">
+  <h2>Warranty cohort</h2>
+  <p class="status" style="margin:0 0 8px">Drives the Cohort page. Every change is logged and cannot be edited later.</p>
+  <label for="wcStart">PDI program start (fixed date)</label>
+  <input type="text" id="wcStart" placeholder="YYYY-MM-DD" style="width:11em">
+  <label for="wcRanges" style="margin-top:10px">Test serial ranges (one per line: from-to, optional note)</label>
+  <textarea id="wcRanges" rows="3" style="width:100%;padding:8px;font-size:1rem;border:1px solid #ccc;border-radius:6px"></textarea>
+  <label for="wcSerials" style="margin-top:10px">Individual test serials (comma separated)</label>
+  <input type="text" id="wcSerials" style="width:100%">
+  <button type="button" class="btn" id="wcSave">Save cohort settings</button>
+  <p class="status" id="wcStatus">Loading…</p>
+  <div id="wcBanner" class="warnline" style="display:none;background:#fdecea;border-color:#c0392b;color:#7b1d12"></div>
+  <h2 style="margin-top:18px">Units built (exposure)</h2>
+  <p class="status" style="margin:0 0 8px">One line per cell: <b>plant, YYYY-MM, model year, units built</b> (example: 51, 2026-09, 2026, 120). Empty means "units built not loaded"; the Cohort page never estimates. A blank count clears a cell.</p>
+  <textarea id="exLines" rows="6" style="width:100%;padding:8px;font-size:.95rem;border:1px solid #ccc;border-radius:6px;font-family:monospace"></textarea>
+  <label for="exNote" style="margin-top:8px">Note for the log (where the numbers came from)</label>
+  <input type="text" id="exNote" style="width:100%">
+  <button type="button" class="btn" id="exSave">Save units built</button>
+  <p class="status" id="exStatus">Loading…</p>
+</div>
+<div class="card" id="thresholdCard">
+  <h2>Waiting and stalled units (business days, Mon-Fri)</h2>
+  <label for="thRain">Rain done, awaiting PDI: turn red after this many business days with no activity</label>
+  <input type="number" id="thRain" min="1" max="15" step="1" inputmode="numeric" value="3" style="width:90px">
+  <label for="thStarted" style="margin-top:10px">Started PDI, not complete: turn red after this many business days with no activity</label>
+  <input type="number" id="thStarted" min="1" max="15" step="1" inputmode="numeric" value="2" style="width:90px">
+  <div style="margin-top:12px"><button type="button" class="btn" id="btnSaveTh">Save days</button></div>
+  <p class="status" id="thStatus">Whole numbers 1 to 15. Takes effect on the next page load, no deploy.</p>
+</div>
+<div class="card" id="planCard">
+  <h2>Takt, lane target and staffing</h2>
+  <label for="pUnits">Target units per day through PDI</label>
+  <input type="number" id="pUnits" min="1" max="50" step="1" inputmode="numeric" value="11" style="width:90px">
+  <label for="pGross" style="margin-top:10px">Gross shift minutes</label>
+  <input type="number" id="pGross" min="60" max="1440" step="1" inputmode="numeric" value="510" style="width:90px">
+  <label for="pDown" style="margin-top:10px">Planned down minutes (breaks, meetings)</label>
+  <input type="number" id="pDown" min="0" max="1439" step="1" inputmode="numeric" value="45" style="width:90px">
+  <label for="pUtil" style="margin-top:10px">Utilization % for staffing</label>
+  <input type="number" id="pUtil" min="1" max="100" step="1" inputmode="numeric" value="85" style="width:90px">
+  <label for="pOps" style="margin-top:10px">Operators staffed today</label>
+  <input type="number" id="pOps" min="0" max="50" step="1" inputmode="numeric" value="0" style="width:90px">
+  <label for="pCut" style="margin-top:10px">Lane contents changed on (YYYY-MM-DD, blank = not set)</label>
+  <input type="text" id="pCut" maxlength="10" placeholder="YYYY-MM-DD" style="width:140px;padding:8px;font-size:1rem;border:1px solid #ccc;border-radius:6px">
+  <table style="margin-top:12px;width:100%">
+    <tr><td>Net minutes</td><td id="pNet">—</td></tr>
+    <tr><td>Takt (net / units)</td><td id="pTakt">—</td></tr>
+    <tr><td>Lane target (whole minutes, used on every report)</td><td id="pTarget">—</td></tr>
+    <tr><td>Labor minutes per unit (R + S + E + I averages, last 14 days)</td><td id="pLabor">—</td></tr>
+    <tr><td>Design clock for comparison</td><td id="pDesign">80 to 104 min</td></tr>
+    <tr><td>Operators needed at the utilization above</td><td id="pNeed">—</td></tr>
+    <tr><td>Operators needed at 100%</td><td id="pNeed100">—</td></tr>
+    <tr><td>Staffed vs needed</td><td id="pGap">—</td></tr>
+  </table>
+  <div style="margin-top:12px"><button type="button" class="btn" id="btnSavePlan">Save planning</button></div>
+  <p class="status" id="pStatus">Whole numbers only. Takes effect on the next page load, no deploy.</p>
+</div>
+<div class="card">
+  <label>Floor PIN</label>
+  <p class="status" id="floorState">Floor PIN: loading… (managed in Netlify env var FLOOR_PIN)</p>
+</div>
+<script>
+requireOps();
+(function(){
+  var API = "/.netlify/functions";
+  var state = { active: [], inactive: [], codes: {}, resets: {}, edits: {}, loaded: false };
+  function el(id){ return document.getElementById(id); }
+  function norm(s){ return String(s||"").trim().replace(/\s+/g," "); }
+  function today(){ var d = new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+  function inactiveIdx(name){ for (var i=0;i<state.inactive.length;i++) if (state.inactive[i].name===name) return i; return -1; }
+
+  function paintNoCode(){
+    var n = 0;
+    state.active.forEach(function(name){ if (!state.codes[name] || state.resets[name]) n++; });
+    var box = el("noCode");
+    if (n > 0 && state.loaded) { box.style.display = ""; box.textContent = n + " active name" + (n===1?"":"s") + " " + (n===1?"has":"have") + " no code. Save to issue codes."; }
+    else { box.style.display = "none"; box.textContent = ""; }
+  }
+  function btn(text, cls, fn){
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "btn small " + (cls||""); b.textContent = text; b.onclick = fn; return b;
+  }
+  function row(name, isActive){
+    var tr = document.createElement("tr");
+    tr.setAttribute("data-name", name);
+    var tdName = document.createElement("td"); tdName.className = "name"; tdName.textContent = name; tr.appendChild(tdName);
+    var tdSt = document.createElement("td");
+    var badge = document.createElement("span"); badge.className = isActive ? "badge-on" : "badge-off"; badge.textContent = isActive ? "Active" : "Inactive";
+    tdSt.appendChild(badge); tdSt.appendChild(document.createTextNode(" "));
+    tdSt.appendChild(btn(isActive ? "Make inactive" : "Make active", isActive ? "warn" : "", function(){ toggle(name, isActive); }));
+    tr.appendChild(tdSt);
+    var tdCode = document.createElement("td"); tdCode.className = "code";
+    var shown = state.edits[name] != null && state.edits[name] !== "" ? state.edits[name] : (state.codes[name] || "");
+    if (state.resets[name]) {
+      var p = document.createElement("span"); p.className = "pending"; p.textContent = "new code on Save"; tdCode.appendChild(p);
+    } else if (shown) {
+      var c = document.createElement("code"); c.textContent = shown; tdCode.appendChild(c);
+    } else {
+      var none = document.createElement("span"); none.className = "pending"; none.textContent = isActive ? "no code yet" : "—"; tdCode.appendChild(none);
+    }
+    tr.appendChild(tdCode);
+    var tdRes = document.createElement("td");
+    tdRes.appendChild(btn("Reset", "grey", function(){ state.resets[name] = true; delete state.edits[name]; render(); }));
+    tr.appendChild(tdRes);
+    var tdEd = document.createElement("td");
+    var inp = document.createElement("input"); inp.type = "text"; inp.className = "code-edit"; inp.maxLength = 4; inp.inputMode = "numeric"; inp.placeholder = "####";
+    inp.value = state.edits[name] || "";
+    inp.oninput = function(){
+      inp.value = inp.value.replace(/\D/g,"").slice(0,4);
+      if (inp.value) { state.edits[name] = inp.value; delete state.resets[name]; } else { delete state.edits[name]; }
+      paintNoCode();
+    };
+    inp.onchange = function(){ render(); };
+    tdEd.appendChild(inp); tr.appendChild(tdEd);
+    return tr;
+  }
+  function render(){
+    var a = el("tblActive").querySelector("tbody"), i = el("tblInactive").querySelector("tbody");
+    a.innerHTML = ""; i.innerHTML = "";
+    if (!state.active.length) { var r = document.createElement("tr"); var d = document.createElement("td"); d.colSpan = 5; d.className = "empty"; d.textContent = "No active inspectors."; r.appendChild(d); a.appendChild(r); }
+    state.active.forEach(function(n){ a.appendChild(row(n, true)); });
+    if (!state.inactive.length) { var r2 = document.createElement("tr"); var d2 = document.createElement("td"); d2.colSpan = 5; d2.className = "empty"; d2.textContent = "Nobody inactive."; r2.appendChild(d2); i.appendChild(r2); }
+    state.inactive.forEach(function(x){ i.appendChild(row(x.name, false)); });
+    paintNoCode();
+  }
+  function toggle(name, wasActive){
+    if (wasActive) {
+      state.active = state.active.filter(function(n){ return n !== name; });
+      state.inactive.push({ name: name, since: today() });
+    } else {
+      state.inactive = state.inactive.filter(function(x){ return x.name !== name; });
+      state.active.push(name);
+    }
+    render();
+  }
+  function adopt(data){
+    state.active = (data.inspectors||[]).slice();
+    state.inactive = (data.inactive||[]).map(function(x){ return { name: x.name, since: x.since }; });
+    state.codes = Object.assign({}, data.codes||{});
+    state.resets = {}; state.edits = {};
+    state.loaded = true;
+    render();
+  }
+  async function load(){
+    try {
+      var res = await fetch(API+"/settings");
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) throw new Error(data.error||res.status);
+      adopt(data);
+      if (data.thresholds) { el("thRain").value = data.thresholds.rainQueueRedDays; el("thStarted").value = data.thresholds.startedStaleDays; }
+      adoptPlan(data.planning);
+      el("status").textContent = state.active.length + " active, " + state.inactive.length + " inactive.";
+      el("floorState").textContent = "Floor PIN: " + (data.floorSet ? "set" : "not set") + " (managed in Netlify env var FLOOR_PIN)";
+    } catch(e){
+      el("status").textContent = "Load failed: "+e.message;
+      el("floorState").textContent = "Floor PIN: unknown (managed in Netlify env var FLOOR_PIN)";
+    }
+  }
+  el("btnAdd").onclick = function(){
+    var n = norm(el("addName").value);
+    if (!n) return;
+    if (!/\s/.test(n)) { el("status").textContent = "First and last name required: " + n; return; }
+    if (state.active.indexOf(n) >= 0 || inactiveIdx(n) >= 0) { el("status").textContent = n + " is already on the list."; return; }
+    state.active.push(n);
+    el("addName").value = "";
+    el("status").textContent = "Added " + n + ". Press Save to issue the code.";
+    render();
+  };
+  el("btnSave").onclick = async function(){
+    if (!state.loaded) { el("status").textContent = "Not loaded yet. Reload the page."; return; }
+    var firstOnly = state.active.concat(state.inactive.map(function(x){ return x.name; })).filter(function(n){ return !/\s/.test(n); });
+    if (firstOnly.length) { el("status").textContent = "First name only is not allowed: " + firstOnly.join(", "); return; }
+    var bad = Object.keys(state.edits).filter(function(n){ return state.edits[n] && !/^\d{4}$/.test(state.edits[n]); });
+    if (bad.length) { el("status").textContent = "Code must be exactly 4 digits: " + bad.join(", "); return; }
+    var codes = Object.assign({}, state.codes);
+    Object.keys(state.edits).forEach(function(n){ if (state.edits[n]) codes[n] = state.edits[n]; });
+    var resetCodes = Object.keys(state.resets).filter(function(n){ return state.resets[n]; });
+    try {
+      var res = await fetch(API+"/settings", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ inspectors: state.active, inactive: state.inactive, codes: codes, resetCodes: resetCodes }) });
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) throw new Error(data.error||res.status);
+      adopt(data);
+      var g = (data.generated||[]).length;
+      el("status").textContent = "Saved. " + data.inspectors.length + " active, " + data.inactive.length + " inactive" + (g ? ", " + g + " new code" + (g===1?"":"s") + " issued." : ".");
+    } catch(e){ el("status").textContent = "Save failed: "+e.message; }
+  };
+  el("btnSaveTh").onclick = async function(){
+    var a = el("thRain").value.trim(), b = el("thStarted").value.trim();
+    var ok = function(v){ return /^\d+$/.test(v) && Number(v) >= 1 && Number(v) <= 15; };
+    if (!ok(a) || !ok(b)) { el("thStatus").textContent = "Each must be a whole number from 1 to 15."; return; }
+    try {
+      var res = await fetch(API+"/settings", { method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ thresholds: { rainQueueRedDays: Number(a), startedStaleDays: Number(b) } }) });
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) throw new Error(data.error||res.status);
+      el("thRain").value = data.thresholds.rainQueueRedDays; el("thStarted").value = data.thresholds.startedStaleDays;
+      el("thStatus").textContent = "Saved. Rain-queue red after " + data.thresholds.rainQueueRedDays + " business days; started-not-complete red after " + data.thresholds.startedStaleDays + ".";
+    } catch(e){ el("thStatus").textContent = "Save failed: "+e.message; }
+  };
+  // ---- r6b: takt / target / staffing (inline fields and status text only)
+  var PLAN_ID = { unitsPerDay: "pUnits", grossMin: "pGross", downMin: "pDown", utilPct: "pUtil", operators: "pOps" };
+  var labor = { avg: {}, total: null };
+  function planVals(){
+    var v = {};
+    Object.keys(PLAN_ID).forEach(function(k){ v[k] = el(PLAN_ID[k]).value.trim(); });
+    v.laneContentCutDate = el("pCut").value.trim();
+    return v;
+  }
+  function pInt(s, lo, hi){ return /^\d+$/.test(s) && Number(s) >= lo && Number(s) <= hi ? Number(s) : null; }
+  function paintPlan(){
+    var v = planVals(), u = pInt(v.unitsPerDay, 1, 50), g = pInt(v.grossMin, 60, 1440), d = pInt(v.downMin, 0, 1439), ut = pInt(v.utilPct, 1, 100), op = pInt(v.operators, 0, 50);
+    var set = function(id, t){ el(id).textContent = t; };
+    if (u === null || g === null || d === null || d >= g) { ["pNet","pTakt","pTarget","pNeed","pNeed100","pGap"].forEach(function(i){ set(i, "—"); }); return; }
+    var net = g - d, takt = net / u;
+    set("pNet", net + " min");
+    set("pTakt", takt.toFixed(2) + " min");
+    set("pTarget", Math.max(1, Math.round(takt)) + " min");
+    set("pLabor", labor.total == null ? "needs timed R, S, E and I sittings in the last 14 days" : (labor.total / 60).toFixed(1) + " min (R " + (labor.avg.R/60).toFixed(1) + " + S " + (labor.avg.S/60).toFixed(1) + " + E " + (labor.avg.E/60).toFixed(1) + " + I " + (labor.avg.I/60).toFixed(1) + ")");
+    if (labor.total == null || ut === null) { set("pNeed", "—"); set("pNeed100", "—"); set("pGap", "—"); return; }
+    var lm = labor.total / 60, need = (u * lm) / (net * ut / 100), need100 = (u * lm) / net;
+    set("pNeed", Math.ceil(need) + " (" + need.toFixed(1) + ")");
+    set("pNeed100", need100.toFixed(2));
+    var gap = (op === null ? 0 : op) - Math.ceil(need);
+    set("pGap", (op === null ? 0 : op) + " staffed vs " + Math.ceil(need) + " needed: " + (gap >= 0 ? "covered" + (gap ? " (+" + gap + ")" : "") : "short by " + (-gap)));
+  }
+  function adoptPlan(p){
+    if (!p) return;
+    Object.keys(PLAN_ID).forEach(function(k){ el(PLAN_ID[k]).value = p[k]; });
+    el("pCut").value = p.laneContentCutDate || "";
+    paintPlan();
+  }
+  async function loadLabor(){
+    try {
+      var t = new Date(), f = new Date(t.getTime() - 13 * 86400000);
+      var iso = function(x){ return x.getFullYear() + "-" + String(x.getMonth()+1).padStart(2,"0") + "-" + String(x.getDate()).padStart(2,"0"); };
+      var res = await fetch(API + "/inspector-stats?from=" + iso(f) + "&to=" + iso(t));
+      var data = JSON.parse(await res.text() || "{}");
+      if (!res.ok) return;
+      var sum = {}, n = {};
+      (data.rows || []).forEach(function(r){
+        if (!r.timed || (r.durationSec || 0) < 60) return;
+        var l = String(r.lane);
+        if ("RSEI".indexOf(l) < 0 || l.length !== 1) return;
+        sum[l] = (sum[l] || 0) + r.durationSec; n[l] = (n[l] || 0) + 1;
+      });
+      var ok = true, tot = 0;
+      ["R","S","E","I"].forEach(function(l){ if (!n[l]) ok = false; else { labor.avg[l] = sum[l] / n[l]; tot += labor.avg[l]; } });
+      labor.total = ok ? tot : null;
+      paintPlan();
+    } catch (e) {}
+  }
+  Object.keys(PLAN_ID).forEach(function(k){ el(PLAN_ID[k]).oninput = paintPlan; });
+  el("btnSavePlan").onclick = async function(){
+    var v = planVals();
+    try {
+      var res = await fetch(API+"/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ planning: v }) });
+      var raw = await res.text();
+      var data = raw ? JSON.parse(raw) : {};
+      if (!res.ok) throw new Error(data.error||res.status);
+      adoptPlan(data.planning);
+      el("pStatus").textContent = "Saved. Lane target is now " + Math.max(1, Math.round((data.planning.grossMin - data.planning.downMin) / data.planning.unitsPerDay)) + " minutes on every report.";
+    } catch(e){ el("pStatus").textContent = "Save failed: "+e.message; }
+  };
+  load();
+  loadLabor();
+})();
+</script>
+<script>
+(function(){
+  var API = "/.netlify/functions/";
+  function $(id){ return document.getElementById(id); }
+  function bad(msg){ var b = $("wcBanner"); b.style.display = "block"; b.textContent = msg; }
+  function ok(){ $("wcBanner").style.display = "none"; }
+  async function jget(name){
+    var r = await fetch(API + name); var t = await r.text(); var j = {};
+    try { j = t ? JSON.parse(t) : {}; } catch (e) { throw new Error(name + ": unreadable reply (" + r.status + ")"); }
+    if (!r.ok) throw new Error(name + ": " + (j.error || r.status));
+    return j;
+  }
+  async function jpost(name, body){
+    var r = await fetch(API + name, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    var t = await r.text(); var j = {}; try { j = t ? JSON.parse(t) : {}; } catch (e) {}
+    if (!r.ok) throw new Error((j.error || j.errors && j.errors.join("; ") || r.status));
+    return j;
+  }
+  function fillCohort(c){
+    $("wcStart").value = c.pdiProgramStart || "";
+    $("wcRanges").value = (c.testSerialRanges || []).map(function(x){ return x.from + "-" + x.to + (x.note ? ", " + x.note : ""); }).join("\n");
+    $("wcSerials").value = (c.testSerials || []).join(", ");
+    $("wcStatus").textContent = c.isDefault ? "Showing the defaults (nothing saved yet)." : "Saved " + (c.updatedAt || "");
+  }
+  function fillEx(e){
+    var rows = Object.keys(e.table || {}).sort().map(function(k){ var p = k.split("|"); return p[0] + ", " + p[1] + ", " + p[2] + ", " + e.table[k]; });
+    $("exLines").value = rows.join("\n");
+    $("exStatus").textContent = rows.length ? (rows.length + " cells · updated " + (e.updatedAt || "")) : "Empty: units built not loaded.";
+  }
+  async function load(){
+    try {
+      var s = await jget("settings"); fillCohort(s.warrantyCohort || {}); ok();
+      var e = await jget("exposure"); fillEx(e);
+    } catch (err) { bad("Could not load cohort settings: " + err.message); $("wcStatus").textContent = "Not loaded."; $("exStatus").textContent = "Not loaded."; }
+  }
+  $("wcSave").onclick = async function(){
+    var ranges = [], problems = [];
+    $("wcRanges").value.split("\n").forEach(function(line, i){
+      line = line.trim(); if (!line) return;
+      var m = /^(\d+)\s*-\s*(\d+)(?:\s*,\s*(.*))?$/.exec(line);
+      if (!m) { problems.push("range line " + (i + 1) + " is not 'from-to'"); return; }
+      ranges.push({ from: Number(m[1]), to: Number(m[2]), note: m[3] || "" });
+    });
+    var serials = $("wcSerials").value.split(",").map(function(x){ return x.trim(); }).filter(Boolean);
+    if (problems.length) { bad(problems.join("; ")); return; }
+    try {
+      var j = await jpost("settings", { warrantyCohort: { pdiProgramStart: $("wcStart").value.trim(), testSerialRanges: ranges, testSerials: serials } });
+      ok(); fillCohort(j.warrantyCohort || {}); $("wcStatus").textContent = "Saved. Logged.";
+    } catch (err) { bad("NOT SAVED: " + err.message); }
+  };
+  $("exSave").onclick = async function(){
+    var set = {}, problems = [];
+    var existing = {};
+    $("exLines").value.split("\n").forEach(function(line, i){
+      line = line.trim(); if (!line) return;
+      var p = line.split(",").map(function(x){ return x.trim(); });
+      if (p.length !== 4 || !/^\d{2}$/.test(p[0]) || !/^\d{4}-\d{2}$/.test(p[1]) || !/^\d{4}$/.test(p[2]) || !/^\d+$/.test(p[3])) { problems.push("line " + (i + 1) + " needs: plant, YYYY-MM, model year, whole number"); return; }
+      set[p[0] + "|" + p[1] + "|" + p[2]] = Number(p[3]);
+    });
+    if (problems.length) { bad(problems.join("; ")); return; }
+    try {
+      var cur = await jget("exposure");
+      Object.keys(cur.table || {}).forEach(function(k){ if (!(k in set)) set[k] = null; });   // lines removed from the box clear their cell
+      if (!Object.keys(set).length) { bad("Nothing to save."); return; }
+      var j = await jpost("exposure", { set: set, note: $("exNote").value.trim() });
+      ok(); fillEx(j); $("exStatus").textContent = "Saved. " + (j.changes || 0) + " changes logged.";
+    } catch (err) { bad("NOT SAVED: " + err.message); }
+  };
+  load();
+})();
+</script>
+</body>
+</html>
